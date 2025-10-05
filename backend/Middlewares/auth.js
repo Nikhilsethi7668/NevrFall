@@ -1,23 +1,23 @@
-
 import jwt from "jsonwebtoken";
-export default function auth(required = true) {
-  return (req, res, next) => {
-    const bearer = req.headers.authorization || "";
-    const token = bearer.startsWith("Bearer ")
-      ? bearer.slice(7)
-      : req.cookies?.accessToken || null;
-    if (!token) {
-      if (required) return res.status(401).json({ error: "Unauthorized" });
-      req.user = null;
-      return next();
-    }
-    try {
-      req.user = jwt.verify(token, process.env.JWT_SECRET);
-      next();
-    } catch {
-      if (required) return res.status(401).json({ error: "Invalid token" });
-      req.user = null;
-      next();
-    }
-  };
-}
+
+export const generateToken = (user) => {
+  return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+    expiresIn: process.env.TokenTTL || "1d",
+  });
+};
+export const auth = async (req, res, next) => {
+  const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ error: "No token, authorization denied" });
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    console.error(err);
+    res.status(401).json({ error: "Token is not valid" });
+  }
+};
+
+// module.exports = { generateToken, auth };

@@ -14,7 +14,17 @@ const AddressSchema = new mongoose.Schema(
 
 const UserSchema = new mongoose.Schema(
   {
+    name: {
+      type: String,
+      default: "User",
+    },
     phone: { type: String, unique: true, index: true, required: true },
+    email: { type: String, unique: true, sparse: true, index: true },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other"],
+      default: "male",
+    },
     role: {
       type: String,
       enum: ["user", "admin", "Support", "manager"],

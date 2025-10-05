@@ -1,6 +1,6 @@
 // routes/auth.routes.js
 import { Router } from "express";
-import auth from "../Middlewares/auth.js";
+import { auth } from "../Middlewares/auth.js";
 import {
   requestOtp,
   verifyOtp,
@@ -11,7 +11,7 @@ import {
 const router = Router();
 router.post("/otp/request", requestOtp);
 router.post("/otp/verify", verifyOtp);
-router.get("/me", auth(false), me);
+router.get("/me", auth, me);
 router.post("/logout", logout);
 
 export default router;

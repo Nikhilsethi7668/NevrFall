@@ -6,6 +6,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectDB from "./Config/Db.js";
 import authRoutes from "./Routes/auth.routes.js";
+import { connectRedis } from "./lib/redis.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -31,7 +32,6 @@ app.get("/health", (req, res) =>
 );
 
 app.use("/auth", authRoutes);
-// app.use("/products", productRoutes);
 
 app.use((req, res) => res.status(404).json({ error: "Route not found" }));
 
@@ -46,6 +46,7 @@ const PORT = Number(process.env.PORT || 8080);
 (async () => {
   try {
     await connectDB();
+    await connectRedis();
     const server = app.listen(PORT, () => {
       console.log(`Server started on PORT ${PORT}`);
     });

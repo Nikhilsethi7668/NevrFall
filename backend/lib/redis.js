@@ -1,18 +1,21 @@
 import { createClient } from "redis";
-import dotenv from "dotenv";
-dotenv.config();
+const useTLS = (process.env.REDIS_TLS || "false").toLowerCase() === "true";
 
-const client = createClient({
+export const redis = createClient({
+  username: process.env.REDIS_USERNAME || "default",
+  password: process.env.REDIS_PASSWORD || undefined,
   socket: {
     host: process.env.REDIS_HOST,
-    port: Number(process.env.REDIS_PORT),
-    tls: true,
+    port: Number(process.env.REDIS_PORT || 6379),
+    tls: useTLS ? { servername: process.env.REDIS_HOST } : undefined,
   },
-  username: process.env.REDIS_USERNAME,
-  password: process.env.REDIS_PASSWORD,
 });
 
-client.on("connect", () => console.log("✅ Redis connected"));
-client.on("error", (err) => console.error("❌ Redis error", err));
+redis.on("ready", () => console.log("Redis Connected........"));
+redis.on("error", (e) => console.error(" Redis error", e));
 
-await client.connect();
+export async function connectRedis() {
+  if (!redis.isOpen) await redis.connect();
+  await redis.set("foo", "bar");
+  console.log("foo =", await redis.get("foo"));
+}
