@@ -63,7 +63,7 @@ export async function requestOTPByEmail(req, res) {
     return res.status(500).json({ error: "Failed to send OTP" });
   }
 }
-export async function verifyOtp(req, res) {
+export async function verifyOtpByMobile(req, res) {
   try {
     const { phone, otp } = req.body;
     if (!phone || !otp)
@@ -118,4 +118,59 @@ export async function me(req, res) {
 export async function logout(req, res) {
   res.clearCookie("token");
   res.json({ ok: true });
+}
+export async function verifyOtpByEmail(req, res) {
+  try {
+    const { email, otp, phone } = req.body;
+    if (!email || !otp || !phone)
+      return res.status(400).json({ error: "All Fields are required" });
+
+    const blockedKey = `otp:block:${email}`;
+    if (await redis.get(blockedKey))
+      return res.status(429).json({ error: "Temporarily blocked, try later" });
+
+    const dataKey = `otp:data:${email}`;
+    const storedHash = await redis.get(dataKey);
+    if (!storedHash)
+      return res.status(400).json({ error: "OTP expired or not requested" });
+
+    const ok = storedHash === hashOtp(otp);
+    if (!ok) {
+      const attemptsKey = `otp:attempts:${email}`;
+      const attempts = await redis.incr(attemptsKey);
+      if (attempts === 1) await redis.expire(attemptsKey, 600); // 10 minutes
+      if (attempts >= 5) await redis.set(blockedKey, "1", { EX: 600 });
+      return res.status(400).json({ error: "Incorrect OTP" });
+    }
+
+    await redis.del(dataKey);
+    await redis.del(`otp:attempts:${email}`);
+
+    let user = await User.findOne({ phone });
+    if (!user) user = await User.create({ phone, email });
+    else if (!user.email) {
+      user.email = email;
+      await user.save();
+    }
+
+    const token = generateToken(user);
+    res
+      .cookie("token", token, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: false,
+      })
+      .json({
+        token,
+        user: {
+          id: user._id,
+          phone: user.phone,
+          email: user.email,
+          role: user.role,
+        },
+      });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "OTP verify failed" });
+  }
 }
