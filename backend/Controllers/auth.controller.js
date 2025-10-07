@@ -127,7 +127,7 @@ export async function verifyOtpByEmail(req, res) {
 
     const blockedKey = `otp:block:${email}`;
     if (await redis.get(blockedKey))
-      return res.status(429).json({ error: "Temporarily blocked, try later" });
+      return res.status(429).json({ error: "Temporarily blocked, try after 1 hr" });
 
     const dataKey = `otp:data:${email}`;
     const storedHash = await redis.get(dataKey);

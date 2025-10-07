@@ -18,18 +18,14 @@ const VariantSchema = new mongoose.Schema(
     currency: { type: String, default: "INR" },
     mrp: { type: Number, required: true }, 
     price: { type: Number, required: true, index: true },
-    taxClass: { type: String, default: "GST-APPAREL" },
+    taxClass: { type: String, default: "GST" },
 
     weightGrams: { type: Number, default: 0 },
     dimensionsCm: { l: Number, w: Number, h: Number },
 
     images: [{ url: String, alt: String }],
-
-    trackInventory: { type: Boolean, default: true },
     allowBackorder: { type: Boolean, default: false },
 
-    isDefault: { type: Boolean, default: false },
-    sortOrder: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

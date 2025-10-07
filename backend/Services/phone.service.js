@@ -16,10 +16,10 @@ export function sendSms(phone, otp) {
 
     request(options, (error, response, body) => {
       if (error) {
-        console.log("❌ SMS sending failed:", error);
+        console.log(" SMS sending failed:", error);
         reject(error);
       } else {
-        console.log("✅ SMS sent successfully:", body);
+        console.log(" SMS sent successfully:", body);
         resolve(body);
       }
     });
