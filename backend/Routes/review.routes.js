@@ -1,4 +1,3 @@
-// routes/review.routes.js
 import { Router } from "express";
 import {
   createReview,
@@ -9,17 +8,17 @@ import {
   getMyReviewForProduct,
   getProductReviews,
 } from "../controllers/reviewController.js";
-
+import { auth } from "../Middlewares/auth.js";
 
 const router = Router();
 
 router.get("/reviews", getProductReviews);
 
-router.get("/reviews/my", getMyReviewForProduct);
-router.post("/reviews", createReview);
-router.put("/reviews/:id", updateReview);
-router.patch("/reviews/:id/images/add", addReviewImages);
-router.delete("/reviews/:id/images", deleteReviewImage);
-router.delete("/reviews/:id", deleteReview);
+router.get("/reviews/my", auth, getMyReviewForProduct);
+router.post("/reviews", auth, createReview);
+router.put("/reviews/:id", auth, updateReview);
+router.patch("/reviews/:id/images/add", auth, addReviewImages);
+router.delete("/reviews/:id/images", auth, deleteReviewImage);
+router.delete("/reviews/:id", auth, deleteReview);
 
 export default router;

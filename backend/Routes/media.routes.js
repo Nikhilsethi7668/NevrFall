@@ -1,4 +1,3 @@
-// routes/media.routes.demo.js
 import { Router } from "express";
 import {
   signUploadDemo,

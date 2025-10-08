@@ -2,13 +2,10 @@
 import mongoose from "mongoose";
 import Product from "../Models/Product.js";
 import ProductVariant from "../Models/ProductVariant.js";
-import Inventory from "../Models/Inventory.js";
 import Review from "../Models/Review.js";
 import { redis } from "../lib/redis.js";
 
-/* -------------------------------------------------------------
-   Cache helpers + small utils
-------------------------------------------------------------- */
+
 const cacheGet = async (key) => {
   const v = await redis.get(key);
   return v ? JSON.parse(v) : null;
@@ -30,102 +27,6 @@ const toArr = (v) =>
     ? v
     : [];
 
-/* -------------------------------------------------------------
-   Common product projection for lists
-------------------------------------------------------------- */
-const listSelect = {
-  title: 1,
-  slug: 1,
-  coverImage: 1,
-  ratingAvg: 1,
-  ratingCount: 1,
-  availableColors: 1,
-  availableSizes: 1,
-  collections: 1,
-  publishAt: 1,
-  isTrending: 1,
-  clicks: 1,
-  purchases: 1,
-  defaultVariantSku: 1,
-  basePrice: 1,
-};
-
-/* -------------------------------------------------------------
-   Filters (no text search here)
-------------------------------------------------------------- */
-const buildFilter = (q) => {
-  const filter = {};
-  const categories = toArr(q.categories);
-  if (categories.length) {
-    filter.categories = {
-      $in: categories.map((id) => new mongoose.Types.ObjectId(id)),
-    };
-  }
-  const colors = toArr(q.colors);
-  if (colors.length)
-    filter.availableColors = { $in: colors.map((c) => c.toLowerCase()) };
-  const sizes = toArr(q.sizes);
-  if (sizes.length)
-    filter.availableSizes = { $in: sizes.map((s) => s.toUpperCase()) };
-  const tags = toArr(q.tags);
-  if (tags.length) filter.tags = { $in: tags.map((t) => t.toLowerCase()) };
-
-  const sleeveLength = (q.sleeveLength || "").toLowerCase();
-  if (sleeveLength) {
-    const allowed = ["full", "half", "three-quarter", "sleeveless"];
-    if (allowed.includes(sleeveLength)) filter.sleeveLength = sleeveLength;
-  }
-  const fitType = (q.fitType || "").toLowerCase();
-  if (fitType) {
-    const allowed = [
-      "regular",
-      "slim",
-      "loose",
-      "skinny",
-      "relaxed",
-      "oversized",
-      "box",
-    ];
-    if (allowed.includes(fitType)) filter.fitType = fitType;
-  }
-  const material = (q.material || "").toLowerCase();
-  if (material) {
-    const allowed = [
-      "cotton",
-      "polyester",
-      "wool",
-      "linen",
-      "silk",
-      "denim",
-      "leather",
-      "rayon",
-      "nylon",
-      "spandex",
-      "chiffon",
-      "velvet",
-      "corduroy",
-      "fleece",
-      "cashmere",
-      "suede",
-      "lace",
-    ];
-    if (allowed.includes(material)) filter.material = material;
-  }
-
-  // keeping your priceMin/priceMax passthrough as-is (no functional change)
-  const priceMin = toNum(q.priceMin, null);
-  if (priceMin !== null) filter.priceMin = { $gte: priceMin };
-  const priceMax = toNum(q.priceMax, null);
-  if (priceMax !== null) filter.priceMax = { $lte: priceMax };
-
-  return filter;
-};
-
-/* -------------------------------------------------------------
-   Cursor helpers
-   - lists/filters: custom sort (new | price_asc | price_desc | rating | popular)
-   - search:        text score DESC, _id DESC
-------------------------------------------------------------- */
 const encodeCursor = (obj) =>
   Buffer.from(JSON.stringify(obj)).toString("base64");
 const decodeCursor = (str) => {
@@ -137,6 +38,59 @@ const decodeCursor = (str) => {
   }
 };
 
+/* -------------------------------------------------------------
+   Common product projection for lists (color-level Product)
+------------------------------------------------------------- */
+const listSelect = {
+  title: 1,
+  slug: 1,
+  color: 1,
+  colorLabel: 1,
+  coverImage: 1,
+  images: 1,
+  priceFrom: 1,
+  compareAtFrom: 1,
+  inStock: 1,
+  availableSizes: 1,
+  currency: 1,
+  collections: 1,
+  publishAt: 1,
+  isTrending: 1,
+  clicks: 1,
+  purchases: 1,
+};
+
+const buildFilter = (q) => {
+  const filter = {};
+
+  // categories? (denormalized on Product via parent is not here; skip unless you store categories on Product)
+  // If Product also has categories, plug them here; otherwise facet on parent route.
+
+  const colors = toArr(q.colors);
+  if (colors.length) filter.color = { $in: colors.map((c) => c.toLowerCase()) };
+
+  const sizes = toArr(q.sizes);
+  if (sizes.length)
+    filter.availableSizes = { $in: sizes.map((s) => s.toUpperCase()) };
+
+  const tags = toArr(q.tags);
+  if (tags.length) filter.tags = { $in: tags.map((t) => t.toLowerCase()) }; // only if Product has tags
+
+  // price range applies to priceFrom
+  const priceMin = toNum(q.priceMin, null);
+  const priceMax = toNum(q.priceMax, null);
+  if (priceMin !== null || priceMax !== null) {
+    filter.priceFrom = {};
+    if (priceMin !== null) filter.priceFrom.$gte = priceMin;
+    if (priceMax !== null) filter.priceFrom.$lte = priceMax;
+  }
+
+  return filter;
+};
+
+/* -------------------------------------------------------------
+   Cursor helpers for list/search sorts
+------------------------------------------------------------- */
 const afterByPublish = (cursor) => {
   if (!cursor?.publishAt || !cursor?._id) return {};
   const d = new Date(cursor.publishAt);
@@ -163,28 +117,29 @@ const afterByScore = (cursor) => {
 
 /* -------------------------------------------------------------
    Sort mapping + generic "after" condition for cursors
-   Supported sorts: new | price_asc | price_desc | rating | popular
+   (rating fallback -> purchases/clicks since Product has no rating fields)
 ------------------------------------------------------------- */
 const buildSort = (sortKey = "new") => {
   switch (String(sortKey).toLowerCase()) {
     case "price_asc":
       return {
-        primary: "basePrice",
+        primary: "priceFrom",
         order: "asc",
-        sort: { basePrice: 1, _id: 1 },
+        sort: { priceFrom: 1, _id: 1 },
       };
     case "price_desc":
       return {
-        primary: "basePrice",
+        primary: "priceFrom",
         order: "desc",
-        sort: { basePrice: -1, _id: -1 },
+        sort: { priceFrom: -1, _id: -1 },
       };
     case "rating":
+      // Fallback: purchases/clicks desc (since ratingAvg not on Product schema)
       return {
-        primary: "ratingAvg",
+        primary: "purchases",
         order: "desc",
-        sort: { ratingAvg: -1, ratingCount: -1, _id: -1 },
-        ties: ["ratingCount"],
+        sort: { purchases: -1, clicks: -1, publishAt: -1, _id: -1 },
+        ties: ["clicks", "publishAt"],
       };
     case "popular":
       return {
@@ -218,12 +173,10 @@ const afterBySort = (cursor, config) => {
 
   const strictCmp = (field) => {
     const v = valOf(field);
-    if (field === "_id") {
+    if (field === "_id")
       return dir === 1 ? { _id: { $gt: v } } : { _id: { $lt: v } };
-    }
-    if (field === "publishAt") {
+    if (field === "publishAt")
       return dir === 1 ? { publishAt: { $gt: v } } : { publishAt: { $lt: v } };
-    }
     return dir === 1 ? { [field]: { $gt: v } } : { [field]: { $lt: v } };
   };
 
@@ -236,7 +189,6 @@ const afterBySort = (cursor, config) => {
       : { [field]: v };
   };
 
-  // OR of ladders: primary strict OR (primary eq AND tie1 strict) OR (primary eq, tie1 eq, tie2 strict) ... etc.
   const ladders = [];
   for (let i = 0; i <= parts.length; i++) {
     const strictField = i === 0 ? primary : parts[i - 1];
@@ -247,50 +199,32 @@ const afterBySort = (cursor, config) => {
 };
 
 /* -------------------------------------------------------------
-   Variant helpers
+   Variant helpers (aligned to new ProductVariant schema)
 ------------------------------------------------------------- */
-const toCardVariant = async (variant) => {
+const toCardVariant = (variant, product) => {
   if (!variant) return null;
-  const stock = await Inventory.findOne({ variant: variant._id })
-    .select({ qty: 1, reserved: 1 })
-    .lean();
-  const inStock = (stock?.qty ?? 0) - (stock?.reserved ?? 0) > 0;
-  const image =
-    variant.images?.find?.((m) => m.role === "main")?.url ||
-    variant.images?.[0]?.url ||
-    null;
+  const image = product?.images?.[0]?.url || product?.coverImage || null;
   return {
     sku: variant.sku,
-    color: variant.options?.color ?? null,
-    size: variant.options?.size ?? null,
+    size: variant.size,
     price: variant.price,
     compareAtPrice: variant.compareAtPrice ?? null,
     image,
-    inStock,
+    inStock: (variant.stock ?? 0) > 0,
   };
 };
 
 const resolveDefaultVariant = async (product) => {
   if (!product) return null;
-  if (product.defaultVariantSku) {
-    const byDefault = await ProductVariant.findOne({
-      product: product._id,
-      sku: product.defaultVariantSku,
-    }).lean();
-    if (byDefault) return byDefault;
-  }
+  // Prefer in-stock cheapest; else cheapest
   const variants = await ProductVariant.find({ product: product._id })
-    .sort({ createdAt: 1 })
-    .limit(12)
+    .select("sku size price compareAtPrice stock")
+    .sort({ price: 1, _id: 1 })
     .lean();
-  for (const v of variants) {
-    const stock = await Inventory.findOne({ variant: v._id })
-      .select({ qty: 1, reserved: 1 })
-      .lean();
-    const inStock = (stock?.qty ?? 0) - (stock?.reserved ?? 0) > 0;
-    if (inStock) return v;
-  }
-  return variants[0] ?? null;
+
+  if (!variants.length) return null;
+  const inStock = variants.find((v) => (v.stock ?? 0) > 0);
+  return inStock || variants[0];
 };
 
 const resolveInitialVariantForPDP = async (product, skuFromQuery) => {
@@ -299,10 +233,80 @@ const resolveInitialVariantForPDP = async (product, skuFromQuery) => {
     const bySku = await ProductVariant.findOne({
       product: product._id,
       sku: String(skuFromQuery),
-    }).lean();
+    })
+      .select("sku size price compareAtPrice stock")
+      .lean();
     if (bySku) return bySku;
   }
   return resolveDefaultVariant(product);
+};
+
+/* =============================================================
+   COLOR FEED
+   With color-as-product, the "color feed" is simply Product cards.
+   We still compute a representative variant for price/image/inStock.
+============================================================= */
+
+/**
+ * Color feed for homepage
+ * GET /api/products/color-feed?limit=24&cursor=<base64>&sort=popular&seed=YYYYMMDD
+ * - cursor: base64 {"offset": number} on a cached array
+ */
+export const getColorVariantFeed = async (req, res) => {
+  const limit = Math.min(60, Math.max(1, toNum(req.query.limit, 24)));
+  const cursor = decodeCursor(req.query.cursor) || { offset: 0 };
+  const sortKey = req.query.sort || "popular";
+  const seed =
+    req.query.seed || new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const cacheKey = `feed:color:${sortKey}:${seed}:v2`;
+
+  let seq = await cacheGet(cacheKey);
+
+  if (!seq) {
+    const P = limit * 5; // cache ahead
+    const products = await Product.find({})
+      .select(listSelect)
+      .sort(
+        sortKey === "new"
+          ? { publishAt: -1, _id: -1 }
+          : sortKey === "price_asc"
+          ? { priceFrom: 1, _id: 1 }
+          : sortKey === "price_desc"
+          ? { priceFrom: -1, _id: -1 }
+          : { purchases: -1, clicks: -1, publishAt: -1, _id: -1 }
+      )
+      .limit(P)
+      .lean();
+
+    // Attach representative variant card data
+    seq = [];
+    for (const p of products) {
+      const rep = await resolveDefaultVariant(p);
+      const card = toCardVariant(rep, p);
+      seq.push({
+        productId: String(p._id),
+        slug: p.slug,
+        title: p.title,
+        color: p.color,
+        colorLabel: p.colorLabel,
+        priceFrom: p.priceFrom,
+        compareAtFrom: p.compareAtFrom,
+        inStock: p.inStock,
+        currency: p.currency,
+        // representative variant details for the card:
+        cardVariant: card,
+      });
+    }
+
+    await cacheSet(cacheKey, seq, 120);
+  }
+
+  const start = cursor.offset || 0;
+  const end = start + limit;
+  const slice = seq.slice(start, end);
+  const nextCursor = end < seq.length ? encodeCursor({ offset: end }) : null;
+
+  res.json({ items: slice, nextCursor, limit, seed });
 };
 
 /* -------------------------------------------------------------
@@ -330,9 +334,7 @@ export const getAllProducts = async (req, res) => {
       ? encodeCursor({
           _id: last?._id,
           publishAt: last?.publishAt,
-          basePrice: last?.basePrice,
-          ratingAvg: last?.ratingAvg,
-          ratingCount: last?.ratingCount,
+          priceFrom: last?.priceFrom,
           purchases: last?.purchases,
           clicks: last?.clicks,
         })
@@ -341,7 +343,7 @@ export const getAllProducts = async (req, res) => {
   const withCardVariant = await Promise.all(
     items.map(async (p) => {
       const base = await resolveDefaultVariant(p);
-      const cardVariant = await toCardVariant(base);
+      const cardVariant = toCardVariant(base, p);
       return { ...p, cardVariant };
     })
   );
@@ -377,9 +379,7 @@ export const getProductsByFilter = async (req, res) => {
       ? encodeCursor({
           _id: last?._id,
           publishAt: last?.publishAt,
-          basePrice: last?.basePrice,
-          ratingAvg: last?.ratingAvg,
-          ratingCount: last?.ratingCount,
+          priceFrom: last?.priceFrom,
           purchases: last?.purchases,
           clicks: last?.clicks,
         })
@@ -388,7 +388,7 @@ export const getProductsByFilter = async (req, res) => {
   const withCardVariant = await Promise.all(
     items.map(async (p) => {
       const base = await resolveDefaultVariant(p);
-      const cardVariant = await toCardVariant(base);
+      const cardVariant = toCardVariant(base, p);
       return { ...p, cardVariant };
     })
   );
@@ -400,6 +400,7 @@ export const getProductsByFilter = async (req, res) => {
 
 /* -------------------------------------------------------------
    3) SEARCH PRODUCTS (cursor-based) + cardVariant (relevance only)
+   Ensure text index on Product(title, colorLabel)
 ------------------------------------------------------------- */
 export const getProductsBySearch = async (req, res) => {
   const q = (req.query.q || "").trim();
@@ -428,7 +429,7 @@ export const getProductsBySearch = async (req, res) => {
   const withCardVariant = await Promise.all(
     items.map(async (p) => {
       const base = await resolveDefaultVariant(p);
-      const cardVariant = await toCardVariant(base);
+      const cardVariant = toCardVariant(base, p);
       return { ...p, cardVariant };
     })
   );
@@ -447,7 +448,7 @@ export const getProductsBySearch = async (req, res) => {
 };
 
 /* -------------------------------------------------------------
-   4) FACETS
+   4) FACETS (color / size / tags / publish range) from Product
 ------------------------------------------------------------- */
 export const getFacets = async (req, res) => {
   const filter = buildFilter(req.query);
@@ -460,8 +461,7 @@ export const getFacets = async (req, res) => {
     {
       $facet: {
         colors: [
-          { $unwind: "$availableColors" },
-          { $group: { _id: "$availableColors", count: { $sum: 1 } } },
+          { $group: { _id: "$color", count: { $sum: 1 } } },
           { $sort: { count: -1 } },
         ],
         sizes: [
@@ -470,6 +470,7 @@ export const getFacets = async (req, res) => {
           { $sort: { _id: 1 } },
         ],
         tags: [
+          // only if Product has tags; if not, remove this pipeline
           { $unwind: "$tags" },
           { $group: { _id: "$tags", count: { $sum: 1 } } },
           { $sort: { count: -1 } },
@@ -500,7 +501,7 @@ export const getFacets = async (req, res) => {
 };
 
 /* -------------------------------------------------------------
-   5) NEW ARRIVALS (cursor-based) + cardVariant (still by publishAt)
+   5) NEW ARRIVALS (cursor-based) + cardVariant
 ------------------------------------------------------------- */
 export const getNewArrivals = async (req, res) => {
   const limit = Math.min(60, Math.max(1, toNum(req.query.limit, 24)));
@@ -519,7 +520,7 @@ export const getNewArrivals = async (req, res) => {
   const withCardVariant = await Promise.all(
     items.map(async (p) => {
       const base = await resolveDefaultVariant(p);
-      const cardVariant = await toCardVariant(base);
+      const cardVariant = toCardVariant(base, p);
       return { ...p, cardVariant };
     })
   );
@@ -538,7 +539,7 @@ export const getNewArrivals = async (req, res) => {
 };
 
 /* -------------------------------------------------------------
-   6) FEATURED (cursor-based) + cardVariant (still by publishAt)
+   6) FEATURED (cursor-based) + cardVariant
 ------------------------------------------------------------- */
 export const getFeatured = async (req, res) => {
   const limit = Math.min(60, Math.max(1, toNum(req.query.limit, 24)));
@@ -558,7 +559,7 @@ export const getFeatured = async (req, res) => {
   const withCardVariant = await Promise.all(
     items.map(async (p) => {
       const base = await resolveDefaultVariant(p);
-      const cardVariant = await toCardVariant(base);
+      const cardVariant = toCardVariant(base, p);
       return { ...p, cardVariant };
     })
   );
@@ -577,7 +578,7 @@ export const getFeatured = async (req, res) => {
 };
 
 /* -------------------------------------------------------------
-   7) TRENDING (unchanged priority, still paged by publishAt/_id)
+   7) TRENDING (with your fallback logic) + cardVariant
 ------------------------------------------------------------- */
 export const getTrending = async (req, res) => {
   const limit = Math.min(60, Math.max(1, toNum(req.query.limit, 24)));
@@ -635,7 +636,7 @@ export const getTrending = async (req, res) => {
   const withCardVariant = await Promise.all(
     items.map(async (p) => {
       const base = await resolveDefaultVariant(p);
-      const cardVariant = await toCardVariant(base);
+      const cardVariant = toCardVariant(base, p);
       return { ...p, cardVariant };
     })
   );
@@ -687,38 +688,32 @@ export const getProductDetails = async (req, res) => {
       .status(404)
       .json({ message: "No variants available for this product" });
   }
-  const initial = await toCardVariant(initialVariant);
+  const initial = toCardVariant(initialVariant, product);
   const initialVariantSku = initial?.sku ?? null;
 
-  const variants = await ProductVariant.find({ product: product._id }).lean();
-  const inv = await Inventory.find({
-    variant: { $in: variants.map((v) => v._id) },
-  })
-    .select({ variant: 1, qty: 1, reserved: 1, updatedAt: 1 })
+  const variants = await ProductVariant.find({ product: product._id })
+    .select("sku size price compareAtPrice stock")
     .lean();
-  const invMap = new Map(inv.map((r) => [String(r.variant), r]));
-  const variantsWithStock = variants.map((v) => ({
-    ...v,
-    stock: invMap.get(String(v._id)) ?? { qty: 0, reserved: 0 },
-  }));
 
+  // Reviews (optional model)
   const page = Math.max(1, toNum(req.query.page, 1));
-  const limit = Math.min(50, Math.max(1, toNum(req.query.limit, 10)));
+  const perPage = Math.min(50, Math.max(1, toNum(req.query.limit, 10)));
   const [reviews, reviewTotal] = await Promise.all([
     Review.find({ product: product._id })
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean(),
-    Review.countDocuments({ product: product._id }),
+      .skip((page - 1) * perPage)
+      .limit(perPage)
+      .lean()
+      .catch(() => []),
+    Review.countDocuments({ product: product._id }).catch(() => 0),
   ]);
 
   const payload = {
     product,
     initialVariantSku,
     initialVariant: initial,
-    variants: variantsWithStock,
-    reviews: { items: reviews, total: reviewTotal, page, limit },
+    variants, // includes stock field directly
+    reviews: { items: reviews, total: reviewTotal, page, limit: perPage },
   };
 
   await cacheSet(key, payload, 300);
@@ -726,13 +721,13 @@ export const getProductDetails = async (req, res) => {
 };
 
 /* -------------------------------------------------------------
-   9) VARIANT LOOKUP (SKU or productId+color+size)
+   9) VARIANT LOOKUP (SKU or productId+size)
 ------------------------------------------------------------- */
 export const getVariantByKey = async (req, res) => {
-  const { sku, productId, color, size } = req.query;
-  if (!sku && !(productId && color && size)) {
+  const { sku, productId, size } = req.query;
+  if (!sku && !(productId && size)) {
     return res.status(400).json({
-      message: "Provide ?sku=... OR ?productId=...&color=...&size=...",
+      message: "Provide ?sku=... OR ?productId=...&size=...",
     });
   }
 
@@ -744,27 +739,19 @@ export const getVariantByKey = async (req, res) => {
     ? { sku: String(sku) }
     : {
         product: new mongoose.Types.ObjectId(productId),
-        "options.color": String(color).toLowerCase(),
-        "options.size": String(size).toUpperCase(),
+        size: String(size).toUpperCase(),
       };
 
-  const variant = await ProductVariant.findOne(query).lean();
+  const variant = await ProductVariant.findOne(query)
+    .select("sku size price compareAtPrice stock product")
+    .lean();
   if (!variant) return res.status(404).json({ message: "Variant not found" });
 
-  const [product, stock] = await Promise.all([
-    Product.findById(variant.product)
-      .select({ title: 1, slug: 1, coverImage: 1 })
-      .lean(),
-    Inventory.findOne({ variant: variant._id })
-      .select({ qty: 1, reserved: 1 })
-      .lean(),
-  ]);
+  const product = await Product.findById(variant.product)
+    .select({ title: 1, slug: 1, coverImage: 1, color: 1, colorLabel: 1 })
+    .lean();
 
-  const payload = {
-    variant,
-    product,
-    stock: stock ?? { qty: 0, reserved: 0 },
-  };
+  const payload = { variant, product };
   await cacheSet(key, payload, 120);
   res.json(payload);
 };
