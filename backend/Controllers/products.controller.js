@@ -398,10 +398,6 @@ export const getProductsByFilter = async (req, res) => {
   res.json(payload);
 };
 
-/* -------------------------------------------------------------
-   3) SEARCH PRODUCTS (cursor-based) + cardVariant (relevance only)
-   Ensure text index on Product(title, colorLabel)
-------------------------------------------------------------- */
 export const getProductsBySearch = async (req, res) => {
   const q = (req.query.q || "").trim();
   const limit = Math.min(60, Math.max(1, toNum(req.query.limit, 24)));

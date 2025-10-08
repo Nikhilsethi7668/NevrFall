@@ -12,8 +12,8 @@ import {
 
 const router = Router();
 router.post("/otp/request/mobile", requestOtp);
-router.post("/otp/request/email", requestOTPByEmail);
 router.post("/otp/verify/mobile", verifyOtpByMobile);
+router.post("/otp/request/email", requestOTPByEmail);
 router.post("/otp/verify/email", verifyOtpByEmail);
 router.get("/me", auth, me);
 router.post("/logout", logout);

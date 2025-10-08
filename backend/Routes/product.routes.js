@@ -14,15 +14,15 @@ import {
 
 const router = Router();
 
-router.get("/products", getAllProducts);
-router.get("/products/filter", getProductsByFilter);
-router.get("/products/search", getProductsBySearch);
-router.get("/products/facets", getFacets);
-router.get("/products/new", getNewArrivals);
-router.get("/products/featured", getFeatured);
-router.get("/products/trending", getTrending);
-router.get("/products/:idOrSlug", getProductDetails);
-router.get("/variants/lookup", getVariantByKey);
-router.post("/products/:id/track-click", trackClick);
+router.get("/all", getAllProducts);
+router.get("/filter", getProductsByFilter);
+router.get("/search", getProductsBySearch);
+router.get("/facets", getFacets);
+router.get("/new", getNewArrivals);
+router.get("/featured", getFeatured);
+router.get("/trending", getTrending);
+router.get("/:idOrSlug", getProductDetails);
+router.get("/lookup", getVariantByKey);
+router.post("/:id/track-click", trackClick);
 
 export default router;

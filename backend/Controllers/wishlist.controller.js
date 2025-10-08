@@ -1,12 +1,8 @@
-// controllers/wishlist.controller.js
 import Product from "../Models/Product.js";
 import WishlistItem from "../Models/WishlistItem.js";
 import { redis } from "../lib/redis.js";
 
-/* -------------------------------
-   Per-user cache helpers
--------------------------------- */
-const WL_TTL = 120; // seconds
+const WL_TTL = 120;
 const wlKey = (userId) => `wl:${userId}`;
 
 async function getCachedWishlist(userId) {
@@ -20,9 +16,6 @@ async function invalidateWishlist(userId) {
   await redis.del(wlKey(userId));
 }
 
-/* -------------------------------
-   DB query → normalized payload
--------------------------------- */
 async function queryWishlistFromDB(userId) {
   const items = await WishlistItem.find({ user: userId })
     .populate({
@@ -34,9 +27,6 @@ async function queryWishlistFromDB(userId) {
   return { items };
 }
 
-/* ----------------------------------------
-   "live" refresh: invalidate → rebuild → set
------------------------------------------ */
 async function refreshWishlistCache(userId) {
   await invalidateWishlist(userId);
   const payload = await queryWishlistFromDB(userId);
@@ -44,11 +34,6 @@ async function refreshWishlistCache(userId) {
   return payload;
 }
 
-/* -------------------------------------------------------------
- * GET /api/wishlist
- * - read-through cache
- * - ?fresh=1 forces live rebuild & sets cache
-------------------------------------------------------------- */
 export async function getWishlist(req, res) {
   const userId = req.user?._id || req.user?.id;
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -70,12 +55,7 @@ export async function getWishlist(req, res) {
   return res.json(payload);
 }
 
-/* -------------------------------------------------------------
- * POST /api/wishlist
- * body: { productId }  // color-level Product._id
- * - Upsert idempotent
- * - After write: refresh cache immediately and return fresh list
-------------------------------------------------------------- */
+
 export async function addToWishlist(req, res) {
   try {
     const userId = req.user?._id || req.user?.id;
@@ -106,11 +86,6 @@ export async function addToWishlist(req, res) {
   }
 }
 
-/* -------------------------------------------------------------
- * DELETE /api/wishlist
- * body: { itemId } OR { productId }
- * - After write: refresh cache immediately and return fresh list
-------------------------------------------------------------- */
 export async function removeFromWishlist(req, res) {
   const userId = req.user?._id || req.user?.id;
   const { itemId, productId } = req.body || {};

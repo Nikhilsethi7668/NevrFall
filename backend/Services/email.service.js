@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const resend = new Resend(
-  process.env.EMAIL_SERVICE_API_KEY || "re_1234567890abcdef"
+  process.env.EMAIL_SERVICE_API_KEY || "re_gqkWstoN_LCZ16oHE72Bi724zrjRXnn7s"
 );
 
 export async function sendEmail(to, subject, html) {
@@ -12,6 +12,7 @@ export async function sendEmail(to, subject, html) {
       subject,
       html,
     });
+    console.log("email status:", email, "\n", "resend:", resend);
     console.log("Email sent successfully:", email);
     return email;
   } catch (error) {

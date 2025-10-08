@@ -33,8 +33,9 @@ export async function requestOtp(req, res) {
     if (!user) user = await User.create({ phone });
 
     const otp = generateOtp();
+    console.log("Generated OTP:", otp); // For testing purposes only
     const dataKey = `otp:data:${phone}`;
-    await redis.set(dataKey, hashOtp(otp), { EX: 60 });
+    await redis.set(dataKey, hashOtp(otp), "EX", 300);
     await sendSms(phone, otp);
     return res.json({ ok: true, message: "OTP sent" });
   } catch (err) {
@@ -42,27 +43,7 @@ export async function requestOtp(req, res) {
     return res.status(500).json({ error: "Failed to send OTP" });
   }
 }
-export async function requestOTPByEmail(req, res) {
-  try {
-    const { email, phone } = req.body;
-    if (!email || !phone)
-      return res.status(400).json({ error: "All Fields are required" });
-    //send otp to email
-    const otp = generateOtp();
-    const dataKey = `otp:data:${email}`;
-    await redis.set(dataKey, hashOtp(otp), { EX: 300 });
-    await sendEmail(
-      email,
-      "Welcome to NevrFall , Do not share OTP with anyone",
-      `<p>Your OTP is <strong>${otp}</strong>. It is valid for 5 minutes.</p>`
-    );
-
-    res.status(200).json({ ok: true, message: "OTP sent to email" });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Failed to send OTP" });
-  }
-}
+//router.post("/otp/verify/mobile", verifyOtpByMobile);
 export async function verifyOtpByMobile(req, res) {
   try {
     const { phone, otp } = req.body;
@@ -112,6 +93,30 @@ export async function verifyOtpByMobile(req, res) {
     return res.status(500).json({ error: "OTP verify failed" });
   }
 }
+// router.post("/otp/request/email", requestOTPByEmail);
+export async function requestOTPByEmail(req, res) {
+  try {
+    const { email, phone } = req.body;
+    if (!email || !phone)
+      return res.status(400).json({ error: "All Fields are required" });
+    //send otp to email
+    const otp = generateOtp();
+    const dataKey = `otp:data:${email}`;
+    await redis.set(dataKey, hashOtp(otp), "EX", 300);
+    console.log("Generated Email OTP:", otp); 
+    await sendEmail(
+      email,
+      "Welcome to NevrFall , Do not share OTP with anyone",
+      `<p>Your OTP is <strong>${otp}</strong>. It is valid for 5 minutes.</p>`
+    );
+
+    res.status(200).json({ ok: true, message: "OTP sent to email" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Failed to send OTP" });
+  }
+}
+
 export async function me(req, res) {
   res.json({ user: req.user || null });
 }
@@ -119,6 +124,7 @@ export async function logout(req, res) {
   res.clearCookie("token");
   res.json({ ok: true });
 }
+//router.post("/otp/verify/email", verifyOtpByEmail);
 export async function verifyOtpByEmail(req, res) {
   try {
     const { email, otp, phone } = req.body;
@@ -127,7 +133,9 @@ export async function verifyOtpByEmail(req, res) {
 
     const blockedKey = `otp:block:${email}`;
     if (await redis.get(blockedKey))
-      return res.status(429).json({ error: "Temporarily blocked, try after 1 hr" });
+      return res
+        .status(429)
+        .json({ error: "Temporarily blocked, try after 1 hr" });
 
     const dataKey = `otp:data:${email}`;
     const storedHash = await redis.get(dataKey);
