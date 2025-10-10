@@ -19,5 +19,27 @@ export const auth = async (req, res, next) => {
     res.status(401).json({ error: "Token is not valid" });
   }
 };
+export const isAdmin = (req, res, next) => {
+  if (req.user?.role !== "admin") {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+  next();
+};
+export const isManager = (req, res, next) => {
+  if (req.user?.role !== "admin" && req.user?.role !== "manager") {
+    return res.status(403).json({ error: "Manager access required" });
+  }
+  next();
+};
+export const isSupport = (req, res, next) => {
+  if (
+    req.user?.role !== "admin" &&
+    req.user?.role !== "manager" &&
+    req.user?.role !== "support"
+  ) {
+    return res.status(403).json({ error: "Support access required" });
+  }
+  next();
+};
 
 // module.exports = { generateToken, auth };

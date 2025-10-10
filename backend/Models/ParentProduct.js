@@ -7,11 +7,18 @@ const ParentProductSchema = new mongoose.Schema(
     description: { type: String, default: "" },
     details: { type: Object, default: {} },
     tags: { type: [String], index: true, default: [] },
-    categories: [
-      { type: mongoose.Schema.Types.ObjectId, ref: "Category", index: true },
-    ],
+    categories: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      index: true,
+    },
+
     ratingAvg: { type: Number, default: 0 },
     ratingCount: { type: Number, default: 0 },
+    CollectionType: {
+      type: String,
+      enum: ["Winter", "Summer"],
+    },
   },
   { timestamps: true }
 );

@@ -10,7 +10,7 @@ import {
   getProductDetails,
   getVariantByKey,
   trackClick,
-} from "../controllers/productPublic.js";
+} from "../Controllers/products.controller.js";
 
 const router = Router();
 

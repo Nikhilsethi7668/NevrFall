@@ -15,15 +15,15 @@ const ProductSchema = new mongoose.Schema(
       ref: "ParentProduct",
       index: true,
     },
-    title: { type: String, required: true, trim: true }, 
+    title: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true },
     color: { type: String, required: true, lowercase: true, index: true },
-    colorLabel: { type: String, default: "" }, 
+    colorLabel: { type: String, default: "" },
 
     coverImage: { type: String },
     images: { type: [ImageSchema], default: [] },
 
-    priceFrom: { type: Number, required: true }, 
+    priceFrom: { type: Number, required: true },
     compareAtFrom: { type: Number, default: null },
     inStock: { type: Boolean, default: true },
     availableSizes: [{ type: String, uppercase: true, index: true }],
@@ -32,7 +32,12 @@ const ProductSchema = new mongoose.Schema(
     isTrending: { type: Boolean, default: false, index: true },
     collections: [{ type: String, index: true }],
     publishAt: { type: Date, index: true },
-
+    primaryCategoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      index: true,
+      default: null,
+    },
     clicks: { type: Number, default: 0 },
     purchases: { type: Number, default: 0 },
   },

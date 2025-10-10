@@ -6,7 +6,13 @@ export const cacheGet = async (key) => {
 };
 
 export const cacheSet = async (key, value, ttlSeconds = 60) => {
-  await redis.set(key, JSON.stringify(value), "EX", ttlSeconds);
+  const str = typeof value === "string" ? value : JSON.stringify(value);
+  ttlSeconds = Number(ttlSeconds) || 0;
+  if (ttlSeconds > 0) {
+    await redis.set(key, str, "EX", ttlSeconds);
+  } else {
+    await redis.set(key, str);
+  }
 };
 
 export const cacheDelPattern = async (pattern) => {

@@ -1,18 +1,20 @@
 // controllers/productPublic.js
 import mongoose from "mongoose";
 import Product from "../Models/Product.js";
+import ParentProduct from "../Models/ParentProduct.js";
+import Category from "../Models/Category.js";
 import ProductVariant from "../Models/ProductVariant.js";
 import Review from "../Models/Review.js";
 import { redis } from "../lib/redis.js";
+import { cacheGet as redisGet, cacheSet as redisSet } from "../lib/cache.js";
 
-
-const cacheGet = async (key) => {
-  const v = await redis.get(key);
-  return v ? JSON.parse(v) : null;
-};
-const cacheSet = async (key, val, ttl = 120) => {
-  await redis.set(key, JSON.stringify(val), { EX: ttl });
-};
+// const cacheGet = async (key) => {
+//   const v = await redis.get(key);
+//   return v ? JSON.parse(v) : null;
+// };
+// const cacheSet = async (key, val, ttl = 120) => {
+//   await redis.set(key, JSON.stringify(val), { EX: ttl });
+// };
 const cacheKeyFromReq = (req, prefix) =>
   `${prefix}:${req.originalUrl.replace(/\W+/g, ":")}`.toLowerCase();
 
@@ -312,14 +314,17 @@ export const getColorVariantFeed = async (req, res) => {
 /* -------------------------------------------------------------
    1) ALL PRODUCTS (cursor-based) + cardVariant + sorting
 ------------------------------------------------------------- */
+//Working
 export const getAllProducts = async (req, res) => {
+  console.log("getAllProducts called");
   const limit = Math.min(60, Math.max(1, toNum(req.query.limit, 24)));
   const cursor = decodeCursor(req.query.cursor);
   const sortCfg = buildSort(req.query.sort);
 
   const key = cacheKeyFromReq(req, "prd:all:cursor");
-  const cached = await cacheGet(key);
+  const cached = await redisGet(key);
   if (cached) return res.json(cached);
+  console.log("cache miss", key);
 
   const after = afterBySort(cursor, sortCfg);
   const items = await Product.find(after)
@@ -349,13 +354,13 @@ export const getAllProducts = async (req, res) => {
   );
 
   const payload = { items: withCardVariant, nextCursor, limit };
-  await cacheSet(key, payload, 60);
+  console.log("payload is", payload);
+  await redisSet(key, payload, 120);
   res.json(payload);
 };
 
-/* -------------------------------------------------------------
-   2) FILTERED PRODUCTS (cursor-based) + cardVariant + sorting
-------------------------------------------------------------- */
+//Working
+
 export const getProductsByFilter = async (req, res) => {
   const limit = Math.min(60, Math.max(1, toNum(req.query.limit, 24)));
   const cursor = decodeCursor(req.query.cursor);
@@ -363,7 +368,7 @@ export const getProductsByFilter = async (req, res) => {
   const filter = buildFilter(req.query);
 
   const key = cacheKeyFromReq(req, "prd:filter:cursor");
-  const cached = await cacheGet(key);
+  const cached = await redisGet(key);
   if (cached) return res.json(cached);
 
   const after = afterBySort(cursor, sortCfg);
@@ -394,9 +399,11 @@ export const getProductsByFilter = async (req, res) => {
   );
 
   const payload = { items: withCardVariant, nextCursor, limit };
-  await cacheSet(key, payload, 300);
+  await redisSet(key, payload, 300);
   res.json(payload);
 };
+
+//Working
 
 export const getProductsBySearch = async (req, res) => {
   const q = (req.query.q || "").trim();
@@ -404,12 +411,12 @@ export const getProductsBySearch = async (req, res) => {
   const cursor = decodeCursor(req.query.cursor);
 
   const key = cacheKeyFromReq(req, "prd:search:cursor");
-  const cached = await cacheGet(key);
+  const cached = await redisGet(key);
   if (cached) return res.json(cached);
 
   if (!q) {
     const payload = { items: [], nextCursor: null, limit, q: "" };
-    await cacheSet(key, payload, 30);
+    await redisSet(key, payload, 30);
     return res.json(payload);
   }
 
@@ -439,18 +446,23 @@ export const getProductsBySearch = async (req, res) => {
       : null;
 
   const payload = { items: withCardVariant, nextCursor, limit, q };
-  await cacheSet(key, payload, 60);
+  await redisSet(key, payload, 60);
   res.json(payload);
 };
 
 /* -------------------------------------------------------------
    4) FACETS (color / size / tags / publish range) from Product
 ------------------------------------------------------------- */
+
+//Getting Different varients of products
+
 export const getFacets = async (req, res) => {
+  console.log("getFacets called");
   const filter = buildFilter(req.query);
   const key = cacheKeyFromReq(req, "prd:facets");
-  const cached = await cacheGet(key);
+  const cached = await redisGet(key);
   if (cached) return res.json(cached);
+  console.log("facet cache miss", key);
 
   const [facet] = await Product.aggregate([
     { $match: filter },
@@ -466,7 +478,6 @@ export const getFacets = async (req, res) => {
           { $sort: { _id: 1 } },
         ],
         tags: [
-          // only if Product has tags; if not, remove this pipeline
           { $unwind: "$tags" },
           { $group: { _id: "$tags", count: { $sum: 1 } } },
           { $sort: { count: -1 } },
@@ -484,7 +495,7 @@ export const getFacets = async (req, res) => {
       },
     },
   ]);
-
+  console.log("facet is", facet);
   const payload = {
     colors: facet?.colors?.map((x) => ({ color: x._id, count: x.count })) ?? [],
     sizes: facet?.sizes?.map((x) => ({ size: x._id, count: x.count })) ?? [],
@@ -492,7 +503,7 @@ export const getFacets = async (req, res) => {
     publishRange: facet?.publishRange?.[0] ?? null,
   };
 
-  await cacheSet(key, payload, 120);
+  await redisSet(key, payload, 120);
   res.json(payload);
 };
 
@@ -503,7 +514,7 @@ export const getNewArrivals = async (req, res) => {
   const limit = Math.min(60, Math.max(1, toNum(req.query.limit, 24)));
   const cursor = decodeCursor(req.query.cursor);
   const key = cacheKeyFromReq(req, "prd:new:cursor");
-  const cached = await cacheGet(key);
+  const cached = await redisGet(key);
   if (cached) return res.json(cached);
 
   const after = afterByPublish(cursor);
@@ -530,7 +541,7 @@ export const getNewArrivals = async (req, res) => {
       : null;
 
   const payload = { items: withCardVariant, nextCursor, limit };
-  await cacheSet(key, payload, 300);
+  await redisSet(key, payload, 300);
   res.json(payload);
 };
 
@@ -541,7 +552,7 @@ export const getFeatured = async (req, res) => {
   const limit = Math.min(60, Math.max(1, toNum(req.query.limit, 24)));
   const cursor = decodeCursor(req.query.cursor);
   const key = cacheKeyFromReq(req, "prd:feat:cursor");
-  const cached = await cacheGet(key);
+  const cached = await redisGet(key);
   if (cached) return res.json(cached);
 
   const after = afterByPublish(cursor);
@@ -569,7 +580,7 @@ export const getFeatured = async (req, res) => {
       : null;
 
   const payload = { items: withCardVariant, nextCursor, limit };
-  await cacheSet(key, payload, 300);
+  await redisSet(key, payload, 300);
   res.json(payload);
 };
 
@@ -580,7 +591,7 @@ export const getTrending = async (req, res) => {
   const limit = Math.min(60, Math.max(1, toNum(req.query.limit, 24)));
   const cursor = decodeCursor(req.query.cursor);
   const cacheKey = cacheKeyFromReq(req, "prd:trending:cursor");
-  const cached = await cacheGet(cacheKey);
+  const cached = await redisGet(cacheKey);
   if (cached) return res.json(cached);
 
   const after = afterByPublish(cursor);
@@ -646,13 +657,10 @@ export const getTrending = async (req, res) => {
       : null;
 
   const payload = { items: withCardVariant, nextCursor, limit };
-  await cacheSet(cacheKey, payload, 120);
+  await redisSet(cacheKey, payload, 120);
   res.json(payload);
 };
 
-/* -------------------------------------------------------------
-   8) PRODUCT DETAILS (variant-aware first paint)
-------------------------------------------------------------- */
 export const getProductDetails = async (req, res) => {
   const { idOrSlug } = req.params;
   const isAdmin = String(req.query.admin).toLowerCase() === "true";
@@ -662,7 +670,7 @@ export const getProductDetails = async (req, res) => {
     req,
     `prd:detail:${idOrSlug}:${isAdmin ? "a" : "u"}`
   );
-  const cached = await cacheGet(key);
+  const cached = await redisGet(key);
   if (cached) return res.json(cached);
 
   const isId = mongoose.isValidObjectId(idOrSlug);
@@ -674,6 +682,8 @@ export const getProductDetails = async (req, res) => {
   if (!isAdmin) {
     await Product.updateOne({ _id: product._id }, { $inc: { clicks: 1 } });
   }
+  const parent = await ParentProduct.findById(product.parent);
+  console.log("parent is", parent);
 
   const initialVariant = await resolveInitialVariantForPDP(
     product,
@@ -706,13 +716,14 @@ export const getProductDetails = async (req, res) => {
 
   const payload = {
     product,
+    parent: parent.description ? parent : null,
     initialVariantSku,
     initialVariant: initial,
     variants, // includes stock field directly
     reviews: { items: reviews, total: reviewTotal, page, limit: perPage },
   };
 
-  await cacheSet(key, payload, 300);
+  await redisSet(key, payload, 300);
   res.json(payload);
 };
 
@@ -720,6 +731,7 @@ export const getProductDetails = async (req, res) => {
    9) VARIANT LOOKUP (SKU or productId+size)
 ------------------------------------------------------------- */
 export const getVariantByKey = async (req, res) => {
+  console.log("getVariantByKey called");
   const { sku, productId, size } = req.query;
   if (!sku && !(productId && size)) {
     return res.status(400).json({

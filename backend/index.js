@@ -6,7 +6,11 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectDB from "./Config/Db.js";
 import authRoutes from "./Routes/auth.routes.js";
+import reviewRoutes from "./Routes/review.routes.js";
 import productRoutes from "./Routes/product.routes.js";
+import cartRoutes from "./Routes/cart.routes.js";
+import couponRoutes from "./Routes/coupon.routes.js";
+import orderRoutes from "./Routes/order.routes.js";
 import { connectRedis } from "./lib/redis.js";
 
 const app = express();
@@ -34,6 +38,10 @@ app.get("/health", (req, res) =>
 
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/coupons", couponRoutes);
+app.use("/api/orders", orderRoutes);
 
 app.use((req, res) => res.status(404).json({ error: "Route not found" }));
 

@@ -1,21 +1,22 @@
-// models/Cart.js
 import mongoose from "mongoose";
 
 const CartItemSchema = new mongoose.Schema(
   {
     product: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
+      ref: "ParentProduct",
       required: true,
-    }, 
+    },
     variant: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ProductVariant",
       required: true,
-    }, 
-    qty: { type: Number, default: 1, min: 1 },
-    addedAt: { type: Date, default: Date.now }, 
-    
+    },
+    title: { type: String, required: true },
+    color: { type: String, required: true },
+    size: { type: String, required: true },
+    price: { type: Number, required: true },
+    quantity: { type: Number, default: 1, min: 1 },
   },
   { _id: false }
 );
@@ -28,8 +29,8 @@ const CartSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    items: { type: [CartItemSchema], default: [] },
-    currency: { type: String, default: "INR" },
+    items: [CartItemSchema],
+    totalValue: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

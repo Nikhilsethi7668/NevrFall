@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import Review from "../Models/Review.js";
 import Product from "../Models/Product.js";
 
-
 const recomputeProductRatings = async (productId) => {
   const [agg] = await Review.aggregate([
     { $match: { product: new mongoose.Types.ObjectId(productId) } },
@@ -40,6 +39,28 @@ const normalizeImages = (images) =>
         .filter((x) => x && x.url)
         .slice(0, 6)
     : [];
+
+// GET /api/reviews?productId=...&page=1&limit=10
+export const getProductReviews = async (req, res) => {
+  const { parentProductId } = req.query;
+  if (!parentProductId || !mongoose.isValidObjectId(parentProductId)) {
+    return res.status(400).json({ message: "Invalid productId" });
+  }
+
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10));
+
+  const [items, total] = await Promise.all([
+    Review.find({ product: parentProductId })
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    Review.countDocuments({ product: parentProductId }),
+  ]);
+
+  res.json({ items, total, page, limit });
+};
 
 export const createReview = async (req, res) => {
   const userId = req.user?._id;
@@ -182,26 +203,4 @@ export const getMyReviewForProduct = async (req, res) => {
     user: userId,
   }).lean();
   res.json({ review });
-};
-
-// GET /api/reviews?productId=...&page=1&limit=10
-export const getProductReviews = async (req, res) => {
-  const { productId } = req.query;
-  if (!productId || !mongoose.isValidObjectId(productId)) {
-    return res.status(400).json({ message: "Invalid productId" });
-  }
-
-  const page = Math.max(1, Number(req.query.page) || 1);
-  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10));
-
-  const [items, total] = await Promise.all([
-    Review.find({ product: productId })
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean(),
-    Review.countDocuments({ product: productId }),
-  ]);
-
-  res.json({ items, total, page, limit });
 };

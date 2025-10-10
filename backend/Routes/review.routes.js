@@ -7,18 +7,19 @@ import {
   deleteReview,
   getMyReviewForProduct,
   getProductReviews,
-} from "../controllers/reviewController.js";
+} from "../Controllers/reviews.controller.js";
 import { auth } from "../Middlewares/auth.js";
 
 const router = Router();
 
-router.get("/reviews", getProductReviews);
+router.get("/", getProductReviews);
 
-router.get("/reviews/my", auth, getMyReviewForProduct);
-router.post("/reviews", auth, createReview);
-router.put("/reviews/:id", auth, updateReview);
-router.patch("/reviews/:id/images/add", auth, addReviewImages);
-router.delete("/reviews/:id/images", auth, deleteReviewImage);
-router.delete("/reviews/:id", auth, deleteReview);
+router.get("/my", auth, getMyReviewForProduct);
+router.post("/", auth, createReview);
+router.put("/:id", auth, updateReview);
+
+router.patch("/:id/images/add", auth, addReviewImages);
+router.delete("/:id/images", auth, deleteReviewImage);
+router.delete("/:id", auth, deleteReview);
 
 export default router;
