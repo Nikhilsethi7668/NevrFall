@@ -22,6 +22,25 @@ const OrderItemSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const PaymentDetailSchema = new mongoose.Schema(
+  {
+    method: {
+      type: String,
+      enum: ["cod", "wallet", "razorpay", "payu"],
+      required: true,
+    },
+    amount: { type: Number, required: true },
+    gatewayPaymentId: { type: String, default: null },
+    status: {
+      type: String,
+      enum: ["created", "success", "failed", "cod_pending"],
+      default: "created",
+    },
+    meta: { type: Object, default: {} },
+  },
+  { _id: false }
+);
+
 const OrderSchema = new mongoose.Schema(
   {
     user: {
@@ -30,13 +49,10 @@ const OrderSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-
     items: { type: [OrderItemSchema], default: [] },
-
-    subtotal: { type: Number, required: true }, // sum of lineTotal
-    discountAmount: { type: Number, default: 0 }, // coupon discount
-    total: { type: Number, required: true }, // subtotal - discount + shipping/taxes (if any)
-
+    subtotal: { type: Number, required: true },
+    discountAmount: { type: Number, default: 0 },
+    total: { type: Number, required: true },
     coupon: {
       couponId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -44,16 +60,20 @@ const OrderSchema = new mongoose.Schema(
         default: null,
       },
       code: { type: String, default: "" },
+      targetUser: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
+        index: true,
+      },
     },
-
-    // status, payment & shipping
     status: {
       type: String,
       enum: [
         "pending",
         "paid",
         "processing",
-        "Confirmed",
+        "confirmed",
         "out-for-delivery",
         "delivered",
         "cancelled",
@@ -70,16 +90,13 @@ const OrderSchema = new mongoose.Schema(
       ],
       default: "pending",
     },
-    paymentMethod: { type: String, default: "cod" },
-    paymentInfo: { type: Object, default: {} },
-
+    paymentMethod: { type: String, default: "cod" }, // primary method (cod/razorpay/payu/wallet)
+    payments: { type: [PaymentDetailSchema], default: [] }, // stores all payment splits
     shippingAddress: { type: Object, default: {} },
-
-    meta: { type: Object, default: {} }, // extensible metadata
+    meta: { type: Object, default: {} },
   },
   { timestamps: true }
 );
 
 OrderSchema.index({ user: 1, status: 1 });
-
 export default mongoose.model("Order", OrderSchema);
