@@ -7,9 +7,8 @@ import ProductVariant from "../Models/ProductVariant.js";
 import Coupon from "../Models/Coupon.js";
 import Payment from "../Models/Payments.js";
 import PaymentGatewayConfig from "../Models/PaymentGatewayConfig.js";
-import { getActiveGatewayAdapter } from "../Services/gatewayFactory.js"; // ensure path is correct
-
-// --- CouponUsage helper model to track per-user uses (unique index ensures atomicity) ---
+import { getActiveGatewayAdapter } from "../Services/gatewayFactory.js";
+import { use } from "react";
 const CouponUsageSchema = new mongoose.Schema(
   {
     coupon: {
@@ -27,9 +26,6 @@ const CouponUsage =
   mongoose.models.CouponUsage ||
   mongoose.model("CouponUsage", CouponUsageSchema);
 
-// ----------------- Helpers -----------------
-
-/** Atomically decrement stock for a variant inside a session. Throws on failure. */
 async function decrementVariantStockAtomic(variantId, qty, session) {
   const res = await ProductVariant.updateOne(
     { _id: variantId, stock: { $gte: qty } },
@@ -282,7 +278,6 @@ export const createOrder = async (req, res) => {
       }).session(session);
       if (!coupon || !coupon.active) throw new Error("Invalid coupon");
 
-      // compute applicable subtotal (product/category restrictions)
       const applicableSubtotal = await computeApplicableSubtotalForCoupon(
         coupon,
         items,
@@ -339,13 +334,14 @@ export const createOrder = async (req, res) => {
     await order.save({ session });
 
     // 7) clear cart if used
-    if (useCart) {
+    if (paymentMethod == "cod" && useCart) {
       await Cart.updateOne(
         { user: userId },
         { $set: { items: [], totalValue: 0 } },
         { session }
       );
     }
+    //If paymentMethod is online, payment will be created when payment is initiated and then order status will be updated on payment confirmation and cart will be cleared then.
 
     await session.commitTransaction();
     session.endSession();
@@ -374,18 +370,23 @@ export const createPaymentForOrder = async (req, res) => {
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ message: "Order not found" });
     if (order.status === "cancelled")
-      return res.status(400).json({ message: "Order cancelled" });
-
-    // idempotency: return existing Payment if same key exists
+      return res
+        .status(400)
+        .json({ message: "Order cancelled Please order again" });
     if (idempotencyKey) {
       const existing = await Payment.findOne({
         idempotencyKey,
         order: orderId,
       });
-      if (existing) return res.json(existing);
+      if (existing) {
+        return res.json({
+          payment: existing,
+          message: "Payment already initiated — please proceed to payment",
+        });
+      }
     }
 
-    const adapter = await getActiveGatewayAdapter(); // may throw if gateway not configured
+    const adapter = await getActiveGatewayAdapter();
     const gatewayPayload = {
       amount: order.total,
       currency: "INR",
@@ -427,7 +428,7 @@ export const confirmPayment = async (req, res) => {
     session.startTransaction();
 
     const { paymentId } = req.params;
-    const { gatewayPayload = {} } = req.body;
+    const { gatewayPayload = {}, useCart = "false" } = req.body;
 
     const payment = await Payment.findById(paymentId).session(session);
     if (!payment) {
@@ -464,6 +465,14 @@ export const confirmPayment = async (req, res) => {
       meta: payment.meta,
     });
     await order.save({ session });
+    if (useCart === "true") {
+      const cart = await Cart.findOne({ user: order.user }).session(session);
+      if (cart) {
+        cart.items = [];
+        cart.totalValue = 0;
+        await cart.save({ session });
+      }
+    }
 
     await session.commitTransaction();
     session.endSession();
@@ -479,9 +488,6 @@ export const confirmPayment = async (req, res) => {
   }
 };
 
-/**
- * Get single order
- */
 export const getOrder = async (req, res) => {
   const { id } = req.params;
   const order = await Order.findById(id).populate(
@@ -491,9 +497,6 @@ export const getOrder = async (req, res) => {
   res.json(order);
 };
 
-/**
- * List orders
- */
 export const listOrders = async (req, res) => {
   const { userId, page = 1, limit = 20, status } = req.query;
   const q = {};
