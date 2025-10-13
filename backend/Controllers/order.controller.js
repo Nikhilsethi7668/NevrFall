@@ -423,7 +423,7 @@ async function processWalletRefund(userId, amount, orderId, reason, session) {
  * Stock Reservation Management
  */
 async function createStockReservation(orderId, items, paymentId, session) {
-  const reserveMinutes = Number(process.env.RESERVATION_TTL_MINUTES || 30);
+  const reserveMinutes = Number(process.env.RESERVATION_TTL_MINUTES || 10);
   const reservedUntil = new Date(Date.now() + reserveMinutes * 60 * 1000);
 
   const reservationItems = items.map((it) => ({
@@ -445,6 +445,9 @@ async function createStockReservation(orderId, items, paymentId, session) {
   return reservation;
 }
 
+
+
+
 async function consumeStockReservation(orderId, paymentId, session) {
   const reservation = await StockReservation.findOne({
     order: orderId,
@@ -458,6 +461,8 @@ async function consumeStockReservation(orderId, paymentId, session) {
   }
   return reservation;
 }
+
+
 
 async function releaseStockReservation(orderId, paymentId, session) {
   const reservation = await StockReservation.findOne({
