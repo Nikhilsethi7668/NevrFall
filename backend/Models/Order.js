@@ -90,8 +90,12 @@ const OrderSchema = new mongoose.Schema(
       ],
       default: "pending",
     },
-    paymentMethod: { type: String, default: "cod" }, // primary method (cod/razorpay/payu/wallet)
-    payments: { type: [PaymentDetailSchema], default: [] }, // stores all payment splits
+    paymentMethod: {
+      type: String,
+      enum: ["cod", "wallet", "razorpay", "payu", "none"],
+      default: "none",
+    },
+    payments: { type: [PaymentDetailSchema], default: [] },
     shippingAddress: { type: Object, default: {} },
     meta: { type: Object, default: {} },
   },
