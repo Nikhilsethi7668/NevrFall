@@ -104,6 +104,11 @@ const OrderSchema = new mongoose.Schema(
     },
     payments: { type: [PaymentDetailSchema], default: [] },
     shippingAddress: { type: Object, default: {} },
+    deliveryDetails: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Delivery",
+      default: null,
+    },
     meta: { type: Object, default: {} },
   },
   { timestamps: true }
