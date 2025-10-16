@@ -97,6 +97,7 @@ const OrderSchema = new mongoose.Schema(
       enum: ["cod", "wallet", "razorpay", "payu", "none"],
       default: "none",
     },
+    
     walletTransactionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "WalletTransaction",
