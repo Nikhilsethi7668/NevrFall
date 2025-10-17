@@ -1,83 +1,109 @@
 // Services/delivery.worker.js
-import { Worker, Queue, QueueScheduler } from "bullmq";
-import { redis } from "../Controllers/redis.js"; // adjust path if needed
+import pkg from "bullmq";
+// try a few shapes for exports (commonjs default / esm named)
+const BullMQ = pkg || {};
+const WorkerCtor = BullMQ.Worker || BullMQ.default?.Worker;
+const QueueCtor = BullMQ.Queue || BullMQ.default?.Queue;
+const QueueSchedulerCtor =
+  BullMQ.QueueScheduler || BullMQ.default?.QueueScheduler;
+import { redisBullMQ as redis } from "../lib/redis.js";
 import Order from "../Models/Order.js";
 import ReturnRequest from "../Models/ReturnRequest.js";
 import ExchangeRequest from "../Models/ExchangeRequest.js";
-import { delhiveryAPI } from "./delhivery.api.js"; 
-import { createLogger } from "../utils/logger.js"; 
+import { delhivery as delhiveryAPI } from "../Controllers/delivery.controller.js";
+import logger from "../utils/logger.js"; // keep as-is
+
+const log = logger || console;
 const QUEUE_NAME = "delivery-jobs";
 
-// create scheduler to handle stalled jobs / retries
-new QueueScheduler(QUEUE_NAME, { connection: redis });
+// Defensive: ensure QueueCtor and WorkerCtor are present
+if (!QueueCtor) {
+  log.error?.("bullmq Queue export not found. Install/upgrade bullmq.");
+  throw new Error("bullmq Queue export not found");
+}
+if (!WorkerCtor) {
+  log.error?.("bullmq Worker export not found. Install/upgrade bullmq.");
+  throw new Error("bullmq Worker export not found");
+}
+
+// create scheduler to handle stalled jobs / retries if available
+try {
+  if (typeof QueueSchedulerCtor === "function") {
+    // Some environments need `new`, some might export a factory — try new first
+    try {
+      // attempt constructor style
+      // eslint-disable-next-line no-new
+      new QueueSchedulerCtor(QUEUE_NAME, { connection: redis });
+      log.info?.("QueueScheduler instantiated using constructor");
+    } catch (e) {
+      // fallback: try calling without new (some versions export a function)
+      try {
+        QueueSchedulerCtor(QUEUE_NAME, { connection: redis });
+        log.info?.("QueueScheduler instantiated by calling function");
+      } catch (e2) {
+        log.warn?.(
+          "QueueScheduler exists but could not be instantiated. Skipping scheduler.",
+          e2?.message || e2
+        );
+      }
+    }
+  } else {
+    log.warn?.(
+      "QueueScheduler not available in bullmq import — continuing without queue scheduler."
+    );
+  }
+} catch (err) {
+  log.warn?.(
+    "Error while creating QueueScheduler (non-fatal):",
+    err?.message || err
+  );
+}
 
 // export queue for controllers to use
-export const deliveryQueue = new Queue(QUEUE_NAME, { connection: redis });
+export const deliveryQueue = new QueueCtor(QUEUE_NAME, { connection: redis });
 
-const logger =
-  typeof createLogger === "function"
-    ? createLogger("delivery-worker")
-    : console;
-
-export const deliveryWorker = new Worker(
+// Worker factory
+export const deliveryWorker = new WorkerCtor(
   QUEUE_NAME,
   async (job) => {
-    // job.name used as type when scheduling; fallback to job.data.type
     const type = job.name || job.data?.type;
     const payload = job.data?.payload || job.data || {};
 
-    logger.info?.(`Processing job ${job.id} type=${type}`, { payload });
+    log.info?.(`Processing job ${job.id} type=${type}`, { payload });
 
     try {
       switch (type) {
         case "generateLabel":
-          // Expect payload: { orderId, deliveryId }
-          if (!delhiveryAPI || !delhiveryAPI.createShipmentLabel) {
-            throw new Error("delhiveryAPI.createShipmentLabel not implemented");
-          }
-          return await delhiveryAPI.createShipmentLabel(
+          return await delhiveryAPI?.createShipmentLabel?.(
             payload.orderId,
             payload.deliveryId
           );
 
         case "downloadDeliveryDocs":
-          // payload: { waybill } or { deliveryId }
-          if (!delhiveryAPI || !delhiveryAPI.downloadDocuments) {
-            throw new Error("delhiveryAPI.downloadDocuments not implemented");
-          }
-          return await delhiveryAPI.downloadDocuments(
+          return await delhiveryAPI?.downloadDocuments?.(
             payload.waybill || payload.deliveryId,
             payload
           );
 
         case "postDeliveryProcessing":
-          // payload: { orderId, deliveryStatus }
-          if (!payload.orderId)
-            throw new Error("orderId required for postDeliveryProcessing");
-          const order = await Order.findById(payload.orderId);
-          if (!order) throw new Error("Order not found");
-          order.status = payload.deliveryStatus || order.status;
-          await order.save();
-          return order;
+          if (!payload.orderId) throw new Error("orderId required");
+          {
+            const order = await Order.findById(payload.orderId);
+            if (!order) throw new Error("Order not found");
+            order.status = payload.deliveryStatus || order.status;
+            await order.save();
+            return order;
+          }
 
         case "ndrReattempt":
-          // payload: { waybill, deliveryId }
-          if (!delhiveryAPI || !delhiveryAPI.scheduleRetry) {
-            throw new Error("delhiveryAPI.scheduleRetry not implemented");
-          }
-          return await delhiveryAPI.scheduleRetry(
+          return await delhiveryAPI?.scheduleRetry?.(
             payload.waybill || payload.deliveryId,
             payload
           );
 
         case "notifyCustomer":
-          // payload: { userId, deliveryId, status, otp }
-          if (!delhiveryAPI || !delhiveryAPI.sendOTPToCustomer) {
-            // If you don't have delhiveryAPI.sendOTPToCustomer, implement a notifier (SMS/push/email)
-            logger.warn(
-              "notifyCustomer called but sendOTPToCustomer not implemented; payload:",
-              payload
-            );
+          if (!delhiveryAPI?.sendOTPToCustomer) {
+            log.warn?.("sendOTPToCustomer not implemented on delhiveryAPI");
             return { ok: false, message: "notifier-not-implemented" };
           }
           return await delhiveryAPI.sendOTPToCustomer(
@@ -88,12 +114,7 @@ export const deliveryWorker = new Worker(
           );
 
         case "reconcileDeliveryWithDocs":
-          // payload: { deliveryId, waybill, docType }
-          if (!delhiveryAPI || !delhiveryAPI.reconcileWithDocs) {
-            logger.warn("reconcileDeliveryWithDocs not implemented", payload);
-            return { ok: false, message: "reconcile-not-implemented" };
-          }
-          return await delhiveryAPI.reconcileWithDocs(
+          return await delhiveryAPI?.reconcileWithDocs?.(
             payload.deliveryId,
             payload.waybill,
             payload.docType
@@ -103,23 +124,19 @@ export const deliveryWorker = new Worker(
           throw new Error(`Unknown job type: ${type}`);
       }
     } catch (err) {
-      logger.error?.(`Job ${job.id} type=${type} failed`, err);
+      log.error?.(`Job ${job.id} type=${type} failed`, err);
       throw err;
     }
   },
-  { connection: redis, concurrency: 5 } // adjust concurrency as needed
+  { connection: redis, concurrency: 5 }
 );
 
+// event handlers
 deliveryWorker.on("completed", (job) => {
-  logger.info?.(`Job ${job.id} completed`, { name: job.name, data: job.data });
+  log.info?.(`Job ${job.id} completed`, { name: job.name, data: job.data });
 });
-
 deliveryWorker.on("failed", (job, err) => {
-  logger.error?.(`Job ${job.id} failed`, err);
+  log.error?.(`Job ${job.id} failed`, err);
 });
 
-// export default for convenience
-export default {
-  deliveryQueue,
-  deliveryWorker,
-};
+export default { deliveryQueue, deliveryWorker };

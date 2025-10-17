@@ -9,7 +9,8 @@ import PaymentSession from "../Models/PaymentSession.js";
 import User from "../Models/User.js";
 import WalletTransaction from "../Models/WalletTransaction.js";
 import { getActiveGatewayAdapter } from "../Services/gatewayFactory.js";
-import { redis, cacheGet, cacheSet, cacheDelPattern } from "../utils/redis.js";
+import { cacheGet, cacheSet, cacheDelPattern } from "../lib/cache.js";
+import { redis } from "../lib/redis.js";
 import logger from "../utils/logger.js";
 
 // ========== UTILITY FUNCTIONS ==========
@@ -130,7 +131,7 @@ async function validateUserOwnership(
 /**
  * Stock operations with Redis caching
  */
-async function decrementVariantStock(variantId, qty, session) {
+export async function decrementVariantStock(variantId, qty, session) {
   const result = await ProductVariant.updateOne(
     { _id: variantId, stock: { $gte: qty } },
     { $inc: { stock: -qty } },
@@ -159,7 +160,7 @@ async function incrementVariantStock(variantId, qty, session) {
 /**
  * Calculate order totals with caching
  */
-async function calculateOrderTotals(items, couponCode, session, userId) {
+export async function calculateOrderTotals(items, couponCode, session, userId) {
   let subtotal = 0;
   const validatedItems = [];
 
@@ -306,7 +307,7 @@ async function calculateOrderTotals(items, couponCode, session, userId) {
 /**
  * Reserve coupon usage safely (atomic + concurrency-safe)
  */
-async function reserveCouponUsage(couponId, userId, session) {
+export async function reserveCouponUsage(couponId, userId, session) {
   if (!couponId) return;
 
   const result = await Coupon.updateOne(

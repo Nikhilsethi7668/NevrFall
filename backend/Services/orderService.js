@@ -6,8 +6,8 @@ import {
   decrementVariantStock,
   calculateOrderTotals,
 } from "../Controllers/order.controller.js";
-import { cacheDelPattern } from "../utils/cache.js";
-import Payment from "../models/Payment.js";
+import { cacheDelPattern } from "../lib/cache.js";
+// import Payment from "../models/Payment.js";
 
 export async function createOrderFromSelection(payload, session) {
   // payload: { userId, items, paymentMethod, walletTxId, couponCode, meta, shippingAddress }

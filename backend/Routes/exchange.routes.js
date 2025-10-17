@@ -9,7 +9,7 @@ import {
   // getExchangeDetails,
   // cancelRequestedExchange
 } from "../Controllers/exchange.controller.js";
-import { authMiddleware, isAdmin } from "../Middlewares/auth.js"; // assuming you have auth middleware
+import { auth, isAdmin } from "../Middlewares/auth.js"; // assuming you have auth middleware
 
 const router = express.Router();
 
@@ -18,13 +18,13 @@ const router = express.Router();
  */
 router.post(
   "/create",
-  authMiddleware, // user must be logged in
+  auth, // user must be logged in
   createExchange
 );
 
 router.post(
   "/confirm-payment",
-  authMiddleware, // user or admin depending on flow
+  auth, // user or admin depending on flow
   confirmPaymentAndPlaceOrder
 );
 
@@ -33,7 +33,7 @@ router.post(
  */
 router.post(
   "/qc",
-  adminMiddleware, // only admin/QC personnel
+  isAdmin, // only admin/QC personnel
   qcHandler
 );
 

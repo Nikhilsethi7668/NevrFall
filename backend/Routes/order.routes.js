@@ -5,7 +5,7 @@ import {
   listOrders,
   cancelOrder,
   createPaymentSession,
-  getPaymentStatus,
+  checkPaymentStatus,
 } from "../Controllers/order.controller.js";
 import { auth } from "../Middlewares/auth.js";
 
@@ -45,6 +45,6 @@ router.post("/:id/payment-session", auth, createPaymentSession);
 
 // Get payment status by session ID
 // GET /api/orders/payment/status/:sessionId
-router.get("/payment/status/:sessionId", auth, getPaymentStatus);
+router.get("/payment/status/:sessionId", auth, checkPaymentStatus);
 
 export default router;
