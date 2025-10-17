@@ -17,6 +17,7 @@ import exchangeRoutes from "./Routes/exchange.routes.js";
 import returnRoutes from "./Routes/return.routes.js";
 import mediaRoutes from "./Routes/media.routes.js";
 import { connectRedis } from "./lib/redis.js";
+import adminRoutes from "./Routes/admin/index.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -52,6 +53,8 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/orders", orderRoutes);
+
+app.use("/api/admin", adminRoutes);
 
 app.use((req, res) => res.status(404).json({ error: "Route not found" }));
 
