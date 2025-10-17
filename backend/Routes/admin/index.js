@@ -2,7 +2,6 @@ import { Router } from "express";
 import productRoutes from "./adminProduct.routes.js";
 import orderRoutes from "./adminOrder.routes.js";
 // import ticketRoutes from "./adminTicket.routes.js";
-import reviewRoutes from "./adminReview.routes.js";
 // import shipmentRoutes from "./adminShipment.routes.js";
 import paymentRoutes from "./adminPayment.routes.js";
 

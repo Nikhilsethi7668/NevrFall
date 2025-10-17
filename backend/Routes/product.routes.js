@@ -11,8 +11,7 @@ import {
   getProductDetails,
   getVariantByKey,
   trackClick,
-  validateAndSetGateway,
-} from "../Controllers/productPublic.js";
+} from "../Controllers/products.controller.js";
 import { auth } from "../Middlewares/auth.js";
 
 const router = express.Router();
@@ -61,6 +60,6 @@ router.post("/:id/track-click", trackClick);
 /* -------------------------------------------------------------
    PAYMENT GATEWAY CONFIG (admin only)
 ------------------------------------------------------------- */
-router.post("/gateway/set", auth, validateAndSetGateway);
+// router.post("/gateway/set", auth, validateAndSetGateway);
 
 export default router;

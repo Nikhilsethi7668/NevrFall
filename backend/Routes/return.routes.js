@@ -1,7 +1,8 @@
 // routes/return.routes.js
 import express from "express";
 import returnController from "../Controllers/return.controller.js";
-import { authMiddleware, adminMiddleware } from "../Middlewares/auth.js";
+import { auth, isAdmin } from "../Middlewares/auth.js";
+import { cancelReturnRequest } from "../Controllers/return.controller.js";
 
 const router = express.Router();
 
@@ -11,22 +12,18 @@ const router = express.Router();
 // Create a new return request
 router.post(
   "/create",
-  authMiddleware, // logged-in users only
+  isAdmin, // logged-in users only
   returnController.createReturnRequest
 );
 
 // Cancel a return request
-router.post(
-  "/:id/cancel",
-  authMiddleware,
-  returnController.cancelReturnRequest
-);
+router.post("/:id/cancel", auth, cancelReturnRequest);
 
 // List all returns for current user (pagination optional)
-router.get("/my-returns", authMiddleware, returnController.listReturnsForUser);
+router.get("/my-returns", auth, returnController.listReturnsForUser);
 
 // Get a single return by ID
-router.get("/:id", authMiddleware, returnController.getReturn);
+router.get("/:id", auth, returnController.getReturn);
 
 /**
  * Admin routes
@@ -34,14 +31,14 @@ router.get("/:id", authMiddleware, returnController.getReturn);
 // Approve a return and optionally schedule pickup
 router.post(
   "/:id/approve",
-  adminMiddleware, // admin-only
+  isAdmin, // admin-only
   returnController.adminApproveReturn
 );
 
 // Mark return received and process refund
 router.post(
   "/:id/receive",
-  adminMiddleware, // admin-only
+  isAdmin, // admin-only
   returnController.adminReceiveAndProcessRefund
 );
 

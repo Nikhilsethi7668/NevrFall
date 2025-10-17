@@ -7,9 +7,9 @@ import Delivery from "../Models/Delivery.js"; // ensure this model exists
 import ReturnRequest from "../Models/ReturnRequest.js";
 import ExchangeRequest from "../Models/ExchangeRequest.js";
 import User from "../Models/User.js";
-import { cacheGet, cacheSet, cacheDel } from "./cache.js"; // added cacheDel
+import { cacheGet, cacheSet, cacheDel } from "../lib/cache.js"; // added cacheDel
 import { deliveryQueue } from "../Services/delivery.worker.js"; // your job queue (real queue)
-import { redis } from "./redis.js"; // direct redis only as fallback
+import { redis } from "../lib/redis.js"; // direct redis only as fallback
 import mongoose from "mongoose";
 import { sendSms } from "../Services/phone.service.js";
 
@@ -21,7 +21,7 @@ const DELHIVERY_BASE_URL =
 const IS_STAGING = process.env.DELHIVERY_STAGING === "true";
 
 // helper: axios instance
-const delhivery = axios.create({
+export const delhivery = axios.create({
   baseURL: IS_STAGING
     ? process.env.DELHIVERY_STAGING_URL ||
       "https://staging-express.delhivery.com"

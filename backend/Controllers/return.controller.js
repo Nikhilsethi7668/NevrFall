@@ -1,20 +1,19 @@
 import mongoose from "mongoose";
-import Order from "../Models/order.model.js";
+import Order from "../Models/Order.js";
 import ReturnRequest from "../Models/ReturnRequest.js";
 import Delivery from "../Models/Delivery.js";
 import Payment from "../Models/Payments.js";
 import User from "../Models/User.js";
 import ProductVariant from "../Models/ProductVariant.js";
 import WalletTransaction from "../Models/WalletTransaction.js";
-import { computeFraudScore } from "../Services/fraud.service.js";
-import { schedulePickupWithCarrier } from "../Services/shipping.service.js";
+// import { computeFraudScore } from "../Controllers/exchange.controller.js";
+import { scheduleCourierPickup } from "../Services/delivery.service.js";
 import { getActiveGatewayAdapter } from "../Services/gatewayFactory.js";
 import logger from "../utils/logger.js";
 
 const RETURN_WINDOW_DAYS = Number(process.env.RETURN_WINDOW_DAYS || 7);
 const AUTO_RESTOCK_ON_APPROVAL =
   process.env.AUTO_RESTOCK_ON_APPROVAL === "true";
-
 
 function getLineFromOrder(order, index) {
   if (!order || !Array.isArray(order.items)) return null;
@@ -55,7 +54,6 @@ async function creditUserWallet(userId, amount, orderId, session, meta = {}) {
   });
   return walletTx;
 }
-
 
 export const createReturnRequest = async (req, res) => {
   const session = await mongoose.startSession();
@@ -121,14 +119,14 @@ export const createReturnRequest = async (req, res) => {
       );
 
     // fraud score (quick check). If flagged, admin must manually approve later.
-    const fraudResult = await computeFraudScore({
-      userId,
-      order,
-      line,
-      quantity,
-      ip: req.ip,
-      userAgent: req.get("User-Agent"),
-    });
+    // const fraudResult = await computeFraudScore({
+    //   userId,
+    //   order,
+    //   line,
+    //   quantity,
+    //   ip: req.ip,
+    //   userAgent: req.get("User-Agent"),
+    // });
 
     // Create return request in REQUESTED state (admin must approve to schedule pickup)
     const rr = new ReturnRequest({
@@ -144,11 +142,11 @@ export const createReturnRequest = async (req, res) => {
       requestedAt: now,
       status: "requested",
       refundMethod,
-      fraud: {
-        score: fraudResult.score,
-        reason: fraudResult.reason,
-        flagged: fraudResult.flagged,
-      },
+      // fraud: {
+      //   score: fraudResult.score,
+      //   reason: fraudResult.reason,
+      //   flagged: fraudResult.flagged,
+      // },
       meta: {
         requestedFromIp: req.ip,
         userAgent: req.get("User-Agent"),
@@ -174,7 +172,6 @@ export const createReturnRequest = async (req, res) => {
   }
 };
 
-
 export const cancelReturnRequest = async (req, res) => {
   const session = await mongoose.startSession();
   try {
@@ -193,7 +190,9 @@ export const cancelReturnRequest = async (req, res) => {
 
     // Only allow cancel if status is 'requested'
     if (rr.status !== "requested") {
-      throw new Error("Return request cannot be cancelled once approved or pickup scheduled");
+      throw new Error(
+        "Return request cannot be cancelled once approved or pickup scheduled"
+      );
     }
 
     // update status
@@ -234,7 +233,6 @@ export const cancelReturnRequest = async (req, res) => {
   }
 };
 
-
 export const adminApproveReturn = async (req, res) => {
   // admin middleware should ensure req.user.isAdmin
   const session = await mongoose.startSession();
@@ -260,12 +258,12 @@ export const adminApproveReturn = async (req, res) => {
 
     // schedule pickup (if requested)
     if (scheduleImmediately) {
-      // Note: schedulePickupWithCarrier should be implemented per-carrier.
+      // Note: scheduleCourierPickup should be implemented per-carrier.
       // It may be async external call (not part of txn). We'll call it and then save pickup details.
       try {
         const order = await Order.findById(rr.order).session(session); // for address/details
         // Call external service (may be network). It's OK to call within txn but the external call is outside DB.
-        const pickup = await schedulePickupWithCarrier({
+        const pickup = await scheduleCourierPickup({
           order,
           returnRequest: rr,
           preferredCarrier,
@@ -613,7 +611,6 @@ export const adminReceiveAndProcessRefund = async (req, res) => {
     return res.status(400).json({ message: err.message });
   }
 };
-
 
 export const listReturnsForUser = async (req, res) => {
   try {

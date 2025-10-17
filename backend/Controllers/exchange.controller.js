@@ -3,11 +3,11 @@ import mongoose from "mongoose";
 import ExchangeRequest from "../Models/ExchangeRequest.js";
 import InventoryReservation from "../Models/InventoryReservation.js";
 import Order from "../Models/Order.js";
-import Payment from "../models/Payment.js";
+import Payment from "../Models/Payments.js";
 import WalletTransaction from "../Models/WalletTransaction.js";
 import ProductVariant from "../Models/ProductVariant.js";
-import { scheduleCourierPickup } from "../services/courier.service.js"; // stub
-import { createOrderFromSelection } from "../services/order.service.js"; // service below
+import { scheduleCourierPickup } from "../Services/delivery.service.js"; // stub
+import { createOrderFromSelection } from "../Services/orderService.js"; // service below
 import {
   holdWalletAmount,
   finalizeHeldWalletTx,
@@ -358,7 +358,6 @@ export const qcHandler = async (req, res) => {
     session.endSession();
   }
 };
-
 
 export const confirmPaymentAndPlaceOrder = async (req, res) => {
   const session = await mongoose.startSession();
