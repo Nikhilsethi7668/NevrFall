@@ -3,10 +3,22 @@ import Product from "../../Models/Product.js";
 import ParentProduct from "../../Models/ParentProduct.js";
 import ProductVariant from "../../Models/ProductVariant.js";
 import { cacheDelPattern } from "../../lib/cache.js";
+import Category from "../../Models/Category.js";
 
-console.log('Using cacheDelPattern');
+console.log("Using cacheDelPattern");
 
 const toNum = (v, d) => (v !== undefined && v !== null ? Number(v) : d);
+//for normalizing provided slug
+function normalizeSlug(s) {
+  if (!s) return "";
+  return String(s)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "") // remove invalid chars
+    .replace(/\s+/g, "-") // collapse whitespace to -
+    .replace(/-+/g, "-") // collapse multiple dashes
+    .replace(/^-+|-+$/g, ""); // trim leading/trailing dashes
+}
 
 // Invalidate Redis cache for public-facing product routes
 const clearProductCache = async (productId) => {
@@ -28,18 +40,98 @@ const clearProductCache = async (productId) => {
     ];
     // This is a simplified example. A more robust solution would involve
     // pattern-based deletion if your cache library supports it (e.g., Redis SCAN + DEL).
-    await Promise.all(keysToDelete.map(key => cacheDelPattern(key + '*')));
+    await Promise.all(keysToDelete.map((key) => cacheDelPattern(key + "*")));
     console.log(`Cache cleared for product ${productId}`);
   } catch (error) {
     console.error(`Error clearing cache for product ${productId}:`, error);
   }
 };
 
-
 /* =============================================================
    ADMIN: Product Management
 ============================================================= */
 
+/**
+Create a parent project so that now products can be added into that
+ */
+
+export const createParentProduct = async (req, res) => {
+  const session = await mongoose.startSession();
+
+  try {
+    const payload = req.body?.data || req.body || {};
+    const {
+      title,
+      slug: rawSlug,
+      description = "",
+      details = {},
+      tags = [],
+      categories = null,
+      CollectionType = null,
+    } = payload;
+
+    if (!title) {
+      return res.status(400).json({ message: "title is required" });
+    }
+
+    const slug = normalizeSlug(rawSlug || title);
+
+    // validate category if provided (schema expects a single ObjectId ref "Category")
+    let categoryId = null;
+    if (categories) {
+      if (!mongoose.isValidObjectId(categories)) {
+        return res.status(400).json({ message: "Invalid category id" });
+      }
+      // ensure category exists
+      const categoryExists = await Category.findById(categories).lean();
+      if (!categoryExists) {
+        return res
+          .status(400)
+          .json({ message: "Referenced category not found" });
+      }
+      categoryId = categories;
+    }
+
+    // check slug uniqueness
+    const existing = await ParentProduct.findOne({ slug }).lean();
+    if (existing) {
+      return res
+        .status(409)
+        .json({
+          message: "A parent product with this slug already exists",
+          parent: existing,
+        });
+    }
+
+    let createdParent = null;
+    await session.withTransaction(async () => {
+      const parent = new ParentProduct({
+        title: title.trim(),
+        slug,
+        description,
+        details,
+        tags: Array.isArray(tags) ? tags : [tags],
+        categories: categoryId,
+        CollectionType: CollectionType || undefined,
+      });
+
+      const saved = await parent.save({ session });
+      createdParent = saved;
+    });
+
+    // return created parent
+    res
+      .status(201)
+      .json({ message: "Parent product created", parent: createdParent });
+  } catch (err) {
+    console.error("createParentProduct error:", err);
+    res
+      .status(500)
+      .json({ message: "Failed to create parent product", error: err.message });
+  } finally {
+    session.endSession();
+  }
+};
 /**
  * GET /api/admin/products
  * Get all products for the admin panel, with pagination.
@@ -103,13 +195,21 @@ export const createProduct = async (req, res) => {
       }
     } else {
       if (!slug) throw new Error("Slug is required for a new parent product.");
-      parentProduct = new ParentProduct({ title, slug, description, tags, categories });
+      parentProduct = new ParentProduct({
+        title,
+        slug,
+        description,
+        tags,
+        categories,
+      });
       await parentProduct.save({ session });
     }
 
-    const availableSizes = variants.map(v => v.size.toUpperCase());
-    const priceFrom = Math.min(...variants.map(v => v.price));
-    const compareAtFrom = Math.min(...variants.filter(v => v.compareAtPrice).map(v => v.compareAtPrice));
+    const availableSizes = variants.map((v) => v.size.toUpperCase());
+    const priceFrom = Math.min(...variants.map((v) => v.price));
+    const compareAtFrom = Math.min(
+      ...variants.filter((v) => v.compareAtPrice).map((v) => v.compareAtPrice)
+    );
 
     const newProduct = new Product({
       parent: parentProduct._id,
@@ -122,12 +222,12 @@ export const createProduct = async (req, res) => {
       priceFrom,
       compareAtFrom: compareAtFrom === Infinity ? null : compareAtFrom,
       availableSizes,
-      inStock: variants.some(v => v.stock > 0),
+      inStock: variants.some((v) => v.stock > 0),
       publishAt: new Date(),
     });
     await newProduct.save({ session });
 
-    const variantDocs = variants.map(v => ({
+    const variantDocs = variants.map((v) => ({
       product: newProduct._id,
       size: v.size.toUpperCase(),
       sku: v.sku,
@@ -139,10 +239,14 @@ export const createProduct = async (req, res) => {
     await ProductVariant.insertMany(variantDocs, { session });
 
     await session.commitTransaction();
-    res.status(201).json({ message: "Product created successfully", product: newProduct });
+    res
+      .status(201)
+      .json({ message: "Product created successfully", product: newProduct });
   } catch (error) {
     await session.abortTransaction();
-    res.status(400).json({ message: "Failed to create product", error: error.message });
+    res
+      .status(400)
+      .json({ message: "Failed to create product", error: error.message });
   } finally {
     session.endSession();
   }
@@ -159,16 +263,24 @@ export const updateProduct = async (req, res) => {
   }
 
   try {
-    const updatedProduct = await Product.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+    const updatedProduct = await Product.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
     if (!updatedProduct) {
       return res.status(404).json({ message: "Product not found" });
     }
-    
+
     await clearProductCache(id);
 
-    res.json({ message: "Product updated successfully", product: updatedProduct });
+    res.json({
+      message: "Product updated successfully",
+      product: updatedProduct,
+    });
   } catch (error) {
-    res.status(400).json({ message: "Failed to update product", error: error.message });
+    res
+      .status(400)
+      .json({ message: "Failed to update product", error: error.message });
   }
 };
 
@@ -194,7 +306,9 @@ export const deleteProduct = async (req, res) => {
     await Product.findByIdAndDelete(id).session(session);
 
     // Optional: Check if the parent has any other products. If not, delete parent.
-    const remainingProducts = await Product.countDocuments({ parent: product.parent }).session(session);
+    const remainingProducts = await Product.countDocuments({
+      parent: product.parent,
+    }).session(session);
     if (remainingProducts === 0) {
       await ParentProduct.findByIdAndDelete(product.parent).session(session);
     }
@@ -204,7 +318,9 @@ export const deleteProduct = async (req, res) => {
     res.json({ message: "Product and its variants deleted successfully." });
   } catch (error) {
     await session.abortTransaction();
-    res.status(400).json({ message: "Failed to delete product", error: error.message });
+    res
+      .status(400)
+      .json({ message: "Failed to delete product", error: error.message });
   } finally {
     session.endSession();
   }
@@ -237,15 +353,21 @@ export const updateStock = async (req, res) => {
     }
 
     // After updating stock, we must update the parent Product's `inStock` status.
-    const variantsForProduct = await ProductVariant.find({ product: variant.product });
-    const productInStock = variantsForProduct.some(v => v.stock > 0);
-    await Product.findByIdAndUpdate(variant.product, { inStock: productInStock });
-    
+    const variantsForProduct = await ProductVariant.find({
+      product: variant.product,
+    });
+    const productInStock = variantsForProduct.some((v) => v.stock > 0);
+    await Product.findByIdAndUpdate(variant.product, {
+      inStock: productInStock,
+    });
+
     await clearProductCache(variant.product.toString());
 
     res.json({ message: "Stock updated successfully", variant });
   } catch (error) {
-    res.status(500).json({ message: "Error updating stock", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error updating stock", error: error.message });
   }
 };
 
@@ -257,7 +379,9 @@ export const bulkUpdateStock = async (req, res) => {
   const { updates } = req.body; // Expecting [{ variantId, stock }]
 
   if (!Array.isArray(updates) || updates.length === 0) {
-    return res.status(400).json({ message: "Invalid request body for bulk stock update." });
+    return res
+      .status(400)
+      .json({ message: "Invalid request body for bulk stock update." });
   }
 
   const session = await mongoose.startSession();
@@ -275,15 +399,26 @@ export const bulkUpdateStock = async (req, res) => {
     // After bulk update, we need to resync the `inStock` status for all affected products.
     const productIds = [
       ...new Set(
-        (await ProductVariant.find({ _id: { $in: updates.map(u => u.variantId) } }).select('product').lean())
-        .map(v => v.product.toString())
-      )
+        (
+          await ProductVariant.find({
+            _id: { $in: updates.map((u) => u.variantId) },
+          })
+            .select("product")
+            .lean()
+        ).map((v) => v.product.toString())
+      ),
     ];
 
     for (const productId of productIds) {
-      const variants = await ProductVariant.find({ product: productId }).session(session);
-      const productInStock = variants.some(v => v.stock > 0);
-      await Product.findByIdAndUpdate(productId, { inStock: productInStock }, { session });
+      const variants = await ProductVariant.find({
+        product: productId,
+      }).session(session);
+      const productInStock = variants.some((v) => v.stock > 0);
+      await Product.findByIdAndUpdate(
+        productId,
+        { inStock: productInStock },
+        { session }
+      );
       await clearProductCache(productId);
     }
 
@@ -291,7 +426,9 @@ export const bulkUpdateStock = async (req, res) => {
     res.json({ message: "Bulk stock update successful", result });
   } catch (error) {
     await session.abortTransaction();
-    res.status(500).json({ message: "Bulk stock update failed", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Bulk stock update failed", error: error.message });
   } finally {
     session.endSession();
   }
