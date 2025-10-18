@@ -5,6 +5,7 @@ import { generateToken } from "../Middlewares/auth.js";
 import { sendEmail } from "../Services/email.service.js";
 import { sendSms } from "../Services/phone.service.js";
 export async function requestOtp(req, res) {
+  console.log("running");
   try {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ error: "Phone required" });
@@ -103,7 +104,7 @@ export async function requestOTPByEmail(req, res) {
     const otp = generateOtp();
     const dataKey = `otp:data:${email}`;
     await redis.set(dataKey, hashOtp(otp), "EX", 300);
-    console.log("Generated Email OTP:", otp); 
+    console.log("Generated Email OTP:", otp);
     await sendEmail(
       email,
       "Welcome to NevrFall , Do not share OTP with anyone",

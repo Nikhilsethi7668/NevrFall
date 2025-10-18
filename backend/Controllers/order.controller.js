@@ -62,9 +62,7 @@ async function acquirePaymentLock(orderId, timeoutMs = 15000) {
   return lockKey;
 }
 
-/**
- * Release payment lock
- */
+
 async function releasePaymentLock(lockKey) {
   try {
     await redis.del(lockKey);
@@ -92,11 +90,9 @@ async function checkActivePaymentSession(orderId, currentSessionId = null) {
   });
 
   if (activeSession) {
-    // If same session (retry), allow it
     if (currentSessionId && activeSession.sessionId === currentSessionId)
       return true;
 
-    // If session is stale (> 3 min), expire it
     const sessionAge = Date.now() - activeSession.createdAt.getTime();
     if (sessionAge > 3 * 60 * 1000) {
       await PaymentSession.updateOne(
@@ -158,7 +154,7 @@ async function incrementVariantStock(variantId, qty, session) {
 }
 
 /**
- * Calculate order totals with caching
+ * Calculate order totals with caching------ perfect
  */
 export async function calculateOrderTotals(items, couponCode, session, userId) {
   let subtotal = 0;
@@ -237,7 +233,7 @@ export async function calculateOrderTotals(items, couponCode, session, userId) {
           user: userId,
         }).session(session);
         if (userUsage >= coupon.maxUsesPerUser) {
-          throw new Error("Coupon usage limit reached for this user");
+          throw new Error("Coupon usage limit reached for user ");
         }
       }
 
@@ -305,7 +301,7 @@ export async function calculateOrderTotals(items, couponCode, session, userId) {
  * Reserve coupon usage with cache invalidation
  */
 /**
- * Reserve coupon usage safely (atomic + concurrency-safe)
+ * Reserve coupon usage safely (atomic + concurrency-safe)---OK
  */
 export async function reserveCouponUsage(couponId, userId, session) {
   if (!couponId) return;
@@ -328,7 +324,7 @@ export async function reserveCouponUsage(couponId, userId, session) {
 }
 
 /**
- * Revert coupon usage safely (atomic)
+ * Revert coupon usage safely (atomic)--ok
  */
 async function revertCouponUsage(couponId, userId, session) {
   if (!couponId) return;
@@ -344,7 +340,7 @@ async function revertCouponUsage(couponId, userId, session) {
 }
 
 /**
- * Wallet operations - ONLY CALLED AFTER PAYMENT CONFIRMATION
+ * Wallet operations - ONLY CALLED AFTER PAYMENT CONFIRMATION--- good
  */
 async function processWalletPayment(userId, amount, orderId, session) {
   const user = await User.findById(userId).session(session);
@@ -374,7 +370,7 @@ async function processWalletPayment(userId, amount, orderId, session) {
 
   return walletTx[0];
 }
-
+//-----good
 async function processWalletRefund(userId, amount, orderId, reason, session) {
   const user = await User.findById(userId).session(session);
 
