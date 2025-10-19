@@ -174,18 +174,44 @@ export const createProduct = async (req, res) => {
   session.startTransaction();
   try {
     const {
-      parent, // parentId (optional, if adding color to existing)
+      parent,
       title,
       slug,
       description,
       tags,
-      categories,
       color,
       colorLabel,
-      variants, // [{ size, sku, price, compareAtPrice, stock }]
-      images,
+      variants,
+      images, // Now expecting [{url, alt}]
       coverImage,
+      collections,
+      primaryCategoryId,
+      isTrending,
     } = req.body;
+
+    // Validation
+    if (!title || !slug || !color || !colorLabel || !coverImage) {
+      throw new Error("Title, slug, color, colorLabel, and coverImage are required");
+    }
+
+    if (!variants || !Array.isArray(variants) || variants.length === 0) {
+      throw new Error("At least one variant is required");
+    }
+
+    // Validate and process images - ensure they have url and alt
+    const imageArray = Array.isArray(images)
+      ? images
+          .filter(img => img && img.url && typeof img.url === 'string' && img.url.trim().length > 0)
+          .map(img => ({
+            url: img.url.trim(),
+            alt: img.alt || '',
+          }))
+      : [];
+
+    // Validate collections
+    const collectionsArray = Array.isArray(collections)
+      ? collections.filter(c => c && typeof c === 'string' && c.trim().length > 0)
+      : [];
 
     let parentProduct;
     if (parent) {
@@ -194,68 +220,91 @@ export const createProduct = async (req, res) => {
         throw new Error("Specified parent product not found.");
       }
     } else {
-      if (!slug) throw new Error("Slug is required for a new parent product.");
+      const tagArray = Array.isArray(tags)
+        ? tags.filter(tag => tag && typeof tag === 'string' && tag.trim().length > 0)
+        : [];
+
       parentProduct = new ParentProduct({
         title,
-        slug,
-        description,
-        tags,
-        categories,
+        slug: normalizeSlug(slug),
+        description: description || '',
+        tags: tagArray,
+        categories: primaryCategoryId || null,
       });
       await parentProduct.save({ session });
     }
 
-    const availableSizes = variants.map((v) => v.size.toUpperCase());
-    const priceFrom = Math.min(...variants.map((v) => v.price));
-    const compareAtFrom = Math.min(
-      ...variants.filter((v) => v.compareAtPrice).map((v) => v.compareAtPrice)
+    // Validate and process variants
+    const validVariants = variants.filter(v =>
+      v.size && v.sku && v.price !== undefined && v.price !== null
     );
+
+    if (validVariants.length === 0) {
+      throw new Error("No valid variants provided");
+    }
+
+    const availableSizes = validVariants.map((v) => String(v.size).toUpperCase());
+    const priceFrom = Math.min(...validVariants.map((v) => Number(v.price)));
+    const compareAtPrices = validVariants
+      .filter((v) => v.compareAtPrice && v.compareAtPrice > 0)
+      .map((v) => Number(v.compareAtPrice));
+    const compareAtFrom = compareAtPrices.length > 0
+      ? Math.min(...compareAtPrices)
+      : null;
+
+    const productSlug = normalizeSlug(`${slug}-${color}`);
 
     const newProduct = new Product({
       parent: parentProduct._id,
       title: `${title} - ${colorLabel}`,
-      slug: `${slug}-${color}`,
-      color,
+      slug: productSlug,
+      color: color.toLowerCase(),
       colorLabel,
-      images,
+      images: imageArray,
       coverImage,
       priceFrom,
-      compareAtFrom: compareAtFrom === Infinity ? null : compareAtFrom,
+      compareAtFrom,
       availableSizes,
-      inStock: variants.some((v) => v.stock > 0),
+      inStock: validVariants.some((v) => v.stock > 0),
+      collections: collectionsArray,
+      primaryCategoryId: primaryCategoryId || null,
+      isTrending: isTrending || false,
       publishAt: new Date(),
+      currency: 'INR',
+      clicks: 0,
+      purchases: 0,
     });
     await newProduct.save({ session });
 
-    const variantDocs = variants.map((v) => ({
+    const variantDocs = validVariants.map((v) => ({
       product: newProduct._id,
-      size: v.size.toUpperCase(),
+      size: String(v.size).toUpperCase(),
       sku: v.sku,
-      price: v.price,
-      compareAtPrice: v.compareAtPrice,
-      stock: v.stock,
+      price: Number(v.price),
+      compareAtPrice: v.compareAtPrice ? Number(v.compareAtPrice) : 0,
+      stock: Number(v.stock) || 0,
     }));
 
     await ProductVariant.insertMany(variantDocs, { session });
 
     await session.commitTransaction();
-    res
-      .status(201)
-      .json({ message: "Product created successfully", product: newProduct });
+
+    res.status(201).json({
+      message: "Product created successfully",
+      product: newProduct
+    });
   } catch (error) {
     await session.abortTransaction();
-    res
-      .status(400)
-      .json({ message: "Failed to create product", error: error.message });
+    console.error('Create product error:', error);
+    res.status(400).json({
+      message: "Failed to create product",
+      error: error.message
+    });
   } finally {
     session.endSession();
   }
 };
 
-/**
- * PUT /api/admin/products/:id
- * Update a product's details.
- */
 export const updateProduct = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.isValidObjectId(id)) {
@@ -263,10 +312,32 @@ export const updateProduct = async (req, res) => {
   }
 
   try {
-    const updatedProduct = await Product.findByIdAndUpdate(id, req.body, {
+    const updateData = { ...req.body };
+
+    // Validate and sanitize images if provided
+    if (updateData.images !== undefined) {
+      updateData.images = Array.isArray(updateData.images)
+        ? updateData.images
+            .filter(img => img && img.url && typeof img.url === 'string' && img.url.trim().length > 0)
+            .map(img => ({
+              url: img.url.trim(),
+              alt: img.alt || '',
+            }))
+        : [];
+    }
+
+    // Validate collections
+    if (updateData.collections !== undefined) {
+      updateData.collections = Array.isArray(updateData.collections)
+        ? updateData.collections.filter(c => c && typeof c === 'string' && c.trim().length > 0)
+        : [];
+    }
+
+    const updatedProduct = await Product.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     });
+
     if (!updatedProduct) {
       return res.status(404).json({ message: "Product not found" });
     }
@@ -278,9 +349,11 @@ export const updateProduct = async (req, res) => {
       product: updatedProduct,
     });
   } catch (error) {
-    res
-      .status(400)
-      .json({ message: "Failed to update product", error: error.message });
+    console.error('Update product error:', error);
+    res.status(400).json({
+      message: "Failed to update product",
+      error: error.message
+    });
   }
 };
 

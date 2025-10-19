@@ -1,12 +1,12 @@
 import Order from "../../Models/Order.js";
 import User from "../../Models/User.js";
-import Refund from "../Models/Refund.js";
+import Refund from "../../Models/Refund.js";
 import ProductVariant from "../../Models/ProductVariant.js";
 import Payment from "../../Models/Payments.js";
 import WalletTransaction from "../../Models/WalletTransaction.js";
 import mongoose from "mongoose";
 import logger from "../../utils/logger.js";
-import { getActiveGatewayAdapter } from "../Services/gatewayFactory.js"; // add this import at top if not present
+import { getActiveGatewayAdapter } from "../../Services/gatewayFactory.js"; // add this import at top if not present
 
 // Utility to process wallet refunds
 //good
