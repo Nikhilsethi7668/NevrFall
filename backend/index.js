@@ -16,6 +16,7 @@ import deliveryRoutes from "./Routes/delivery.routes.js";
 import exchangeRoutes from "./Routes/exchange.routes.js";
 import returnRoutes from "./Routes/return.routes.js";
 import mediaRoutes from "./Routes/media.routes.js";
+import wishlistRoutes from "./Routes/wishlist.routes.js";
 import { connectRedis } from "./lib/redis.js";
 import adminRoutes from "./Routes/admin/index.js";
 
@@ -53,6 +54,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/wishlist", wishlistRoutes);
 
 app.use("/api/admin", adminRoutes);
 
