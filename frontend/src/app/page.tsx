@@ -8,6 +8,7 @@ import Navbar from "./components/Navbar";
 import ProductCard from "./components/ProductCard";
 import LoadingSpinner from "./components/LoadingSpinner";
 import Link from "next/link";
+import ImageCarousel from "./components/ImageCarousel";
 
 export default function Home() {
   const router = useRouter();
@@ -42,30 +43,7 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      
-      {/* Hero Section */}
-      <div className="hero min-h-screen relative">
-        <div className="hero-content text-center text-white">
-            <div className="max-w-md">
-            <h1 className="text-5xl font-bold mb-4">NeverFall</h1>
-            <p className="text-xl mb-8">Your Ultimate Fashion Destination</p>
-            <button 
-              onClick={() => router.push("/products")}
-              className="btn btn-accent btn-lg"
-            >
-              Shop Now
-            </button>
-          </div>
-        </div>
-              <video
-          className="absolute top-0 left-0 w-full h-full object-cover"
-                src="/hero.mp4" 
-                autoPlay
-                loop
-                muted
-              />
-      </div>
-
+      <ImageCarousel />
       {/* Featured Products */}
       <div className="container mx-auto p-6">
         <h2 className="text-3xl font-bold text-center mb-8">Featured Products</h2>
@@ -102,6 +80,29 @@ export default function Home() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Hero Section */}
+      <div className="hero min-h-screen relative">
+        <div className="hero-content text-center text-white">
+            <div className="max-w-md">
+            <h1 className="text-5xl font-bold mb-4">NeverFall</h1>
+            <p className="text-xl mb-8">Your Ultimate Fashion Destination</p>
+            <button 
+              onClick={() => router.push("/products")}
+              className="btn btn-accent btn-lg"
+            >
+              Shop Now
+            </button>
+          </div>
+        </div>
+        <video
+          className="absolute top-0 left-0 w-full h-full object-cover"
+          src="/hero.mp4" 
+          autoPlay
+          loop
+          muted
+        />
       </div>
 
       {/* Trending Products */}

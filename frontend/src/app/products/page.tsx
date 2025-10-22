@@ -124,7 +124,7 @@ export default function ProductsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Filters Sidebar */}
           <div className={`lg:col-span-1 ${showFilters ? "block" : "hidden lg:block"}`}>
-            <div className="card bg-base-200">
+            <div className="card bg-base-200 sticky top-20">
               <div className="card-body">
                 <h3 className="card-title">Filters</h3>
 

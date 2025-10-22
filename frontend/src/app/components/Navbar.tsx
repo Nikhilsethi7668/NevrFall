@@ -88,7 +88,7 @@ const Navbar = () => {
             <li><Link href='/contact'>Contact</Link></li>
         </ul>
 
-        <div className="navbar-end">
+        <div className="navbar-end gap-4">
             {mounted && (
               <button className="btn btn-ghost btn-circle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
                   {theme === 'light' ? (
