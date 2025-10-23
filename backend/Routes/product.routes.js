@@ -46,7 +46,7 @@ router.get("/featured", getFeatured);
 router.get("/trending", getTrending);
 
 //Recommended Products
-router.get("/recommended", getRecommendations);
+router.get("/recommended", auth, getRecommendations);
 
 /* -------------------------------------------------------------
    PRODUCT DETAILS
