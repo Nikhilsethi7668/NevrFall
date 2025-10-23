@@ -47,6 +47,8 @@ export const productAPI = {
     api.get('/api/products/featured', { params }),
   getTrending: (params: { limit?: number; cursor?: string }) => 
     api.get('/api/products/trending', { params }),
+  getRecommended: (params: { limit?: number; cursor?: string }) =>
+    api.get('/api/products/recommended', { params }),
   getDetails: (idOrSlug: string, params?: { sku?: string }) => 
     api.get(`/api/products/${idOrSlug}`, { params }),
   getVariant: (params: { sku?: string; productId?: string; size?: string }) => 
