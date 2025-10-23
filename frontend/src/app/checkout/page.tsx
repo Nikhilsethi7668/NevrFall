@@ -69,7 +69,7 @@ export default function CheckoutPage() {
 
       const res = await orderAPI.create({
         items,
-        useCart: false,
+        useCart: true,
         shippingAddress,
       });
       return res.data;
@@ -170,7 +170,7 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = () => {
-    createOrderMutation.mutate();
+      createOrderMutation.mutate();
   };
 
   if (!userId || !cart || cart.items.length === 0) {

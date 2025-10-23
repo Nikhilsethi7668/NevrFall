@@ -175,10 +175,11 @@ export async function calculateOrderTotals(items, couponCode, session, userId) {
           path: "product",
           populate: {
             path: "parent",
-            populate: { path: "category" }, // populate product → parent → category
+            populate: { path: "categories" }, // populate product → parent → category
           },
         })
         .session(session);
+        console.log("variant is", variant);
 
       if (variant) await cacheSet(cacheKey, variant, 300);
     }
@@ -418,8 +419,8 @@ export const createOrder = async (req, res) => {
         shippingAddress,
       } = req.body;
 
-      const userId = req.user._id;
-
+      const userId = req.user.id;
+      console.log("userId is", userId);
       if (!shippingAddress) {
         throw new Error("Shipping address required");
       }
@@ -427,6 +428,7 @@ export const createOrder = async (req, res) => {
       let items = [];
       if (useCart) {
         const cart = await Cart.findOne({ user: userId }).session(session);
+        console.log("cart is", cart);
         if (!cart?.items?.length) throw new Error("Cart is empty");
         items = cart.items.map((item) => ({
           variantId: item.variant,
@@ -441,9 +443,10 @@ export const createOrder = async (req, res) => {
 
       const {
         items: validatedItems,
+        subtotal,
         total,
         coupon,
-      } = await calculateOrderTotals(items, couponCode, session);
+      } = await calculateOrderTotals(items, couponCode, session, userId);
 
       // Reserve stock
       for (const item of validatedItems) {
@@ -460,6 +463,7 @@ export const createOrder = async (req, res) => {
           {
             user: userId,
             items: validatedItems,
+            subtotal,
             total,
             coupon,
             shippingAddress,
@@ -497,13 +501,14 @@ export const createPaymentSession = async (req, res) => {
 
   try {
     await session.withTransaction(async () => {
-      const { orderId } = req.params;
+      const orderId = req.params.id;
+      console.log("orderId is", orderId);
       const {
         useWallet = false,
         paymentMethod = "cod",
         retrySessionId = null,
       } = req.body;
-      const userId = req.user._id;
+      const userId = req.user.id;
       const sessionId = retrySessionId || generateSessionId();
 
       const validMethods = ["cod", "razorpay", "payu"];
@@ -663,7 +668,7 @@ export const createPaymentSession = async (req, res) => {
   } catch (error) {
     logger.error("Payment session creation failed", {
       error: error.message,
-      orderId: req.params.orderId,
+      orderId: req.params.id,
     });
     res.status(400).json({ message: error.message });
   } finally {
