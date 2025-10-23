@@ -9,9 +9,29 @@ import ProductCard from "./components/ProductCard";
 import LoadingSpinner from "./components/LoadingSpinner";
 import Link from "next/link";
 import ImageCarousel from "./components/ImageCarousel";
+import { useProductStore } from "./store/useProductStore";
+import Pagination from "./components/Pagination";
+import { useEffect } from "react";
 
 export default function Home() {
   const router = useRouter();
+  const {
+      products,
+      loading,
+      filters,
+      page,
+      totalPages,
+      fetchProducts,
+      setFilters,
+    } = useProductStore();
+
+  useEffect(() => {
+    fetchProducts(filters, page);
+  }, [page]);
+
+  const handlePageChange = (newPage: number) => {
+    useProductStore.setState({ page: newPage });
+  };
 
   // Fetch featured products
   const { data: featuredProducts, isLoading: featuredLoading } = useQuery({
@@ -124,6 +144,34 @@ export default function Home() {
               <ProductCard key={product._id} product={product} />
             ))}
           </div>
+        )}
+      </div>
+
+      <ImageCarousel />
+
+      <div className="lg:col-span-3">
+        {loading ? (
+          <LoadingSpinner size="lg" text="Loading products..." />
+        ) : products.length === 0 ? (
+          <div className="text-center py-16">
+            <h2 className="text-2xl font-bold mb-4">No products found</h2>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {products.map((product: any) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              className="mt-8"
+            />
+          </>
         )}
       </div>
 

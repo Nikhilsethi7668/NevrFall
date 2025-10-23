@@ -12,7 +12,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="data-theme" defaultTheme="light">
           <Providers>
           <ToastContainer />
             {children}
