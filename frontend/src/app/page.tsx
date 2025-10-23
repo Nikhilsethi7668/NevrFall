@@ -8,6 +8,7 @@ import Navbar from "./components/Navbar";
 import ProductCard from "./components/ProductCard";
 import LoadingSpinner from "./components/LoadingSpinner";
 import Link from "next/link";
+import Categories from "./components/Categories";
 import ImageCarousel from "./components/ImageCarousel";
 import { useProductStore } from "./store/useProductStore";
 import Pagination from "./components/Pagination";
@@ -185,6 +186,8 @@ export default function Home() {
 
       <ImageCarousel />
 
+      <Categories />
+
       <div className="lg:col-span-3">
         {loading ? (
           <LoadingSpinner size="lg" text="Loading products..." />
@@ -194,7 +197,7 @@ export default function Home() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {products.map((product: any) => (
                 <ProductCard key={product.id} product={product} />
               ))}

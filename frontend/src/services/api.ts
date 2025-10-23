@@ -55,6 +55,7 @@ export const productAPI = {
     api.get('/api/products/variant/lookup', { params }),
   getColorFeed: (params: { limit?: number; cursor?: string; sort?: string; seed?: string }) =>
     api.get('/api/products/color-feed', { params }),
+  getAllCategories: () => api.get('/api/products/getAllCategories'),
 };
 
 // Cart APIs

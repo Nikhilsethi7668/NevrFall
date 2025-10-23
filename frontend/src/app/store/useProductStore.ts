@@ -67,6 +67,6 @@ export const useProductStore = create<ProductState>((set, get) => ({
     const { filters, fetchProducts } = get();
     const updatedFilters = { ...filters, ...newFilters };
     set({ filters: updatedFilters });
-    fetchProducts(updatedFilters, 1); // Reset to page 1 on filter change
+    fetchProducts(updatedFilters, 1);
   },
 }));
