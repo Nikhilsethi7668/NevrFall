@@ -13,6 +13,37 @@ class ShiprocketService {
     this.email = process.env.SHIPROCKET_EMAIL;
     this.password = process.env.SHIPROCKET_PASSWORD;
     this.token = null;
+    this.tokenFetchedAt = null;
+    this.axios = axios.create({
+      baseURL: this.baseURL,
+      timeout: 15_000,
+    });
+
+    // Attach a response interceptor to handle 401 -> refresh token
+    this.axios.interceptors.response.use(
+      (res) => res,
+      async (error) => {
+        const originalRequest = error.config;
+        if (
+          error.response &&
+          error.response.status === 401 &&
+          !originalRequest._retry
+        ) {
+          originalRequest._retry = true;
+          try {
+            await this.authenticate();
+            originalRequest.headers = {
+              ...originalRequest.headers,
+              Authorization: `Bearer ${this.token}`,
+            };
+            return this.axios(originalRequest);
+          } catch (err) {
+            return Promise.reject(err);
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
   }
 
   async authenticate() {
@@ -22,7 +53,21 @@ class ShiprocketService {
         password: this.password,
       });
 
-      this.token = response.data.token;
+      // defensive: check token field
+      this.token = response.data?.token || response.data?.auth_token || null;
+      this.tokenFetchedAt = Date.now();
+
+      if (!this.token) {
+        logger.error("Shiprocket auth response missing token", {
+          body: response.data,
+        });
+        throw new Error("Shiprocket authentication failed: no token");
+      }
+
+      // set axios default auth header
+      this.axios.defaults.headers.common.Authorization = `Bearer ${this.token}`;
+
+      logger.info("Shiprocket authenticated successfully");
       return this.token;
     } catch (error) {
       logger.error("Shiprocket authentication failed", {
@@ -33,12 +78,13 @@ class ShiprocketService {
   }
 
   async makeAuthenticatedRequest(config) {
+    // Ensure we have a token; authenticate if missing
     if (!this.token) {
       await this.authenticate();
     }
 
     try {
-      const response = await axios({
+      const response = await this.axios({
         ...config,
         headers: {
           ...config.headers,
@@ -47,18 +93,11 @@ class ShiprocketService {
       });
       return response.data;
     } catch (error) {
-      if (error.response?.status === 401) {
-        // Token expired, re-authenticate and retry
-        await this.authenticate();
-        const retryResponse = await axios({
-          ...config,
-          headers: {
-            ...config.headers,
-            Authorization: `Bearer ${this.token}`,
-          },
-        });
-        return retryResponse.data;
-      }
+      // Let caller see the underlying response data if available
+      logger.error("Shiprocket request failed", {
+        url: config.url,
+        error: error.response?.data || error.message,
+      });
       throw error;
     }
   }
@@ -72,15 +111,18 @@ class ShiprocketService {
 
       const response = await this.makeAuthenticatedRequest({
         method: "POST",
-        url: `${this.baseURL}/orders/create/adhoc`,
+        url: `/orders/create/adhoc`,
         data: orderPayload,
       });
 
-      // Update delivery with Shiprocket data
+      // Defensive checks for response fields
+      const shipmentId = response?.shipment_id || response?.data?.shipment_id;
+      const awbCode = response?.awb_code || response?.data?.awb_code;
+
       await Delivery.findByIdAndUpdate(deliveryId, {
-        shipmentId: response.shipment_id,
-        awbCode: response.awb_code,
-        channelOrderId: response.channel_order_id,
+        shipmentId,
+        awbCode,
+        channelOrderId: response?.channel_order_id || null,
         status: "NEW",
         shiprocketRaw: response,
         $push: {
@@ -88,6 +130,7 @@ class ShiprocketService {
             status: "NEW",
             note: "Order created in Shiprocket",
             raw: response,
+            at: new Date(),
           },
         },
       });
@@ -95,7 +138,8 @@ class ShiprocketService {
       logger.info("Shiprocket order created successfully", {
         orderId,
         deliveryId,
-        shipmentId: response.shipment_id,
+        shipmentId,
+        awbCode,
       });
 
       return response;
@@ -108,60 +152,84 @@ class ShiprocketService {
       throw error;
     }
   }
+  // Add near other exports
+  async createManualShipment(deliveryId) {
+    try {
+      const delivery = await Delivery.findById(deliveryId).populate("order");
+      if (!delivery || !delivery.order)
+        throw new Error("Delivery or order not found");
+
+      // Reuse existing createOrder logic if you have one
+      const response = await createOrder(delivery.order._id);
+      return response;
+    } catch (err) {
+      logger.error("Manual shipment creation failed", err);
+      throw err;
+    }
+  }
 
   buildOrderPayload(order) {
     const isCOD = order.paymentMethod === "cod";
 
+    // Defensive: ensure shipping/billing exist
+    const ship = order.shippingAddress || {};
+    const user = order.user || {};
+
     return {
       order_id: order._id.toString(),
-      order_date: order.createdAt.toISOString(),
+      order_date: order.createdAt
+        ? order.createdAt.toISOString()
+        : new Date().toISOString(),
       pickup_location: process.env.SHIPROCKET_PICKUP_LOCATION || "Primary",
       channel_id: process.env.SHIPROCKET_CHANNEL_ID || "",
       comment: "Thank you for your order!",
-      billing_customer_name: order.shippingAddress.name,
+      billing_customer_name: ship.name || user.name || "Customer",
       billing_last_name:
-        order.shippingAddress.name.split(" ").slice(1).join(" ") || "",
-      billing_address: order.shippingAddress.addressLine1,
-      billing_address_2: order.shippingAddress.addressLine2 || "",
-      billing_city: order.shippingAddress.city,
-      billing_pincode: order.shippingAddress.pincode,
-      billing_state: order.shippingAddress.state,
+        (ship.name && ship.name.split(" ").slice(1).join(" ")) || "",
+      billing_address: ship.addressLine1 || "",
+      billing_address_2: ship.addressLine2 || "",
+      billing_city: ship.city || "",
+      billing_pincode: ship.pincode || "",
+      billing_state: ship.state || "",
       billing_country: "India",
-      billing_email: order.user.email,
-      billing_phone: order.shippingAddress.phone,
+      billing_email: user.email || "",
+      billing_phone: ship.phone || user.phone || "",
       shipping_is_billing: true,
-      shipping_customer_name: order.shippingAddress.name,
+      shipping_customer_name: ship.name || user.name || "Customer",
       shipping_last_name:
-        order.shippingAddress.name.split(" ").slice(1).join(" ") || "",
-      shipping_address: order.shippingAddress.addressLine1,
-      shipping_address_2: order.shippingAddress.addressLine2 || "",
-      shipping_city: order.shippingAddress.city,
-      shipping_pincode: order.shippingAddress.pincode,
+        (ship.name && ship.name.split(" ").slice(1).join(" ")) || "",
+      shipping_address: ship.addressLine1 || "",
+      shipping_address_2: ship.addressLine2 || "",
+      shipping_city: ship.city || "",
+      shipping_pincode: ship.pincode || "",
       shipping_country: "India",
-      shipping_state: order.shippingAddress.state,
-      shipping_email: order.user.email,
-      shipping_phone: order.shippingAddress.phone,
-      order_items: order.items.map((item) => ({
+      shipping_state: ship.state || "",
+      shipping_email: user.email || "",
+      shipping_phone: ship.phone || user.phone || "",
+      order_items: (order.items || []).map((item) => ({
         name: item.title,
-        sku: item.variant.sku || `variant_${item.variant._id}`,
+        sku: item.variant?.sku || `variant_${item.variant?._id}`,
         units: item.quantity,
         selling_price: item.price,
-        discount: item.lineTotal - item.priceAfterDiscount,
+        discount: Math.max(
+          0,
+          (item.lineTotal || 0) - (item.priceAfterDiscount || item.price || 0)
+        ),
         tax: 0,
         hsn: 0,
       })),
       payment_method: isCOD ? "COD" : "Prepaid",
-      sub_total: order.subtotal,
+      sub_total: order.subtotal || 0,
       length: 10,
       breadth: 10,
       height: 10,
       weight: 0.5,
-      total_discount: order.discountAmount,
+      total_discount: order.discountAmount || 0,
       shipping_charges: 0,
       giftwrap_charges: 0,
       transaction_charges: 0,
-      total: order.total,
-      ...(isCOD && { cod_amount: order.total }),
+      total: order.total || 0,
+      ...(isCOD && { cod_amount: order.total || 0 }),
     };
   }
 
@@ -169,7 +237,7 @@ class ShiprocketService {
     try {
       const response = await this.makeAuthenticatedRequest({
         method: "GET",
-        url: `${this.baseURL}/courier/generate/label`,
+        url: `/courier/generate/label`,
         params: { shipment_ids: shipmentId },
       });
 
@@ -187,7 +255,7 @@ class ShiprocketService {
     try {
       const response = await this.makeAuthenticatedRequest({
         method: "GET",
-        url: `${this.baseURL}/courier/generate/manifest`,
+        url: `/courier/generate/manifest`,
         params: { shipment_ids: shipmentId },
       });
 
@@ -205,7 +273,7 @@ class ShiprocketService {
     try {
       const response = await this.makeAuthenticatedRequest({
         method: "GET",
-        url: `${this.baseURL}/courier/track/awb`,
+        url: `/courier/track/awb`,
         params: { awb_code: awbCode },
       });
 
@@ -223,7 +291,7 @@ class ShiprocketService {
     try {
       const response = await this.makeAuthenticatedRequest({
         method: "POST",
-        url: `${this.baseURL}/orders/cancel`,
+        url: `/orders/cancel`,
         data: { shipment_ids: [shipmentId] },
       });
 
@@ -241,7 +309,7 @@ class ShiprocketService {
     try {
       const response = await this.makeAuthenticatedRequest({
         method: "POST",
-        url: `${this.baseURL}/courier/generate/pickup`,
+        url: `/courier/generate/pickup`,
         data: { shipment_id: [shipmentId] },
       });
 
@@ -254,6 +322,7 @@ class ShiprocketService {
       throw error;
     }
   }
+
   async createReturnPickup(returnRequestId) {
     try {
       const returnRequest = await ReturnRequest.findById(returnRequestId)
@@ -267,15 +336,15 @@ class ShiprocketService {
 
       const response = await this.makeAuthenticatedRequest({
         method: "POST",
-        url: `${this.baseURL}/orders/create/adhoc`,
+        url: `/orders/create/adhoc`,
         data: returnPayload,
       });
 
       // Update return request with pickup info
       await ReturnRequest.findByIdAndUpdate(returnRequestId, {
         "pickup.carrier": "shiprocket",
-        "pickup.trackingId": response.shipment_id,
-        "pickup.awbCode": response.awb_code,
+        "pickup.trackingId": response?.shipment_id || null,
+        "pickup.awbCode": response?.awb_code || null,
         "pickup.scheduledAt": new Date(),
         status: "pickup_scheduled",
         $push: {
@@ -283,15 +352,16 @@ class ShiprocketService {
             status: "pickup_scheduled",
             action: "carrier_assigned",
             performedBy: null,
-            notes: `Return pickup scheduled with Shiprocket. AWB: ${response.awb_code}`,
+            notes: `Return pickup scheduled with Shiprocket. AWB: ${response?.awb_code}`,
+            at: new Date(),
           },
         },
       });
 
       logger.info("Shiprocket return pickup created successfully", {
         returnRequestId,
-        shipmentId: response.shipment_id,
-        awbCode: response.awb_code,
+        shipmentId: response?.shipment_id,
+        awbCode: response?.awb_code,
       });
 
       return response;
@@ -306,12 +376,12 @@ class ShiprocketService {
 
   // Build return pickup payload for Shiprocket
   buildReturnPickupPayload(returnRequest) {
-    const order = returnRequest.order;
-    const user = returnRequest.user;
-    const variant = returnRequest.variant;
+    const order = returnRequest.order || {};
+    const user = returnRequest.user || {};
+    const variant = returnRequest.variant || {};
 
     // Use customer address as pickup location (return from customer)
-    const pickupAddress = order.shippingAddress;
+    const pickupAddress = order.shippingAddress || {};
 
     // Use warehouse address as delivery location (return to warehouse)
     const deliveryAddress = {
@@ -326,23 +396,24 @@ class ShiprocketService {
     return {
       order_id: `RETURN-${returnRequest._id}`,
       order_date: new Date().toISOString(),
-      pickup_location: "Customer_Location", // Special location for returns
+      pickup_location: "Customer_Location",
       channel_id: process.env.SHIPROCKET_CHANNEL_ID || "",
       comment: `Return pickup for order ${order._id}. Reason: ${returnRequest.reason}`,
 
-      // Billing info (customer)
-      billing_customer_name: pickupAddress.name,
-      billing_last_name: pickupAddress.name.split(" ").slice(1).join(" ") || "",
-      billing_address: pickupAddress.addressLine1,
+      billing_customer_name: pickupAddress.name || user.name || "Customer",
+      billing_last_name:
+        (pickupAddress.name &&
+          pickupAddress.name.split(" ").slice(1).join(" ")) ||
+        "",
+      billing_address: pickupAddress.addressLine1 || "",
       billing_address_2: pickupAddress.addressLine2 || "",
-      billing_city: pickupAddress.city,
-      billing_pincode: pickupAddress.pincode,
-      billing_state: pickupAddress.state,
+      billing_city: pickupAddress.city || "",
+      billing_pincode: pickupAddress.pincode || "",
+      billing_state: pickupAddress.state || "",
       billing_country: "India",
-      billing_email: user.email,
-      billing_phone: pickupAddress.phone,
+      billing_email: user.email || "",
+      billing_phone: pickupAddress.phone || user.phone || "",
 
-      // Shipping info (warehouse - where the return goes)
       shipping_is_billing: false,
       shipping_customer_name: deliveryAddress.name,
       shipping_last_name:
@@ -353,24 +424,22 @@ class ShiprocketService {
       shipping_pincode: deliveryAddress.pincode,
       shipping_country: "India",
       shipping_state: deliveryAddress.state,
-      shipping_email: process.env.WAREHOUSE_EMAIL || user.email,
+      shipping_email: process.env.WAREHOUSE_EMAIL || user.email || "",
       shipping_phone: deliveryAddress.phone,
 
-      // Return item details
       order_items: [
         {
           name: `RETURN: ${variant.product?.title || "Product"}`,
           sku: variant.sku || `return_${variant._id}`,
-          units: returnRequest.quantity,
-          selling_price: 0, // No value for returns
+          units: returnRequest.quantity || 1,
+          selling_price: 0,
           discount: 0,
           tax: 0,
           hsn: 0,
         },
       ],
 
-      // Return specific fields
-      payment_method: "Prepaid", // Returns are always prepaid
+      payment_method: "Prepaid",
       sub_total: 0,
       length: 10,
       breadth: 10,
@@ -381,19 +450,17 @@ class ShiprocketService {
       giftwrap_charges: 0,
       transaction_charges: 0,
       total: 0,
-
-      // Return flags (Shiprocket specific)
       is_return: true,
-      return_type: "exchange", // or "refund" based on your logic
+      return_type: "exchange",
     };
   }
 
-  // NEW: Schedule pickup for return
+  // Schedule pickup for return
   async scheduleReturnPickup(shipmentId) {
     try {
       const response = await this.makeAuthenticatedRequest({
         method: "POST",
-        url: `${this.baseURL}/courier/generate/pickup`,
+        url: `/courier/generate/pickup`,
         data: { shipment_id: [shipmentId] },
       });
 
@@ -407,12 +474,12 @@ class ShiprocketService {
     }
   }
 
-  // NEW: Generate return label
+  // Generate return label
   async generateReturnLabel(shipmentId) {
     try {
       const response = await this.makeAuthenticatedRequest({
         method: "GET",
-        url: `${this.baseURL}/courier/generate/label`,
+        url: `/courier/generate/label`,
         params: { shipment_ids: shipmentId },
       });
 
@@ -426,12 +493,12 @@ class ShiprocketService {
     }
   }
 
-  // NEW: Track return shipment
+  // Track return shipment
   async trackReturn(awbCode) {
     try {
       const response = await this.makeAuthenticatedRequest({
         method: "GET",
-        url: `${this.baseURL}/courier/track/awb`,
+        url: `/courier/track/awb`,
         params: { awb_code: awbCode },
       });
 
@@ -445,12 +512,12 @@ class ShiprocketService {
     }
   }
 
-  // NEW: Cancel return pickup
+  // Cancel return pickup
   async cancelReturnPickup(shipmentId) {
     try {
       const response = await this.makeAuthenticatedRequest({
         method: "POST",
-        url: `${this.baseURL}/orders/cancel`,
+        url: `/orders/cancel`,
         data: { shipment_ids: [shipmentId] },
       });
 

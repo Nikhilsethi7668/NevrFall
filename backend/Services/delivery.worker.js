@@ -25,7 +25,6 @@ export const deliveryQueue = new Queue(QUEUE_NAME, {
 export const deliveryWorker = new Worker(
   QUEUE_NAME,
   async (job) => {
-    // Use job.name and job.data (data is payload)
     const jobName = job.name;
     const payload = job.data || {};
 
@@ -64,6 +63,11 @@ export const deliveryWorker = new Worker(
         case "cancelReturnPickup":
           return await shiprocketService.cancelReturnPickup(payload.shipmentId);
 
+        case "scheduleReturnPickup":
+          return await shiprocketService.scheduleReturnPickup(
+            payload.shipmentId
+          );
+
         case "updateOrderStatus":
           const order = await Order.findByIdAndUpdate(
             payload.orderId,
@@ -72,8 +76,6 @@ export const deliveryWorker = new Worker(
           );
           return order;
 
-        // ... rest unchanged
-
         default:
           throw new Error(`Unknown job name: ${jobName}`);
       }
@@ -81,8 +83,9 @@ export const deliveryWorker = new Worker(
       logger.error(`Delivery job ${job.id} failed`, {
         jobName,
         payload,
-        error: error.message,
+        error: error.response?.data || error.message,
       });
+      // Re-throw so Bull handles retries according to attempts/backoff
       throw error;
     }
   },
@@ -92,18 +95,18 @@ export const deliveryWorker = new Worker(
   }
 );
 
-// Event handlers
+// Completed / failed handlers
 deliveryWorker.on("completed", (job) => {
   logger.info(`Delivery job ${job.id} completed`, {
-    type: job.data.type,
+    jobName: job.name,
     result: job.returnvalue,
   });
 });
 
 deliveryWorker.on("failed", (job, err) => {
   logger.error(`Delivery job ${job.id} failed`, {
-    type: job.data.type,
-    error: err.message,
+    jobName: job?.name,
+    error: err?.message,
   });
 });
 
