@@ -4,7 +4,7 @@ import {
   dispatchOrder,
   checkPincodeDeliverabilityForDelhivery,
   createPickupRequest,
-  cancelShipment,
+  cancelDelivery,
   generateDeliveryOtp,
   verifyDeliveryOtp,
   delhiveryScanWebhook,
@@ -33,7 +33,7 @@ router.get(
 // Admin / internal (requires auth)
 router.post("/delivery/dispatch", auth, dispatchOrder); // create manifest + delivery doc
 router.post("/delivery/pickup", auth, createPickupRequest); // create pickup request
-router.post("/delivery/cancel", auth, cancelShipment); // cancel by waybill
+router.post("/delivery/cancel", auth, cancelDelivery); // cancel by waybill
 router.post("/delivery/ndr", auth, triggerNdr); // manual NDR action
 
 // Delivery & OTP routes (protected)

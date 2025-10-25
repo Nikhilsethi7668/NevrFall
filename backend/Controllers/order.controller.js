@@ -175,7 +175,7 @@ export async function calculateOrderTotals(items, couponCode, session, userId) {
           path: "product",
           populate: {
             path: "parent",
-            populate: { path: "category" }, // populate product → parent → category
+            populate: { path: "categories" }, // populate product → parent → category
           },
         })
         .session(session);

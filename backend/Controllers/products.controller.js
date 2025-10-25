@@ -5,7 +5,7 @@ import ParentProduct from "../Models/ParentProduct.js";
 import Category from "../Models/Category.js";
 import ProductVariant from "../Models/ProductVariant.js";
 import Cart from "../Models/Cart.js";
-import WishlistItem from "../Models/WishlistItem.js";
+import WishlistItem from "../Models/Wishlist.js";
 import Review from "../Models/Review.js";
 import { redis } from "../lib/redis.js";
 import { cacheGet as redisGet, cacheSet as redisSet } from "../lib/cache.js";

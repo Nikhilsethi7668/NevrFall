@@ -7,6 +7,8 @@ import User from "../Models/User.js";
 import ProductVariant from "../Models/ProductVariant.js";
 import WalletTransaction from "../Models/WalletTransaction.js";
 // import { computeFraudScore } from "../Controllers/exchange.controller.js";
+import { deliveryQueue } from "../Services/delivery.worker.js";
+import { shiprocketService } from "../Services/shiprocket.service.js";
 import { scheduleCourierPickup } from "../Services/delivery.service.js";
 import { getActiveGatewayAdapter } from "../Services/gatewayFactory.js";
 import logger from "../utils/logger.js";
@@ -234,13 +236,12 @@ export const cancelReturnRequest = async (req, res) => {
 };
 
 export const adminApproveReturn = async (req, res) => {
-  // admin middleware should ensure req.user.isAdmin
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
 
     const returnId = req.params.id;
-    const { preferredCarrier = null, scheduleImmediately = true } = req.body;
+    const { scheduleImmediately = true } = req.body;
     const adminId = req.user._id;
 
     const rr = await ReturnRequest.findById(returnId).session(session);
@@ -249,52 +250,184 @@ export const adminApproveReturn = async (req, res) => {
     if (rr.status !== "requested")
       throw new Error("Return request not in requested state");
 
-    // set approved
+    // Set approved
     rr.status = "approved";
     rr.admin = rr.admin || {};
     rr.admin.processedBy = adminId;
     rr.admin.processedAt = new Date();
     await rr.save({ session });
 
-    // schedule pickup (if requested)
+    // Schedule return pickup with Shiprocket
     if (scheduleImmediately) {
-      // Note: scheduleCourierPickup should be implemented per-carrier.
-      // It may be async external call (not part of txn). We'll call it and then save pickup details.
-      try {
-        const order = await Order.findById(rr.order).session(session); // for address/details
-        // Call external service (may be network). It's OK to call within txn but the external call is outside DB.
-        const pickup = await scheduleCourierPickup({
-          order,
-          returnRequest: rr,
-          preferredCarrier,
-        });
+      await deliveryQueue.add("createReturnPickup", {
+        returnRequestId: rr._id,
+      });
 
-        rr.pickup = {
-          carrier: pickup.carrier,
-          scheduledAt: pickup.scheduledAt,
-          labelUrl: pickup.labelUrl,
-          trackingId: pickup.trackingId,
-        };
-        rr.status = "pickup_scheduled";
-        await rr.save({ session });
-      } catch (carrierErr) {
-        // Carrier scheduling failed — keep rr as approved but not scheduled.
-        logger.warn("Carrier scheduling failed", {
-          returnId,
-          err: carrierErr?.message,
-        });
-        // Do not throw — admin can retry scheduling later.
-      }
+      logger.info("Return pickup queued for Shiprocket", {
+        returnRequestId: rr._id,
+      });
     }
 
     await session.commitTransaction();
     session.endSession();
 
-    return res.json(rr);
+    return res.json({
+      success: true,
+      returnRequest: rr,
+      message: "Return approved and pickup scheduled with Shiprocket",
+    });
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
     logger.error("adminApproveReturn failed", { error: err.message });
+    return res.status(400).json({ message: err.message });
+  }
+};
+export const trackReturnPickup = async (req, res) => {
+  try {
+    const { returnRequestId } = req.params;
+
+    const returnRequest = await ReturnRequest.findById(returnRequestId);
+    if (!returnRequest) throw new Error("Return request not found");
+
+    if (!returnRequest.pickup.awbCode) {
+      throw new Error("AWB code not available for this return");
+    }
+
+    const trackingData = await shiprocketService.trackReturn(
+      returnRequest.pickup.awbCode
+    );
+
+    // Update return status based on tracking
+    if (trackingData.tracking_data?.shipment_status) {
+      const newStatus = trackingData.tracking_data.shipment_status;
+      const statusMap = {
+        PICKUP_QUEUED: "pickup_scheduled",
+        PICKUP_ASSIGNED: "pickup_assigned",
+        PICKUP_COMPLETED: "picked_up",
+        IN_TRANSIT: "received",
+        DELIVERED: "received",
+        CANCELLED: "cancelled",
+      };
+
+      if (
+        statusMap[newStatus] &&
+        statusMap[newStatus] !== returnRequest.status
+      ) {
+        await ReturnRequest.findByIdAndUpdate(returnRequestId, {
+          status: statusMap[newStatus],
+          $push: {
+            timelines: {
+              status: statusMap[newStatus],
+              action: "status_updated_from_tracking",
+              performedBy: null,
+              notes: `Status updated from Shiprocket tracking: ${newStatus}`,
+            },
+          },
+        });
+      }
+    }
+
+    return res.json({
+      success: true,
+      trackingData,
+      returnRequest: await ReturnRequest.findById(returnRequestId),
+    });
+  } catch (err) {
+    logger.error("trackReturnPickup failed", { error: err.message });
+    return res.status(400).json({ message: err.message });
+  }
+};
+export const cancelReturnPickup = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+
+    const { returnRequestId } = req.params;
+    const { reason } = req.body;
+
+    const returnRequest = await ReturnRequest.findById(returnRequestId).session(
+      session
+    );
+    if (!returnRequest) throw new Error("Return request not found");
+
+    if (
+      !["approved", "pickup_scheduled", "pickup_assigned"].includes(
+        returnRequest.status
+      )
+    ) {
+      throw new Error("Return cannot be cancelled in current status");
+    }
+
+    // Cancel with Shiprocket if tracking ID exists
+    if (returnRequest.pickup.trackingId) {
+      await deliveryQueue.add("cancelReturnPickup", {
+        shipmentId: returnRequest.pickup.trackingId,
+      });
+    }
+
+    // Update return request status
+    returnRequest.status = "cancelled";
+    returnRequest.$push({
+      timelines: {
+        status: "cancelled",
+        action: "cancelled_by_admin",
+        performedBy: req.user._id,
+        notes: `Return cancelled. Reason: ${reason}`,
+      },
+    });
+
+    await returnRequest.save({ session });
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.json({
+      success: true,
+      returnRequest,
+      message: "Return pickup cancelled successfully",
+    });
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    logger.error("cancelReturnPickup failed", { error: err.message });
+    return res.status(400).json({ message: err.message });
+  }
+};
+export const generateReturnLabel = async (req, res) => {
+  try {
+    const { returnRequestId } = req.params;
+
+    const returnRequest = await ReturnRequest.findById(returnRequestId);
+    if (!returnRequest) throw new Error("Return request not found");
+
+    if (!returnRequest.pickup.trackingId) {
+      throw new Error("Tracking ID not available for this return");
+    }
+
+    const labelData = await shiprocketService.generateReturnLabel(
+      returnRequest.pickup.trackingId
+    );
+
+    // Update return request with label URL
+    await ReturnRequest.findByIdAndUpdate(returnRequestId, {
+      "pickup.labelUrl": labelData.label_url,
+      $push: {
+        timelines: {
+          status: returnRequest.status,
+          action: "label_generated",
+          performedBy: null,
+          notes: "Return label generated",
+        },
+      },
+    });
+
+    return res.json({
+      success: true,
+      labelData,
+      labelUrl: labelData.label_url,
+    });
+  } catch (err) {
+    logger.error("generateReturnLabel failed", { error: err.message });
     return res.status(400).json({ message: err.message });
   }
 };
@@ -652,4 +785,8 @@ export default {
   adminReceiveAndProcessRefund,
   listReturnsForUser,
   getReturn,
+  //new
+  trackReturnPickup,
+  cancelReturnPickup,
+  generateReturnLabel,
 };

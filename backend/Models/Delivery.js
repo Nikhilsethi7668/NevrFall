@@ -6,7 +6,7 @@ const DeliveryHistorySchema = new mongoose.Schema(
     status: { type: String, required: true },
     at: { type: Date, default: Date.now },
     note: { type: String, default: "" },
-    raw: { type: Object, default: {} }, // raw payload from Delhivery scan/doc push
+    raw: { type: Object, default: {} }, // raw payload from Shiprocket
   },
   { _id: false }
 );
@@ -19,41 +19,47 @@ const DeliverySchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    client: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
       index: true,
     },
 
+    // Shiprocket specific fields
+    shipmentId: { type: String, default: null, index: true },
+    awbCode: { type: String, default: null, index: true },
+    channelOrderId: { type: String, default: null },
+
     status: {
       type: String,
       enum: [
-        "created",
-        "manifest_failed",
-        "manifested",
-        "processing",
-        "out-for-delivery",
-        "picked_up",
-        "attempted",
-        "delivered",
-        "rto",
-        "cancelled",
+        "NEW",
+        "PICKUP_SCHEDULED",
+        "MANIFESTED",
+        "PICKUP_QUEUED",
+        "PICKUP_ASSIGNED",
+        "PICKUP_COMPLETED",
+        "IN_TRANSIT",
+        "OUT_FOR_DELIVERY",
+        "DELIVERED",
+        "CANCELLED",
+        "RTO",
+        "LOST",
+        "DAMAGED",
       ],
-      default: "created",
+      default: "NEW",
       index: true,
     },
 
-    // Waybill assigned by Delhivery
-    waybill: { type: String, default: null, index: true },
     payment_mode: {
       type: String,
       enum: ["COD", "Prepaid"],
       default: "Prepaid",
     },
-    pickup_location: { type: String, default: null },
 
-    delhiveryRaw: { type: Object, default: {} }, // store entire Delhivery response/manifest
+    // Shiprocket raw responses
+    shiprocketRaw: { type: Object, default: {} },
     history: { type: [DeliveryHistorySchema], default: [] },
 
     // OTP for delivery verification
@@ -62,17 +68,17 @@ const DeliverySchema = new mongoose.Schema(
     otpVerified: { type: Boolean, default: false },
 
     deliveredAt: { type: Date, default: null },
-    attemptCount: { type: Number, default: 0 }, // NDR attempts / failed delivery attempts
+    attemptCount: { type: Number, default: 0 },
 
-    // optional RTO / NDR fields
+    // RTO/NDR fields
     ndrStatus: { type: String, default: null },
-    meta: { type: Object, default: {} }, // store admin notes, QC info, manifest info, etc.
+    meta: { type: Object, default: {} },
   },
   { timestamps: true }
 );
 
-DeliverySchema.index({ order: 1, client: 1 });
-DeliverySchema.index({ status: 1, waybill: 1 });
+DeliverySchema.index({ order: 1, user: 1 });
+DeliverySchema.index({ status: 1, awbCode: 1 });
 
 export default mongoose.models.Delivery ||
   mongoose.model("Delivery", DeliverySchema);
