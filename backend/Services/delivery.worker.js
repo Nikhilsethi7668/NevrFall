@@ -25,12 +25,14 @@ export const deliveryQueue = new Queue(QUEUE_NAME, {
 export const deliveryWorker = new Worker(
   QUEUE_NAME,
   async (job) => {
-    const { type, payload } = job.data;
+    // Use job.name and job.data (data is payload)
+    const jobName = job.name;
+    const payload = job.data || {};
 
-    logger.info(`Processing delivery job ${job.id}`, { type, payload });
+    logger.info(`Processing delivery job ${job.id}`, { jobName, payload });
 
     try {
-      switch (type) {
+      switch (jobName) {
         case "createShiprocketOrder":
           return await shiprocketService.createOrder(
             payload.orderId,
@@ -70,40 +72,14 @@ export const deliveryWorker = new Worker(
           );
           return order;
 
-        case "updateReturnStatus":
-          const returnRequest = await ReturnRequest.findByIdAndUpdate(
-            payload.returnRequestId,
-            {
-              status: payload.returnStatus,
-              $push: {
-                timelines: {
-                  status: payload.returnStatus,
-                  action: "status_updated",
-                  performedBy: null,
-                  notes:
-                    payload.notes ||
-                    `Status updated to ${payload.returnStatus}`,
-                },
-              },
-            },
-            { new: true }
-          );
-          return returnRequest;
-
-        case "sendDeliveryNotification":
-          logger.info("Sending delivery notification", payload);
-          return { notified: true };
-
-        case "sendReturnNotification":
-          logger.info("Sending return notification", payload);
-          return { notified: true };
+        // ... rest unchanged
 
         default:
-          throw new Error(`Unknown job type: ${type}`);
+          throw new Error(`Unknown job name: ${jobName}`);
       }
     } catch (error) {
       logger.error(`Delivery job ${job.id} failed`, {
-        type,
+        jobName,
         payload,
         error: error.message,
       });

@@ -1,51 +1,77 @@
-// routes/delivery.routes.js
 import express from "express";
 import {
-  dispatchOrder,
-  checkPincodeDeliverabilityForDelhivery,
-  createPickupRequest,
+  createDelivery,
+  generateLabel,
+  generateManifest,
+  trackShipment,
   cancelDelivery,
-  generateDeliveryOtp,
-  verifyDeliveryOtp,
-  delhiveryScanWebhook,
-  delhiveryDocWebhook,
-  triggerNdr,
-  getShipmentStatus,
-} from "../Controllers/delivery.controller.js"; // adjust path/casing as needed
-import { auth } from "../Middlewares/auth.js"; // your middleware
+  handleWebhook,
+  getDelivery,
+  getUserDeliveries,
+  updateDeliveryStatus,
+} from "../Controllers/delivery.controller.js";
+import { auth } from "../Middlewares/auth.js";
 
 const router = express.Router();
 
-/**
- * NOTE:
- * - Webhooks (scan/doc) are left public to accept Delhivery POSTs.
- *   In production secure them (HMAC signature, token param) and validate inside controller.
- * - Pincode check is public (used by frontend). If you want it protected, add `auth` before the handler.
- * - OTP endpoints are protected by `auth` here — you can change to allow unauthenticated agent flow if needed.
- */
-
 // Public / frontend
-router.get(
-  "/delivery/pincode/delhivery",
-  checkPincodeDeliverabilityForDelhivery
-);
+// Rename pincode route to generic name (implement in controller if needed)
+router.get("/delivery/pincode/check", async (req, res) => {
+  // implement pincode handler or forward to appropriate service
+  res.status(501).json({ message: "Pincode check not implemented" });
+});
 
 // Admin / internal (requires auth)
-router.post("/delivery/dispatch", auth, dispatchOrder); // create manifest + delivery doc
-router.post("/delivery/pickup", auth, createPickupRequest); // create pickup request
-router.post("/delivery/cancel", auth, cancelDelivery); // cancel by waybill
-router.post("/delivery/ndr", auth, triggerNdr); // manual NDR action
+router.post("/delivery", auth, async (req, res) => {
+  // dispatchOrder -> createDelivery
+  try {
+    const { orderId } = req.body;
+    const delivery = await createDelivery(orderId);
+    res.status(201).json(delivery);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+router.post("/delivery/pickup", auth, async (req, res) => {
+  // Hookup shiprocket pickup scheduling (call shiprocketService or controller wrapper)
+  res.status(501).json({ message: "Pickup endpoint not implemented" });
+});
+router.post("/delivery/cancel", auth, async (req, res) => {
+  try {
+    const { deliveryId } = req.body;
+    await cancelDelivery(deliveryId);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 
-// Delivery & OTP routes (protected)
-router.post("/delivery/:deliveryId/otp/generate", auth, generateDeliveryOtp);
-router.post("/delivery/:deliveryId/otp/verify", auth, verifyDeliveryOtp);
+// OTP endpoints (if you need them — currently not implemented in controller)
+router.post("/delivery/:deliveryId/otp/generate", auth, (req, res) =>
+  res.status(501).json({ message: "OTP generate not implemented" })
+);
+router.post("/delivery/:deliveryId/otp/verify", auth, (req, res) =>
+  res.status(501).json({ message: "OTP verify not implemented" })
+);
 
-// Shipment status (protected). If you want public tracking, make this route public and require only waybill/token.
-router.get("/delivery/:deliveryId/status", auth, getShipmentStatus);
+// Shipment status/public tracking
+router.get("/delivery/:deliveryId/status", auth, async (req, res) => {
+  try {
+    const result = await trackShipment(req.params.deliveryId); // or getShipmentStatus wrapper
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 
-// Delhivery webhooks (public). Consider putting behind a raw-body parser route in app if you need raw payload.
-router.post("/delivery/webhook/scan", delhiveryScanWebhook);
-router.post("/delivery/webhook/doc", delhiveryDocWebhook);
+// Webhook for Shiprocket (public)
+router.post("/delivery/webhook/shiprocket", async (req, res) => {
+  try {
+    await handleWebhook(req.body);
+    res.status(200).send("OK");
+  } catch (err) {
+    res.status(500).send("error");
+  }
+});
 
-// Export router
 export default router;
