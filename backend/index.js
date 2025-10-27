@@ -3,6 +3,7 @@ dotenv.config();
 
 import express from "express";
 import cors from "cors";
+import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import connectDB from "./Config/Db.js";
 import authRoutes from "./Routes/auth.routes.js";
@@ -21,9 +22,20 @@ import { connectRedis } from "./lib/redis.js";
 import publicFilterRoutes from "./Routes/publicFilter.routes.js";
 import adminFilterRoutes from "./Routes/admin/adminFilter.routes.js";
 import adminRoutes from "./Routes/admin/index.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 app.set("trust proxy", 1);
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.join(__dirname, "uploads");
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
 
 const isProd = process.env.PRODUCTION === "true";
 app.use(
@@ -35,7 +47,10 @@ app.use(
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.get("/health", (req, res) =>
   res.json({
