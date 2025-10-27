@@ -617,6 +617,12 @@ export const createPaymentSession = async (req, res) => {
 
         paymentSession.status = "completed";
         paymentSession.completedAt = new Date();
+        // const cart = await Cart.findOne({ user: userId }).session(session);
+        // if (cart) {
+        //   cart.items = [];
+        //   cart.totalValue = 0;
+        //   await cart.save({ session });
+        // }
         await paymentSession.save({ session });
       } else {
         // --- Online payment flow ---

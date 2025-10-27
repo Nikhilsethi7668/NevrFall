@@ -36,3 +36,25 @@
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:22:06.036Z"}
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:22:29.762Z"}
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:22:29.762Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:32:01.829Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:32:01.834Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:32:05.710Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:32:05.767Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:33:22.547Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:33:22.549Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:33:23.763Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:33:23.773Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:33:24.508Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:33:24.527Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:33:27.672Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:33:27.712Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:33:31.714Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:33:31.781Z"}
+{"error":"Cart is empty","level":"error","message":"Order creation failed","service":"app-service","timestamp":"2025-10-26T23:33:43.674Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:34:13.768Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T23:34:13.768Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-27T10:21:17.344Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-27T10:23:07.135Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-27T10:23:07.135Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-27T10:23:09.685Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-27T10:23:09.705Z"}
