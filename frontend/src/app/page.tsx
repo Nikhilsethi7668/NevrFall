@@ -102,7 +102,7 @@ export default function Home() {
       )}
 
       {/* Featured Products */}
-      <div className="container mx-auto p-6">
+      {/* <div className="container mx-auto p-6">
         <h2 className="text-3xl font-bold text-center mb-8">Featured Products</h2>
         {featuredLoading ? (
           <LoadingSpinner size="lg" text="Loading featured products..." />
@@ -113,7 +113,7 @@ export default function Home() {
             ))}
           </div>
         )}
-      </div>
+      </div> */}
 
       {/* New Arrivals */}
       <div className="bg-base-200 py-12">

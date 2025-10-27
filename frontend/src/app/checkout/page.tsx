@@ -1,12 +1,13 @@
 // frontend/src/app/checkout/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { cartAPI, orderAPI, deliveryAPI } from "@/services/api";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useOrderStore } from "../store/useOrderStore";
 
 declare global {
   interface Window {
@@ -16,6 +17,7 @@ declare global {
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const {coupon, setCoupon} = useOrderStore();
   const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
 
   const [step, setStep] = useState<"address" | "payment">("address");
@@ -71,6 +73,7 @@ export default function CheckoutPage() {
         items,
         useCart: true,
         shippingAddress,
+        couponCode : coupon,
       });
       return res.data;
     },

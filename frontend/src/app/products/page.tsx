@@ -35,13 +35,19 @@ export default function ProductsPage() {
       category: searchParams.get('category') || '',
       priceRange: searchParams.get('price') || '',
     };
-    fetchProducts(initialFilters, 1);
+    setFilters(initialFilters);
     fetchCategories();
   }, []);
 
   useEffect(() => {
+    const query = new URLSearchParams();
+    if (filters.search) query.set('q', filters.search);
+    if (filters.sort) query.set('sort', filters.sort);
+    if (filters.category) query.set('category', filters.category);
+    if (filters.priceRange) query.set('price', filters.priceRange);
+    router.push(`${window.location.pathname}?${query.toString()}`);
     fetchProducts(filters, page);
-  }, [page]);
+  }, [filters, page]);
 
   // Fetch facets for filters
   const { data: facetsData } = useQuery({

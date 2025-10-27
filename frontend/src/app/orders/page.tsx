@@ -218,7 +218,7 @@ export default function OrdersPage() {
                     >
                       View Details
                     </Link>
-                    {order.status === "pending" && (
+                    {(order.status === "pending" || order.status === "confirmed" ) && (
                       <button
                         onClick={() => {
                           if (confirm("Are you sure you want to cancel this order?")) {
