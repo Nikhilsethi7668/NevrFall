@@ -1,10 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function FilterSidebar({ filters, facetsData, handleFilterChange, clearFilters, categories }: any) {
   const [openSections, setOpenSections] = useState<string[]>(['category', 'size', 'sleeves', 'price']);
+  
+  // Local state for pending filters (not yet applied)
+  const [pendingFilters, setPendingFilters] = useState({
+    category: '',
+    size: '',
+    sleeves: '',
+    price: 5000,
+  });
+
+  // Initialize pending filters from applied filters
+  useEffect(() => {
+    setPendingFilters({
+      category: filters.category || '',
+      size: filters.size || '',
+      sleeves: filters.sleeves || '',
+      price: filters.price || 5000,
+    });
+  }, [filters]);
 
   const toggleSection = (section: string) => {
     setOpenSections((prev) =>
@@ -13,6 +31,35 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
   };
 
   const isOpen = (section: string) => openSections.includes(section);
+
+  // Handle local filter changes (doesn't trigger API call)
+  const handleLocalFilterChange = (key: string, value: string | number) => {
+    setPendingFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Apply filters when Apply button is clicked
+  const applyFilters = () => {
+    // Apply each filter to the parent component
+    Object.keys(pendingFilters).forEach((key) => {
+      handleFilterChange(key, pendingFilters[key as keyof typeof pendingFilters]);
+    });
+  };
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setPendingFilters({
+      category: '',
+      size: '',
+      sleeves: '',
+      price: 5000,
+    });
+    clearFilters();
+  };
+
+  // Count active filters
+  const activeFilterCount = Object.values(pendingFilters).filter(
+    (value) => value !== '' && value !== 5000
+  ).length;
 
   return (
     <aside className='w-full lg:w-72 bg-white border-r sticky top-20 h-fit px-4 py-5'>
@@ -31,9 +78,9 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
             {categories?.map((cat: any) => (
                 <button
                   key={cat.id}
-                  onClick={() => handleFilterChange('category', cat.name)}
+                  onClick={() => handleLocalFilterChange('category', cat.name)}
                   className={`border px-3 py-1 text-sm ${
-                    filters.category === cat.name ? 'bg-black text-white' : 'hover:bg-gray-100'
+                    pendingFilters.category === cat.name ? 'bg-black text-white' : 'hover:bg-gray-100'
                   }`}
                 >
                   {cat.name}
@@ -57,9 +104,9 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
             {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL', '6XL'].map((size) => (
               <button
                 key={size}
-                onClick={() => handleFilterChange('size', size)}
+                onClick={() => handleLocalFilterChange('size', size)}
                 className={`border px-3 py-1 text-sm ${
-                  filters.size === size ? 'bg-black text-white' : 'hover:bg-gray-100'
+                  pendingFilters.size === size ? 'bg-black text-white' : 'hover:bg-gray-100'
                 }`}
               >
                 {size}
@@ -83,9 +130,9 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
             {['FULL SLEEVE', 'HALF SLEEVE'].map((sleeve) => (
               <button
                 key={sleeve}
-                onClick={() => handleFilterChange('sleeves', sleeve)}
+                onClick={() => handleLocalFilterChange('sleeves', sleeve)}
                 className={`border px-3 py-1 text-sm ${
-                  filters.sleeves === sleeve ? 'bg-black text-white' : 'hover:bg-gray-100'
+                  pendingFilters.sleeves === sleeve ? 'bg-black text-white' : 'hover:bg-gray-100'
                 }`}
               >
                 {sleeve}
@@ -109,13 +156,13 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
               type='range'
               min='0'
               max='5000'
-              value={filters.price || 5000}
+              value={pendingFilters.price}
               className='range range-sm'
-              onChange={(e) => handleFilterChange('price', e.target.value)}
+              onChange={(e) => handleLocalFilterChange('price', e.target.value)}
             />
             <div className='flex justify-between text-sm mt-1'>
               <span>₹0</span>
-              <span>₹5000</span>
+              <span>₹{pendingFilters.price}</span>
             </div>
           </div>
         )}
@@ -123,11 +170,11 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
 
       {/* Buttons */}
       <div className='flex gap-2 mt-6'>
-        <button onClick={clearFilters} className='btn btn-outline w-1/2'>
+        <button onClick={handleClearFilters} className='btn btn-outline w-1/2'>
           CLEAR
         </button>
-        <button className='btn btn-neutral w-1/2'>
-          APPLY (317)
+        <button onClick={applyFilters} className='btn btn-neutral w-1/2'>
+          APPLY {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
         </button>
       </div>
     </aside>

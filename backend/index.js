@@ -40,7 +40,7 @@ if (!fs.existsSync(uploadsDir)) {
 const isProd = process.env.PRODUCTION === "true";
 app.use(
   cors({
-    origin: ['http://13.61.7.132:3000', 'http://13.61.7.132:5173'],
+    origin: ['http://13.61.7.132:3000', 'http://13.61.7.132:5173', 'http://localhost:3000'],
     credentials: true,
   })
 );
@@ -91,7 +91,11 @@ const PORT = Number(process.env.PORT || 8080);
 (async () => {
   try {
     await connectDB();
-    await connectRedis();
+    try {
+      await connectRedis();
+    } catch (err) {
+      console.warn('Redis connection failed, continuing without cache:', err.message);
+    }
     const server = app.listen(PORT, () => {
       console.log(`Server started on PORT ${PORT}`);
     });

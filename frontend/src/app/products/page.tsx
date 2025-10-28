@@ -33,6 +33,9 @@ function ProductsPageContent() {
       search: searchParams.get('q') || '',
       sort: searchParams.get('sort') || 'newest',
       category: searchParams.get('category') || '',
+      size: searchParams.get('size') || '',
+      sleeves: searchParams.get('sleeves') || '',
+      price: searchParams.get('price') || '',
       priceRange: searchParams.get('price') || '',
     };
     setFilters(initialFilters);
@@ -44,6 +47,9 @@ function ProductsPageContent() {
     if (filters.search) query.set('q', filters.search);
     if (filters.sort) query.set('sort', filters.sort);
     if (filters.category) query.set('category', filters.category);
+    if (filters.size) query.set('size', filters.size);
+    if (filters.sleeves) query.set('sleeves', filters.sleeves);
+    if (filters.price) query.set('price', filters.price);
     if (filters.priceRange) query.set('price', filters.priceRange);
     router.push(`${window.location.pathname}?${query.toString()}`);
     fetchProducts(filters, page);
@@ -71,6 +77,9 @@ function ProductsPageContent() {
       search: '',
       sort: 'newest',
       category: '',
+      size: '',
+      sleeves: '',
+      price: '',
       priceRange: '',
     });
   };
