@@ -58,3 +58,12 @@
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-27T10:23:07.135Z"}
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-27T10:23:09.685Z"}
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-27T10:23:09.705Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-28T20:52:39.483Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-28T20:59:31.650Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-28T21:16:19.536Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-28T21:19:06.973Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-28T21:19:10.497Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-28T21:26:48.986Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-28T21:39:52.535Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-28T21:59:26.015Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-28T22:27:04.620Z"}
