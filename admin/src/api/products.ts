@@ -7,7 +7,7 @@ export const productApi = {
     page?: number;
     limit?: number;
   }): Promise<PaginatedResponse<Product>> => {
-    const { data } = await axios.get('/admin/products', { params });
+    const { data } = await axios.get('/api/admin/products', { params });
     return data;
   },
 
