@@ -41,7 +41,7 @@ export default function ReturnPage() {
       return returnAPI.create(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["returns"]);
+      queryClient.invalidateQueries({ queryKey: ["returns"] });
       alert("Return request submitted successfully");
       router.push("/returns");
     },
@@ -300,10 +300,10 @@ export default function ReturnPage() {
             </button>
             <button
               onClick={handleSubmitReturn}
-              disabled={createReturnMutation.isLoading || selectedItems.length === 0 || !returnReason}
+              disabled={createReturnMutation.isPending || selectedItems.length === 0 || !returnReason}
               className="btn btn-primary"
             >
-              {createReturnMutation.isLoading ? "Submitting..." : "Submit Return Request"}
+              {createReturnMutation.isPending ? "Submitting..." : "Submit Return Request"}
             </button>
           </div>
         </div>
