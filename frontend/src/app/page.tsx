@@ -140,55 +140,43 @@ export default function Home() {
       </div>
 
       {/* Hero Section */}
-      <div className="hero min-h-screen relative">
-        <div className="hero-content text-center text-white">
-            <div className="max-w-md">
-            <h1 className="text-5xl font-bold mb-4">NeverFall</h1>
-            <p className="text-xl mb-8">Your Ultimate Fashion Destination</p>
+        <div className="hero lg:min-h-screen relative">
+          <video
+            className="top-0 left-0 lg:w-full lg:h-full object-cover"
+            src="/hero.mp4"
+            autoPlay
+            loop
+            muted
+          />
+        </div>
+
+        {/* Trending Products */}
+        <div className="container mx-auto p-6">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-3xl font-bold">Trending Now</h2>
             <button
-              onClick={() => router.push("/products")}
-              className="btn btn-accent btn-lg"
+              onClick={() => router.push("/products?sort=trending")}
+              className="btn btn-outline"
             >
-              Shop Now
+              View All
             </button>
           </div>
+          {trendingLoading ? (
+            <LoadingSpinner size="lg" text="Loading trending products..." />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {trendingProducts?.items?.map((product: any) => (
+                <ProductCard key={product._id} product={product} />
+              ))}
+            </div>
+          )}
         </div>
-        <video
-          className="absolute top-0 left-0 w-full h-full object-cover"
-          src="/hero.mp4"
-          autoPlay
-          loop
-          muted
-        />
-      </div>
-
-      {/* Trending Products */}
-      <div className="container mx-auto p-6">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold">Trending Now</h2>
-          <button
-            onClick={() => router.push("/products?sort=trending")}
-            className="btn btn-outline"
-          >
-            View All
-          </button>
-        </div>
-        {trendingLoading ? (
-          <LoadingSpinner size="lg" text="Loading trending products..." />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {trendingProducts?.items?.map((product: any) => (
-              <ProductCard key={product._id} product={product} />
-            ))}
-          </div>
-        )}
-      </div>
-
       <ImageCarousel />
 
       <Categories />
 
       <div className="lg:col-span-3">
+        <h1 className="text-center font-semibold text-2xl my-2">Products</h1>
         {loading ? (
           <LoadingSpinner size="lg" text="Loading products..." />
         ) : products.length === 0 ? (

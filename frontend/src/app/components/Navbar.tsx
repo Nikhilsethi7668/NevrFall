@@ -11,9 +11,14 @@ import { IoMoonSharp, IoSunny } from "react-icons/io5";
 import { FaOpencart } from "react-icons/fa";
 import { BsBagHeartFill } from "react-icons/bs";
 import { useProfileStore } from '../store/useProfileStore';
+import { CiHome } from "react-icons/ci";
+import { IoShirtOutline } from "react-icons/io5";
+import { MdOutlineContactSupport } from "react-icons/md";
+import { GoPerson } from "react-icons/go";
 
 const Navbar = () => {
   const { theme, setTheme } = useTheme();
+  const [open, setOpen] = useState(false);
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { activeTab, setActiveTab } = useProfileStore();
@@ -66,19 +71,9 @@ const Navbar = () => {
   };
 
   return (
+    <>
     <div className="navbar bg-base-100/40 shadow-sm sticky top-0 z-10 backdrop-blur-md">
       <div className="navbar-start">
-        <div className="dropdown sm:hidden">
-          <div tabIndex={0} role="button" className="btn btn-ghost btn-circle">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h7" />
-            </svg>
-          </div>
-          <ul tabIndex={0} className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
-            <li><Link href='/products'>Products</Link></li>
-            <li><Link href='/contact'>Contact</Link></li>
-          </ul>
-        </div>
         <Link href="/" className="btn btn-ghost text-lg sm:text-xl">NeverFall</Link>
       </div>
 
@@ -120,28 +115,61 @@ const Navbar = () => {
             >
                 <BsBagHeartFill size={22}/>
             </button>
-
-            {isLoggedIn ? (
-              <div className="dropdown dropdown-end">
-                <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
-                  <div className="w-10 rounded-full">
-                    <div className="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
-                      {userData?.name?.charAt(0) || 'U'}
-                    </div>
+            
+           {isLoggedIn ? (
+            <div className="dropdown dropdown-end hidden sm:block">
+              <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
+                <div className="w-10 rounded-full">
+                  <div className="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
+                    {userData?.name?.charAt(0) || 'U'}
                   </div>
                 </div>
-                <ul tabIndex={0} className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
-                  <li><Link href="/profile">My Profile</Link></li>
-                  <li><Link href="/orders">My Orders</Link></li>
-                  <li><Link href="/returns">My Returns</Link></li>
-                  <li><button onClick={handleLogout}>Logout</button></li>
-                </ul>
               </div>
-            ) : (
-              <div className='ml-4'><LoginDialog/></div>
-            )}
+              <ul
+                tabIndex={0}
+                className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
+              >
+                <li><Link href="/profile">My Profile</Link></li>
+                <li><Link href="/orders">My Orders</Link></li>
+                <li><Link href="/returns">My Returns</Link></li>
+                <li><button onClick={handleLogout}>Logout</button></li>
+              </ul>
+            </div>
+          ) : (
+            <div className="ml-4 hidden sm:block">
+              <LoginDialog open={open} setOpen={setOpen} />
+            </div>
+          )}
         </div>
     </div>
+
+    <div className="dock dock-md md:hidden lg:hidden">
+      <button onClick={() => router.push('/')}>
+        <CiHome/>
+        <span className="dock-label">Home</span>
+      </button>
+      <button onClick={() => router.push('/products')}>
+        <IoShirtOutline/>
+        <span className="dock-label">Product</span>
+      </button>
+      <button onClick={() => router.push('/contact')}>
+        <MdOutlineContactSupport/>
+        <span className="dock-label">Contact</span>
+      </button>
+      <button onClick={() => {
+          if (!isLoggedIn){
+            setOpen(true)
+          } else {
+            router.push('/profile');
+            setActiveTab('profile');
+          }
+        }
+      }>
+        <GoPerson/>
+        <span className="dock-label">Profile</span>
+      </button>
+    </div>
+    </>
   )
 }
 

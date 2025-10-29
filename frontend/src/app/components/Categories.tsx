@@ -38,28 +38,31 @@ export default function Categories() {
   if (error) return <div>{error}</div>;
 
   return (
-    <div className="grid mt-2 mx-2 grid-cols-2 md:grid-cols-4 gap-4">
-      {categories.map((category) => (
-        <div
-          key={category._id}
-          className="relative cursor-pointer group rounded-xl overflow-hidden"
-          onClick={() => handleCategoryClick(category.name)}
-        >
-          <img
-            src={category.image}
-            alt={category.name}
-            className="h-48 sm:h-64 md:h-80 w-full object-cover object-center transition-all duration-300 group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-all duration-300"></div>
-          <h3
-            className={`absolute inset-0 flex items-center justify-center text-2xl font-semibold text-white drop-shadow-md transition-all duration-300 group-hover:scale-110
-              ${getCategoryStyle(category.name)}
-            `}
+    <>
+      <h1 className='text-center font-semibold text-2xl my-2'>Categories</h1>
+      <div className="grid my-2 mx-2 grid-cols-2 md:grid-cols-4 gap-4">
+        {categories.map((category) => (
+          <div
+            key={category._id}
+            className="relative cursor-pointer group rounded-xl overflow-hidden"
+            onClick={() => handleCategoryClick(category.name)}
           >
-            {category.name}
-          </h3>
-        </div>
-      ))}
-    </div>
+            <img
+              src={category.image}
+              alt={category.name}
+              className="h-48 sm:h-64 md:h-80 w-full object-cover object-center transition-all duration-300 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-all duration-300"></div>
+            <h3
+              className={`absolute inset-0 flex items-center justify-center text-2xl font-semibold text-white drop-shadow-md transition-all duration-300 group-hover:scale-110
+                ${getCategoryStyle(category.name)}
+              `}
+            >
+              {category.name}
+            </h3>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
