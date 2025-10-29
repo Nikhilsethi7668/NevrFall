@@ -48,7 +48,7 @@ export default function Categories() {
           <img
             src={category.image}
             alt={category.name}
-            className="h-80 w-full object-cover object-center transition-all duration-300 group-hover:scale-105"
+            className="h-48 sm:h-64 md:h-80 w-full object-cover object-center transition-all duration-300 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-all duration-300"></div>
           <h3
