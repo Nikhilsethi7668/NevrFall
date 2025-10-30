@@ -125,7 +125,7 @@ export default function OrderDetailsPage() {
             <div className="card bg-base-100 shadow">
               <div className="card-body p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row justify-between sm:items-start">
-                  <div class="mb-4 sm:mb-0">
+                  <div className="mb-4 sm:mb-0">
                     <h1 className="text-2xl font-bold">Order #{order._id.slice(-6)}</h1>
                     <p className="text-gray-600">
                       Placed on {new Date(order.createdAt).toLocaleDateString()}
