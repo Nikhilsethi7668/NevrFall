@@ -11,10 +11,8 @@ import { IoMoonSharp, IoSunny } from "react-icons/io5";
 import { FaOpencart } from "react-icons/fa";
 import { BsBagHeartFill } from "react-icons/bs";
 import { useProfileStore } from '../store/useProfileStore';
-import { CiHome } from "react-icons/ci";
-import { IoShirtOutline } from "react-icons/io5";
-import { MdOutlineContactSupport } from "react-icons/md";
-import { GoPerson } from "react-icons/go";
+import { CiMenuBurger } from "react-icons/ci";
+import ProfileCard from './ProfileCard';
 
 const Navbar = () => {
   const { theme, setTheme } = useTheme();
@@ -70,10 +68,37 @@ const Navbar = () => {
     }
   };
 
+  const closeDrawer = () => {
+    const drawer = document.getElementById('my-drawer-1') as HTMLInputElement | null;
+    if (drawer) {
+      drawer.checked = false;
+    }
+  };
+
   return (
     <>
     <div className="navbar bg-base-100/40 shadow-sm sticky top-0 z-10 backdrop-blur-md">
       <div className="navbar-start">
+        <div className="drawer md:hidden lg:hidden">
+          <input id="my-drawer-1" type="checkbox" className="drawer-toggle" />
+          <div className="drawer-content">
+            <label htmlFor="my-drawer-1" className="btn drawer-button"><CiMenuBurger/></label>
+          </div>
+          <div className="drawer-side">
+            <label htmlFor="my-drawer-1" aria-label="close sidebar" className="drawer-overlay"></label>
+            <ul className="menu bg-base-200 min-h-full w-64 p-4">
+              {isLoggedIn ? (
+                <ProfileCard />
+              ) : (
+                <li className="ml-4" onClick={closeDrawer}>
+                  <LoginDialog open={open} setOpen={setOpen} />
+                </li>
+              )}
+              <li><Link href='/products'>Products</Link></li>
+              <li><Link href='/contact'>Contact</Link></li>
+            </ul>
+          </div>
+        </div>
         <Link href="/" className="btn btn-ghost text-lg sm:text-xl">NeverFall</Link>
       </div>
 
@@ -127,7 +152,7 @@ const Navbar = () => {
               </div>
               <ul
                 tabIndex={0}
-                className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
+                className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
               >
                 <li><Link href="/profile">My Profile</Link></li>
                 <li><Link href="/orders">My Orders</Link></li>
@@ -141,33 +166,6 @@ const Navbar = () => {
             </div>
           )}
         </div>
-    </div>
-
-    <div className="dock dock-md md:hidden lg:hidden">
-      <button onClick={() => router.push('/')}>
-        <CiHome/>
-        <span className="dock-label">Home</span>
-      </button>
-      <button onClick={() => router.push('/products')}>
-        <IoShirtOutline/>
-        <span className="dock-label">Product</span>
-      </button>
-      <button onClick={() => router.push('/contact')}>
-        <MdOutlineContactSupport/>
-        <span className="dock-label">Contact</span>
-      </button>
-      <button onClick={() => {
-          if (!isLoggedIn){
-            setOpen(true)
-          } else {
-            router.push('/profile');
-            setActiveTab('profile');
-          }
-        }
-      }>
-        <GoPerson/>
-        <span className="dock-label">Profile</span>
-      </button>
     </div>
     </>
   )

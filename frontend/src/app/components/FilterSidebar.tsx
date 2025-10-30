@@ -185,7 +185,7 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
 
       <Dialog.Root open={isFilterBar} onOpenChange={setIsFilterBar}>
         <Dialog.Trigger asChild>
-          <button className="lg:hidden"><GiSettingsKnobs /></button>
+          <button className="md:hidden lg:hidden"><GiSettingsKnobs /></button>
         </Dialog.Trigger>
   
         <Dialog.Portal>

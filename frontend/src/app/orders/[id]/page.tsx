@@ -114,7 +114,7 @@ export default function OrderDetailsPage() {
             <li>
               <Link href="/orders">Orders</Link>
             </li>
-            <li>Order #{order?._id}</li>
+            <li>Order #{order?._id.slice(-6)}</li>
           </ul>
         </div>
 
@@ -123,16 +123,16 @@ export default function OrderDetailsPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Order Header */}
             <div className="card bg-base-100 shadow">
-              <div className="card-body">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h1 className="text-2xl font-bold">Order #{order._id}</h1>
+              <div className="card-body p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-start">
+                  <div class="mb-4 sm:mb-0">
+                    <h1 className="text-2xl font-bold">Order #{order._id.slice(-6)}</h1>
                     <p className="text-gray-600">
                       Placed on {new Date(order.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <div className={`badge ${getStatusBadge(order.status)} text-lg`}>
+                  <div className="text-left sm:text-right">
+                    <div className={`badge ${getStatusBadge(order.status)} text-lg mb-1`}>
                       {getStatusText(order.status)}
                     </div>
                     <p className="text-2xl font-bold mt-2">₹{order.total}</p>
@@ -143,7 +143,7 @@ export default function OrderDetailsPage() {
 
             {/* Order Progress */}
             <div className="card bg-base-100 shadow">
-              <div className="card-body">
+              <div className="card-body p-4 sm:p-6">
                 <h2 className="card-title mb-4">Order Progress</h2>
                 <ul className="steps steps-vertical lg:steps-horizontal w-full">
                   {steps.map((step, index) => (
@@ -162,15 +162,15 @@ export default function OrderDetailsPage() {
 
             {/* Order Items */}
             <div className="card bg-base-100 shadow">
-              <div className="card-body">
+              <div className="card-body p-4 sm:p-6">
                 <h2 className="card-title mb-4">Order Items</h2>
                 <div className="space-y-4">
                   {order.items.map((item: any, index: number) => (
-                    <div key={index} className="flex gap-4 p-4 bg-base-200 rounded-lg">
+                    <div key={index} className="flex flex-col sm:flex-row gap-4 p-4 bg-base-200 rounded-lg">
                       <img
                         src={item.product?.coverImage || "/placeholder.png"}
                         alt={item.title}
-                        className="w-20 h-20 object-cover rounded"
+                        className="w-full h-48 sm:w-24 sm:h-24 object-cover rounded"
                       />
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg">{item.title}</h3>
@@ -181,9 +181,8 @@ export default function OrderDetailsPage() {
                           Size: {item.size} | Color: {item.color}
                         </p>
                         <p className="text-gray-600">Quantity: {item.quantity}</p>
-                        <p className="text-lg font-bold">₹{item.price}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-left sm:text-right mt-4 sm:mt-0">
                         <p className="text-lg font-bold">
                           ₹{(item.price * item.quantity).toFixed(2)}
                         </p>
@@ -197,7 +196,7 @@ export default function OrderDetailsPage() {
             {/* Shipping Address */}
             {order.shippingAddress && (
               <div className="card bg-base-100 shadow">
-                <div className="card-body">
+                <div className="card-body p-4 sm:p-6">
                   <h2 className="card-title mb-4">Shipping Address</h2>
                   <div className="text-gray-700">
                     <p className="font-semibold text-lg">{order.shippingAddress.name}</p>
@@ -215,7 +214,7 @@ export default function OrderDetailsPage() {
 
             {/* Payment Details */}
             <div className="card bg-base-100 shadow">
-              <div className="card-body">
+              <div className="card-body p-4 sm:p-6">
                 <h2 className="card-title mb-4">Payment Details</h2>
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -253,7 +252,7 @@ export default function OrderDetailsPage() {
           {/* Order Actions */}
           <div className="lg:col-span-1">
             <div className="card bg-base-200 sticky top-20">
-              <div className="card-body">
+              <div className="card-body p-4 sm:p-6">
                 <h2 className="card-title mb-4">Order Actions</h2>
                 <div className="space-y-3">
                   {order.status === "pending" && (

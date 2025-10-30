@@ -8,6 +8,7 @@ import { cartAPI, couponAPI } from "@/services/api";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useOrderStore } from "../store/useOrderStore";
+import { RiDeleteBin6Line } from "react-icons/ri";
 
 export default function CartPage() {
   const router = useRouter();
@@ -159,7 +160,7 @@ export default function CartPage() {
     <>
       <Navbar />
       <div className="container mx-auto p-4">
-        <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
+        <h1 className="text-2xl lg:text-3xl font-bold mb-8">Shopping Cart</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
@@ -167,25 +168,30 @@ export default function CartPage() {
             {cart.items.map((item: any) => (
               <div key={item.variant} className="card bg-base-100 shadow">
                 <div className="card-body">
-                  <div className="flex gap-4">
-                    <img
-                      src={item.product?.coverImage || "/placeholder.png"}
-                      alt={item.title}
-                      className="w-24 h-24 object-cover rounded"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg">{item.title}</h3>
-                      <p className="text-sm text-gray-600">
-                        Color: {item.color} | Size: {item.size}
-                      </p>
-                      <p className="text-lg font-semibold mt-2">₹{item.price}</p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div
+                      className="flex gap-4 flex-1 cursor-pointer"
+                      onClick={() => router.push(`/products/${item.product._id}`)}
+                    >
+                      <img
+                        src={item.product?.coverImage || "/placeholder.png"}
+                        alt={item.title}
+                        className="w-24 h-24 object-cover rounded"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-bold text-sm sm:text-lg">{item.title}</h3>
+                        <p className="text-sm text-gray-600">
+                          Color: {item.color} | Size: {item.size}
+                        </p>
+                        <p className="text-lg font-semibold mt-2">₹{item.price}</p>
+                      </div>
                     </div>
-                    <div className="flex flex-col items-end justify-between">
+                    <div className="flex justify-between items-center w-full sm:w-auto sm:flex-col sm:items-end sm:justify-between">
                       <button
                         onClick={() => removeItemMutation.mutate(item.variant)}
                         className="btn btn-ghost btn-sm btn-circle"
                       >
-                        ✕
+                        <RiDeleteBin6Line className="text-red-500" size={20} />
                       </button>
                       <div className="flex items-center gap-2">
                         <button

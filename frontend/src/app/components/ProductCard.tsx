@@ -90,15 +90,8 @@ export default function ProductCard({
           <img
             src={`http://13.61.7.132:8080/${product.coverImage}` || "/placeholder.png"}
             alt={product.title}
-            className="w-full h-80 object-cover"
+            className="w-full h-40 lg:h-80 object-cover"
           />
-          {product.compareAtFrom && (
-            <div className="absolute top-2 left-2">
-              <div className="badge badge-error">
-                {Math.round(((product.compareAtFrom - product.priceFrom) / product.compareAtFrom) * 100)}% OFF
-              </div>
-            </div>
-          )}
           {showWishlist && (
             <button
               onClick={handleAddToWishlist}
@@ -111,19 +104,14 @@ export default function ProductCard({
           )}
         </figure>
         <div className="card-body">
-          <h2 className="card-title text-lg line-clamp-2">{product.title}</h2>
+          <h2 className="card-title text-sm lg:text-lg line-clamp-1 lg:line-clamp-2">{product.title}</h2>
           {product.brand && (
             <p className="text-sm text-gray-600">{product.brand}</p>
           )}
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-primary">
+            <span className="text-lg lg:text-xl font-bold text-primary">
               ₹{product.priceFrom}
             </span>
-            {product.compareAtFrom && (
-              <span className="text-sm line-through text-gray-500">
-                ₹{product.compareAtFrom}
-              </span>
-            )}
           </div>
           {/* <div className="card-actions justify-between items-center mt-2">
             <div className="badge badge-outline">

@@ -91,7 +91,7 @@ export default function Home() {
             {recommendedLoading ? (
               <LoadingSpinner size="lg" text="Loading recommendations..." />
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 lg:gap-6">
                 {recommendedProducts?.items?.map((product: any) => (
                   <ProductCard key={product._id} product={product} />
                 ))}
@@ -107,7 +107,7 @@ export default function Home() {
         {featuredLoading ? (
           <LoadingSpinner size="lg" text="Loading featured products..." />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-6">
             {featuredProducts?.items?.map((product: any) => (
               <ProductCard key={product._id} product={product} />
             ))}
@@ -130,7 +130,7 @@ export default function Home() {
           {newArrivalsLoading ? (
             <LoadingSpinner size="lg" text="Loading new arrivals..." />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 lg:gap-6">
               {newArrivals?.items?.map((product: any) => (
                 <ProductCard key={product._id} product={product} />
               ))}
@@ -164,7 +164,7 @@ export default function Home() {
           {trendingLoading ? (
             <LoadingSpinner size="lg" text="Loading trending products..." />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 lg:gap-6">
               {trendingProducts?.items?.map((product: any) => (
                 <ProductCard key={product._id} product={product} />
               ))}
@@ -174,52 +174,53 @@ export default function Home() {
       <ImageCarousel />
 
       <Categories />
-
-      <div className="lg:col-span-3">
-        <h1 className="text-center font-semibold text-2xl my-2">Products</h1>
-        {loading ? (
-          <LoadingSpinner size="lg" text="Loading products..." />
-        ) : products.length === 0 ? (
-          <div className="text-center py-16">
-            <h2 className="text-2xl font-bold mb-4">No products found</h2>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {products.map((product: any) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
+      
+      <div className="container mx-auto p-6">
+        <div className="lg:col-span-3">
+          <h1 className="text-center font-semibold text-2xl my-2">Products</h1>
+          {loading ? (
+            <LoadingSpinner size="lg" text="Loading products..." />
+          ) : products.length === 0 ? (
+            <div className="text-center py-16">
+              <h2 className="text-2xl font-bold mb-4">No products found</h2>
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 lg:gap-6">
+                {products.map((product: any) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
 
-            {/* Pagination */}
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              className="mt-8"
-            />
-          </>
-        )}
+              {/* Pagination */}
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                className="mt-8"
+              />
+            </>
+          )}
+        </div>
       </div>
-
       {/* Features Section */}
       <div className="bg-base-200 py-12">
         <div className="container mx-auto p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-3 gap-8">
             <div className="text-center">
               <div className="text-4xl mb-4">🚚</div>
-              <h3 className="text-xl font-semibold mb-2">Free Shipping</h3>
-              <p className="text-gray-600">On orders over ₹999</p>
+              <h3 className="text-md lg:text-xl font-semibold mb-2">Free Shipping</h3>
+              <p className="text-gray-600 text-sm">On orders over ₹999</p>
             </div>
             <div className="text-center">
               <div className="text-4xl mb-4">↩️</div>
-              <h3 className="text-xl font-semibold mb-2">Easy Returns</h3>
-              <p className="text-gray-600">30-day return policy</p>
+              <h3 className="text-md lg:text-xl font-semibold mb-2">Easy Returns</h3>
+              <p className="text-gray-600 text-sm">30-day return policy</p>
             </div>
             <div className="text-center">
               <div className="text-4xl mb-4">🔒</div>
-              <h3 className="text-xl font-semibold mb-2">Secure Payment</h3>
-              <p className="text-gray-600">100% secure transactions</p>
+              <h3 className="text-md lg:text-xl font-semibold mb-2">Secure Payment</h3>
+              <p className="text-gray-600 text-sm">100% secure transactions</p>
             </div>
           </div>
         </div>
