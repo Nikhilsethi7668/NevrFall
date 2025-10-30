@@ -6,7 +6,7 @@ import Order from "../Models/Order.js";
 import Payment from "../Models/Payments.js";
 import WalletTransaction from "../Models/WalletTransaction.js";
 import ProductVariant from "../Models/ProductVariant.js";
-import { scheduleCourierPickup } from "../Services/delivery.service.js"; // stub
+// import { scheduleCourierPickup } from "../Services/delivery.service.js"; // stub
 import { createOrderFromSelection } from "../Services/orderService.js"; // service below
 import {
   holdWalletAmount,

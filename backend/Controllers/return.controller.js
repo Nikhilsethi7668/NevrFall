@@ -7,7 +7,7 @@ import User from "../Models/User.js";
 import ProductVariant from "../Models/ProductVariant.js";
 import WalletTransaction from "../Models/WalletTransaction.js";
 // import { computeFraudScore } from "../Controllers/exchange.controller.js";
-import { scheduleCourierPickup } from "../Services/delivery.service.js";
+// import { scheduleCourierPickup } from "../Services/delivery.service.js";
 import { getActiveGatewayAdapter } from "../Services/gatewayFactory.js";
 import logger from "../utils/logger.js";
 

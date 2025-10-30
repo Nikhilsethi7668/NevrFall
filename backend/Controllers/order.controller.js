@@ -12,6 +12,7 @@ import { getActiveGatewayAdapter } from "../Services/gatewayFactory.js";
 import { cacheGet, cacheSet, cacheDelPattern } from "../lib/cache.js";
 import { redis } from "../lib/redis.js";
 import logger from "../utils/logger.js";
+import { isAdmin } from "../Middlewares/auth.js";
 
 // ========== UTILITY FUNCTIONS ==========
 
@@ -108,7 +109,7 @@ async function checkActivePaymentSession(orderId, currentSessionId = null) {
 }
 
 async function validateUserOwnership(
-  resource,
+  resource, //order or cart
   userId,
   resourceType = "resource"
 ) {
@@ -971,7 +972,8 @@ export const cancelOrder = async (req, res) => {
       const order = await Order.findById(id).session(session);
       if (!order) throw new Error("Order not found");
 
-      validateUserOwnership(order, req.user.id, "order");
+      if (req.user.role === "user")
+        validateUserOwnership(order, req.user.id, "order");
 
       if (!["pending", "confirmed"].includes(order.status)) {
         throw new Error("Order cannot be cancelled");
