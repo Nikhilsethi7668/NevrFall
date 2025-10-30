@@ -1,8 +1,6 @@
 import mongoose from "mongoose";
 import Product from "../Models/Product.js";
-// import mongoose from "mongoose";
 import Cart from "../Models/Cart.js";
-// import Product from "../Models/Product.js";
 import { cacheGet, cacheSet, cacheKeyFromReq } from "../lib/cache.js";
 
 export const getRecommendationsByProductId = async (req, res) => {
@@ -69,8 +67,6 @@ export const getRecommendationsByProductId = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
-// adjust path: cache.service.js should export cacheGet/cacheSet/cacheKeyFromReq as you provided
 
 export const getRecommendationsForUserCart = async (req, res) => {
   try {
