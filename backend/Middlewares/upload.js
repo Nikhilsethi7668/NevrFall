@@ -20,7 +20,7 @@ const fileFilter = (req, file, cb) => {
 export const upload = multer({
   storage: multerS3({
     s3: s3,
-    bucket: process.env.MEDIA_BUCKET || "your-production-bucket",
+    bucket: process.env.AWS_BUCKET_NAME || "neverfall-image-bucket",
     contentType: multerS3.AUTO_CONTENT_TYPE,
     metadata: function (req, file, cb) {
       cb(null, {fieldName: file.fieldname});
