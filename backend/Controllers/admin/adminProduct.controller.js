@@ -190,8 +190,8 @@ export const createProduct = async (req, res) => {
       isTrending,
     } = req.body;
 
-    const coverImage = req.files.coverImage ? req.files.coverImage[0].path : '';
-    const imageFiles = req.files.imageFiles ? req.files.imageFiles.map(file => ({ url: file.path, alt: '' })) : [];
+    const coverImage = req.files.coverImage ? req.files.coverImage[0].location : '';
+    const imageFiles = req.files.imageFiles ? req.files.imageFiles.map(file => ({ url: file.location, alt: '' })) : [];
 
     // Validation
     if (!title || !slug || !color || !colorLabel || !coverImage) {
@@ -321,11 +321,11 @@ export const updateProduct = async (req, res) => {
     const updateData = { ...req.body };
 
     if (req.files.coverImage) {
-      updateData.coverImage = req.files.coverImage[0].path;
+      updateData.coverImage = req.files.coverImage[0].location;
     }
 
     if (req.files.imageFiles) {
-      const newImages = req.files.imageFiles.map(file => ({ url: file.path, alt: '' }));
+      const newImages = req.files.imageFiles.map(file => ({ url: file.location, alt: '' }));
       updateData.images = [...(updateData.images || []), ...newImages];
     }
 
