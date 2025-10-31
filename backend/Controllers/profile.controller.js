@@ -27,7 +27,10 @@ export const updateProfile = async (req, res) => {
 export const walletHistory = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    return res.json({ walletHistory });
+    const walletHistory = await WalletTransaction.find({ user: user.id })
+      .sort({ createdAt: -1 })
+      .limit(50);
+    return res.status(200).json({ ok: true, walletHistory });
   } catch (error) {
     console.error("Error getting wallet history:", error);
     return res.status(500).json({ error: "Internal server error" });

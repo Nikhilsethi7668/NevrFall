@@ -7,4 +7,6 @@ const router = express.Router();
 router.post("/webhook/razorpay", verifyPayment);
 router.post("/webhook/payu", verifyPayment);
 
+//Wallet history
+router.get("/wallet/history", auth, walletHistory);
 export default router;
