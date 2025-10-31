@@ -43,7 +43,7 @@ export default function OrdersPage() {
       return orderAPI.cancel(orderId, { reason: "Customer requested cancellation" });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["orders"]);
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       alert("Order cancelled successfully");
     },
     onError: (error: any) => {
@@ -124,12 +124,12 @@ export default function OrdersPage() {
     <>
       <Navbar />
       <div className="container mx-auto p-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">My Orders</h1>
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6">
+          <h1 className="text-3xl font-bold mb-4 sm:mb-0">My Orders</h1>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="select select-bordered"
+            className="select select-bordered w-full sm:w-auto"
           >
             <option value="all">All Orders</option>
             <option value="pending">Pending</option>
@@ -157,37 +157,37 @@ export default function OrdersPage() {
           <div className="space-y-6">
             {orders && orders.map((order: any) => (
               <div key={order._id} className="card bg-base-100 shadow">
-                <div className="card-body">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">Order #{order._id}</h3>
+                <div className="card-body p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-4">
+                    <div className="mb-4 sm:mb-0">
+                      <h3 className="text-lg font-semibold">Order #{order._id.slice(-6)}</h3>
                       <p className="text-sm text-gray-600">
                         Placed on {new Date(order.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <div className={`badge ${getStatusBadge(order.status)}`}>
+                    <div className="text-left sm:text-right">
+                      <div className={`badge ${getStatusBadge(order.status)} mb-1`}>
                         {getStatusText(order.status)}
                       </div>
-                      <p className="text-lg font-bold mt-1">₹{order?.total}</p>
+                      <p className="text-lg font-bold">₹{order?.total}</p>
                     </div>
                   </div>
 
                   {/* Order Items */}
                   <div className="space-y-3 mb-4">
                     {order.items.map((item: any, index: number) => (
-                      <div key={index} className="flex gap-4 p-3 bg-base-200 rounded-lg">
+                      <div key={index} className="flex flex-col sm:flex-row gap-4 p-3 bg-base-200 rounded-lg">
                         <img
                           src={item.product?.coverImage || "/placeholder.png"}
                           alt={item.title}
-                          className="w-16 h-16 object-cover rounded"
+                          className="w-full h-48 sm:w-24 sm:h-24 object-cover rounded"
                         />
                         <div className="flex-1">
                           <h4 className="font-semibold">{item.title}</h4>
                           <p className="text-sm text-gray-600">
                             Size: {item.size} | Color: {item.color} | Qty: {item.quantity}
                           </p>
-                          <p className="font-semibold">₹{item.price}</p>
+                          <p className="font-semibold mt-2">₹{item.price}</p>
                         </div>
                       </div>
                     ))}
@@ -211,10 +211,10 @@ export default function OrdersPage() {
                   )}
 
                   {/* Order Actions */}
-                  <div className="flex gap-2 justify-end">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
                     <Link
                       href={`/orders/${order._id}`}
-                      className="btn btn-outline btn-sm"
+                      className="btn btn-outline btn-sm w-full sm:w-auto"
                     >
                       View Details
                     </Link>
@@ -225,8 +225,8 @@ export default function OrdersPage() {
                             cancelOrderMutation.mutate(order._id);
                           }
                         }}
-                        disabled={cancelOrderMutation.isLoading}
-                        className="btn btn-error btn-sm"
+                        disabled={cancelOrderMutation.isPending}
+                        className="btn btn-error btn-sm w-full sm:w-auto"
                       >
                         Cancel Order
                       </button>
@@ -234,7 +234,7 @@ export default function OrdersPage() {
                     {order.status === "delivered" && (
                       <Link
                         href={`/return?orderId=${order._id}`}
-                        className="btn btn-warning btn-sm"
+                        className="btn btn-warning btn-sm w-full sm:w-auto"
                       >
                         Return
                       </Link>

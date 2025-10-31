@@ -67,8 +67,9 @@ const listSelect = {
 const buildFilter = async (q) => {
   const filter = {};
 
-  // Handle category filtering by primaryCategoryId
-  const categories = toArr(q.categories);
+  // Handle category filtering by primaryCategoryId (support both singular and plural)
+  const categoryParam = q.category || q.categories;
+  const categories = toArr(categoryParam);
   if (categories.length) {
     // Convert category names/slugs to ObjectIds
     const categoryIds = [];
@@ -105,16 +106,26 @@ const buildFilter = async (q) => {
   const colors = toArr(q.colors);
   if (colors.length) filter.color = { $in: colors.map((c) => c.toLowerCase()) };
 
-  const sizes = toArr(q.sizes);
+  // Handle sizes (support both singular and plural)
+  const sizeParam = q.size || q.sizes;
+  const sizes = toArr(sizeParam);
   if (sizes.length)
     filter.availableSizes = { $in: sizes.map((s) => s.toUpperCase()) };
 
-  const tags = toArr(q.tags);
-  if (tags.length) filter.tags = { $in: tags.map((t) => t.toLowerCase()) }; // only if Product has tags
+  // Handle tags and sleeves (support both singular and plural)
+  const tagParam = q.tag || q.tags || q.sleeve || q.sleeves;
+  const tags = toArr(tagParam);
+  if (tags.length) filter.tags = { $in: tags.map((t) => t.toLowerCase()) };
 
-  // price range applies to priceFrom
+  // price range applies to priceFrom (handle both price and priceMin/priceMax)
   const priceMin = toNum(q.priceMin, null);
-  const priceMax = toNum(q.priceMax, null);
+  let priceMax = toNum(q.priceMax, null);
+  
+  // If single 'price' param is provided, use it as max
+  if (q.price && priceMax === null) {
+    priceMax = toNum(q.price, null);
+  }
+  
   if (priceMin !== null || priceMax !== null) {
     filter.priceFrom = {};
     if (priceMin !== null) filter.priceFrom.$gte = priceMin;

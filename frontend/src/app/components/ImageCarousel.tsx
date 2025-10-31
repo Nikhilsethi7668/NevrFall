@@ -29,7 +29,7 @@ const ImageCarousel = () => {
   const prevSlide = () => setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
 
   return (
-    <div className="relative w-full h-screen sm:h-[70vh] md:h-screen overflow-hidden rounded-xl">
+    <div className="relative w-full h-[50vh] sm:h-[60vh] md:h-[70vh] overflow-hidden rounded-xl">
       {/* Slides */}
       {slides.map((slide, index) => (
         <div
@@ -50,10 +50,10 @@ const ImageCarousel = () => {
 
       {/* Navigation Buttons */}
       <div className="absolute flex justify-between items-center w-full px-4 top-1/2 -translate-y-1/2">
-        <button onClick={prevSlide} className="btn btn-circle opacity-70 hover:opacity-100">
+        <button onClick={prevSlide} className="btn btn-circle btn-sm sm:btn-md opacity-70 hover:opacity-100">
           ❮
         </button>
-        <button onClick={nextSlide} className="btn btn-circle opacity-70 hover:opacity-100">
+        <button onClick={nextSlide} className="btn btn-circle btn-sm sm:btn-md opacity-70 hover:opacity-100">
           ❯
         </button>
       </div>
@@ -64,7 +64,7 @@ const ImageCarousel = () => {
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            className={`w-3 h-3 rounded-full transition-all ${
+            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all ${
               i === current ? "bg-primary" : "bg-gray-400"
             }`}
           />

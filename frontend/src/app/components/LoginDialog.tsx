@@ -7,9 +7,8 @@ import { LOGOUT, SEND_OTP, VERIFY_OTP, AUTH_TOKEN_KEY, USER_ID_KEY } from "../co
 import * as Dialog from "@radix-ui/react-dialog";
 import { toast } from "react-toastify";
 
-export default function LoginDialog() {
+export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"request" | "verify" | "loggedin">("request");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");

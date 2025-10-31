@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { productAPI } from '@/services/api';
 
@@ -23,6 +22,9 @@ export const useProductStore = create<ProductState>((set, get) => ({
     search: '',
     sort: '',
     category: '',
+    size: '',
+    sleeves: '',
+    price: '',
     priceRange: '',
   },
 

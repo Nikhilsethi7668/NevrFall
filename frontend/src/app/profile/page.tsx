@@ -13,6 +13,8 @@ import { BsBagHeartFill } from "react-icons/bs";
 import { FaBox } from "react-icons/fa6";
 import { LuBadgeIndianRupee } from "react-icons/lu";
 import { FaStar } from "react-icons/fa6";
+import { FaAngleLeft } from "react-icons/fa6";
+import { FaChevronRight } from "react-icons/fa";
 
 
 export default function ProfilePage() {
@@ -60,7 +62,7 @@ export default function ProfilePage() {
       return Promise.resolve({ data: { ...user, ...data } });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["user"]);
+      queryClient.invalidateQueries({ queryKey: ["user"] });
       setIsEditing(false);
       alert("Profile updated successfully");
     },
@@ -72,7 +74,7 @@ export default function ProfilePage() {
       return wishlistAPI.remove({ productId });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["wishlist"]);
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
     },
   });
 
@@ -147,7 +149,7 @@ export default function ProfilePage() {
     <>
       <Navbar />
       <div className="container mx-auto p-4">
-        <div className="flex justify-between items-center mb-6">
+        <div className="hidden sm:block flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">My Profile</h1>
           <button onClick={handleLogout} className="btn btn-error">
             Logout
@@ -156,7 +158,7 @@ export default function ProfilePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar */}
-          <div className="lg:col-span-1">
+          <div className="hidden sm:block lg:col-span-1">
             <div className="card bg-base-200">
               <div className="card-body">
                 <ul className="menu">
@@ -164,7 +166,7 @@ export default function ProfilePage() {
                     <button
                       onClick={() => setActiveTab("overview")}
                       className={`btn btn-ghost justify-start ${
-                        activeTab === "profile" ? "btn-active" : ""
+                        activeTab === "overview" ? "btn-active" : ""
                       }`}
                     >
                       Overview
@@ -220,6 +222,16 @@ export default function ProfilePage() {
                       Ratings & Reviews
                     </button>
                   </li>
+                  <li>
+                    <button
+                      onClick={() => setActiveTab("wallet")}
+                      className={`btn btn-ghost justify-start ${
+                        activeTab === "wallet" ? "btn-active" : ""
+                      }`}
+                    >
+                      Wallet
+                    </button>
+                  </li>
                 </ul>
               </div>
             </div>
@@ -227,7 +239,7 @@ export default function ProfilePage() {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            
+            { activeTab !== "" && <span><FaAngleLeft onClick={() => setActiveTab('')} size={20} className="lg:hidden mr-2 mb-2"/></span>}
             {activeTab === "overview" && (
               <div className="card bg-base-100 shadow">
                 <div className="card-body">
@@ -252,6 +264,10 @@ export default function ProfilePage() {
                     <div onClick={() => setActiveTab('reviews')} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
                       <FaStar size={30}/>
                       <p>Manage Your reviews</p>
+                    </div>
+                    <div onClick={() => setActiveTab('wallet')} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
+                      <FaStar size={30}/>
+                      <p>Amount in your wallet</p>
                     </div>
                   </div>
                 </div>
@@ -321,10 +337,10 @@ export default function ProfilePage() {
                       <div className="flex gap-2">
                         <button
                           onClick={handleSaveProfile}
-                          disabled={updateProfileMutation.isLoading}
+                          disabled={updateProfileMutation.isPending}
                           className="btn btn-primary"
                         >
-                          {updateProfileMutation.isLoading ? "Saving..." : "Save Changes"}
+                          {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
                         </button>
                         <button
                           onClick={() => setIsEditing(false)}
@@ -451,9 +467,75 @@ export default function ProfilePage() {
                 </div>
               </div>
             )}
+
+            {activeTab === "wallet" && (
+              <div className="card bg-base-100 shadow">
+                <div className="card-body">
+                  <h2 className="card-title mb-6">Wallet</h2>
+                  <p className="text-gray-600 mb-4">
+                    Your wallet amount is : ₹0.00
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
+      
+      {/* Sidebar */}
+      {activeTab === "" && <div className="md:hidden lg:hidden">
+        <ul>
+          <li onClick={() => setActiveTab("profile")} className="flex flex-row justify-between rounded p-2 items-center mb-2">
+            <button
+              className='btn btn-ghost justify-start'
+            >
+              Profile
+            </button>
+            <FaChevronRight className='mr-2' />
+          </li>
+          <li onClick={() => setActiveTab("wishlist")} className="flex flex-row justify-between rounded p-2 items-center mb-2">
+            <button
+              className='btn btn-ghost justify-start'
+            >
+              Wishlist
+            </button>
+            <FaChevronRight className='mr-2' />
+          </li>
+          <li onClick={() => setActiveTab("orders")} className="flex flex-row justify-between rounded p-2 items-center mb-2">
+            <button
+              className='btn btn-ghost justify-start'
+            >
+              Orders
+            </button>
+            <FaChevronRight className='mr-2' />
+          </li>
+          <li onClick={() => setActiveTab("refunds")} className="flex flex-row justify-between rounded p-2 items-center mb-2">
+            <button
+              className='btn btn-ghost justify-start'
+            >
+              Refunds
+            </button>
+            <FaChevronRight className='mr-2' />
+          </li>
+          <li onClick={() => setActiveTab("reviews")} className="flex flex-row justify-between rounded p-2 items-center mb-2">
+            <button
+              className='btn btn-ghost justify-start'
+            >
+              Ratings & Reviews
+            </button>
+            <FaChevronRight className='mr-2' />
+          </li>
+          <li onClick={() => setActiveTab("wallet")} className="flex flex-row justify-between rounded p-2 items-center mb-2">
+            <button
+              className='btn btn-ghost justify-start'
+            >
+              Wallet
+            </button>
+            <FaChevronRight className='mr-2' />
+          </li>
+        </ul>
+      </div>}
+
       <Footer />
     </>
   );

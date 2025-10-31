@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { orderAPI, returnAPI } from "@/services/api";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
-export default function ReturnPage() {
+function ReturnPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const orderId = searchParams.get("orderId");
   const [mounted, setMounted] = useState(false);
+  const [index, setIndex] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -40,7 +41,7 @@ export default function ReturnPage() {
       return returnAPI.create(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["returns"]);
+      queryClient.invalidateQueries({ queryKey: ["returns"] });
       alert("Return request submitted successfully");
       router.push("/returns");
     },
@@ -74,6 +75,7 @@ export default function ReturnPage() {
 
     const returnData = {
       orderId,
+      orderItemIndex: index,
       items: selectedItems.map((itemId) => {
         const item = order.items.find((i: any) => i._id === itemId);
         return {
@@ -176,13 +178,13 @@ export default function ReturnPage() {
             <div className="card-body">
               <h2 className="card-title mb-4">Select Items to Return</h2>
               <div className="space-y-4">
-                {order.items.map((item: any) => (
+                {order.items.map((item: any , index: number) => (
                   <div key={item._id} className="flex items-center gap-4 p-4 bg-base-200 rounded-lg">
                     <input
                       type="checkbox"
                       className="checkbox checkbox-primary"
                       checked={selectedItems.includes(item._id)}
-                      onChange={() => handleItemToggle(item._id)}
+                      onChange={() => {handleItemToggle(item._id); setIndex(index);}}
                     />
                     <img
                       src={item.product?.coverImage || "/placeholder.png"}
@@ -298,15 +300,35 @@ export default function ReturnPage() {
             </button>
             <button
               onClick={handleSubmitReturn}
-              disabled={createReturnMutation.isLoading || selectedItems.length === 0 || !returnReason}
+              disabled={createReturnMutation.isPending || selectedItems.length === 0 || !returnReason}
               className="btn btn-primary"
             >
-              {createReturnMutation.isLoading ? "Submitting..." : "Submit Return Request"}
+              {createReturnMutation.isPending ? "Submitting..." : "Submit Return Request"}
             </button>
           </div>
         </div>
       </div>
       <Footer />
     </>
+  );
+}
+
+export default function ReturnPage() {
+  return (
+    <Suspense
+      fallback={
+        <>
+          <Navbar />
+          <div className="container mx-auto p-4">
+            <div className="flex justify-center items-center min-h-screen">
+              <span className="loading loading-spinner loading-lg"></span>
+            </div>
+          </div>
+          <Footer />
+        </>
+      }
+    >
+      <ReturnPageContent />
+    </Suspense>
   );
 }

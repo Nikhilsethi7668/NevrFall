@@ -3,8 +3,9 @@ dotenv.config();
 
 import express from "express";
 import cors from "cors";
+import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
-import connectDB from "./Config/Db.js";
+import connectDB from "./Config/db.js";
 import authRoutes from "./Routes/auth.routes.js";
 import reviewRoutes from "./Routes/review.routes.js";
 import productRoutes from "./Routes/product.routes.js";
@@ -21,21 +22,34 @@ import { connectRedis } from "./lib/redis.js";
 import publicFilterRoutes from "./Routes/publicFilter.routes.js";
 import adminFilterRoutes from "./Routes/admin/adminFilter.routes.js";
 import adminRoutes from "./Routes/admin/index.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 app.set("trust proxy", 1);
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.join(__dirname, "uploads");
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
 const isProd = process.env.PRODUCTION === "true";
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: ['http://13.61.7.132:3000', 'http://13.61.7.132:5173', 'http://localhost:3000'],
     credentials: true,
   })
 );
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.get("/health", (req, res) =>
   res.json({
@@ -77,7 +91,11 @@ const PORT = Number(process.env.PORT || 8080);
 (async () => {
   try {
     await connectDB();
-    await connectRedis();
+    try {
+      await connectRedis();
+    } catch (err) {
+      console.warn('Redis connection failed, continuing without cache:', err.message);
+    }
     const server = app.listen(PORT, () => {
       console.log(`Server started on PORT ${PORT}`);
     });

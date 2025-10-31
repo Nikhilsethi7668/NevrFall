@@ -142,9 +142,9 @@ export default function ProductDetailPage() {
           <div>
             <div className="mb-4">
               <img
-                src={images[selectedImage]?.url || product.product.coverImage || "/placeholder.png"}
+                src={`http://localhost:8080/${images[selectedImage]?.url}` || product.product.coverImage || "/placeholder.png"}
                 alt={product.product.title}
-                className="w-full h-[500px] object-cover rounded-lg"
+                className="w-full h-[300px] sm:h-[400px] lg:h-[500px] object-cover rounded-lg"
               />
             </div>
             <div className="flex gap-2 overflow-x-auto">
@@ -157,7 +157,7 @@ export default function ProductDetailPage() {
                   }`}
                 >
                   <img
-                    src={img.url}
+                    src={`http://localhost:8080/${img.url}`}
                     alt={`${product.product.title} ${idx + 1}`}
                     className="w-20 h-20 object-cover rounded"
                   />
@@ -168,15 +168,15 @@ export default function ProductDetailPage() {
 
           {/* Product Info */}
           <div>
-            <h1 className="text-3xl font-bold mb-2">{product.product.title}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{product.product.title}</h1>
             
             {/* Price */}
             <div className="flex items-center gap-4 mb-4">
-              <span className="text-3xl font-bold text-primary">
+              <span className="text-2xl sm:text-3xl font-bold text-primary">
                 ₹{selectedVariant?.price || product.product.priceFrom}
               </span>
               {product.product.compareAtFrom && (
-                <span className="text-xl line-through text-gray-500">
+                <span className="text-lg sm:text-xl line-through text-gray-500">
                   ₹{product.product.compareAtFrom}
                 </span>
               )}
@@ -291,8 +291,8 @@ export default function ProductDetailPage() {
 
         {/* Reviews Section */}
         <div className="mt-12">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Customer Reviews</h2>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <h2 className="text-xl sm:text-2xl font-bold">Customer Reviews</h2>
             <button
               onClick={() => setShowReviewForm(!showReviewForm)}
               className="btn btn-outline"
