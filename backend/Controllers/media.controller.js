@@ -1,18 +1,7 @@
-import crypto from "crypto";
-import AWS from "aws-sdk";
+import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
-const s3 = new AWS.S3();
+const s3 = new S3Client({});
 const BUCKET = process.env.MEDIA_BUCKET || "your-production-bucket";
-const CDN_BASE = process.env.CDN_BASE || "https://your-cdn-domain.com/";
-
-const ALLOW_MIME = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/avif",
-]);
-
-
 
 export const deleteObject = async (req, res) => {
   const { key } = req.query;
@@ -20,7 +9,7 @@ export const deleteObject = async (req, res) => {
 
   const params = { Bucket: BUCKET, Key: key };
   try {
-    await s3.deleteObject(params).promise();
+    await s3.send(new DeleteObjectCommand(params));
     return res.json({ ok: true, key });
   } catch (err) {
     return res

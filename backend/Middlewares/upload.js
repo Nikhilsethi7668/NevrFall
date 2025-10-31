@@ -21,7 +21,7 @@ export const upload = multer({
   storage: multerS3({
     s3: s3,
     bucket: process.env.MEDIA_BUCKET || "your-production-bucket",
-    acl: 'public-read',
+    contentType: multerS3.AUTO_CONTENT_TYPE,
     metadata: function (req, file, cb) {
       cb(null, {fieldName: file.fieldname});
     },
