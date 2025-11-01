@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { productAPI } from "@/services/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MdOutlineKeyboardArrowLeft } from "react-icons/md";
@@ -137,4 +137,10 @@ const SearchPage = () => {
   );
 };
 
-export default SearchPage;
+const Search = () => (
+  <Suspense fallback={<div>Loading...</div>}>
+    <SearchPage />
+  </Suspense>
+);
+
+export default Search;
