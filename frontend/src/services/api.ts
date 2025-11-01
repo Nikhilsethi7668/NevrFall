@@ -31,6 +31,10 @@ export const authAPI = {
   verifyEmailOtp: (email: string, otp: string, phone: string) => api.post('/api/auth/otp/verify/email', { email, otp, phone }),
   me: () => api.get('/api/auth/me'),
   logout: () => api.post('/api/auth/logout'),
+  addAddress: (data: any) => api.post('/api/auth/profile/addAddress', data),
+  deleteSelectedAddress: (params: any) => api.post('/api/auth/delete-address/', {params}),
+  getAllUserAddress: () => api.get('/api/auth/profile/getAllAddresses'),
+  markAddressDefault: (params: any) => api.post('/api/auth/profile/markAddressDefault/', {params}),
 };
 
 // Product APIs

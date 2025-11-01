@@ -7,7 +7,7 @@ interface ProductState {
   page: number;
   totalPages: number;
   loading: boolean;
-  filters: any;
+  filters: Record<string, any>;
   fetchProducts: (filters: any, page?: number) => Promise<void>;
   setFilters: (filters: any) => void;
 }
@@ -18,15 +18,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
   page: 1,
   totalPages: 1,
   loading: false,
-  filters: {
-    search: '',
-    sort: '',
-    category: '',
-    size: '',
-    sleeves: '',
-    price: '',
-    priceRange: '',
-  },
+  filters: {},
 
   fetchProducts: async (filters, page = 1) => {
     set({ loading: true });

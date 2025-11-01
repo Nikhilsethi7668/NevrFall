@@ -18,7 +18,7 @@ export const getCart = async (req, res) => {
   if (cached) return res.json(cached);
 
   const cart = await Cart.findOne({ user: userId })
-    .populate("items.product items.variant ")
+    .populate("items.product items.variant")
     .lean();
   console.log(cart);
 

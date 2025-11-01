@@ -17,22 +17,10 @@ declare global {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const {coupon, setCoupon} = useOrderStore();
+  const {coupon, address} = useOrderStore();
   const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
-
-  const [step, setStep] = useState<"address" | "payment">("address");
-  const [shippingAddress, setShippingAddress] = useState({
-    name: "",
-    phone: "",
-    pincode: "",
-    line1: "",
-    line2: "",
-    city: "",
-    state: "",
-  });
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay" | "wallet">("razorpay");
   const [useWallet, setUseWallet] = useState(false);
-  const [pincodeValid, setPincodeValid] = useState<boolean | null>(null);
 
   // Fetch cart
   const { data: cart } = useQuery({
@@ -45,19 +33,6 @@ export default function CheckoutPage() {
     enabled: !!userId,
   });
 
-  // Check pincode serviceability
-  const checkPincodeMutation = useMutation({
-    mutationFn: async (pincode: string) => {
-      const res = await deliveryAPI.checkPincode(pincode);
-      return res.data;
-    },
-    onSuccess: (data) => {
-      setPincodeValid(data.deliverable === true);
-      if (data.deliverable === false) {
-        alert("Sorry, we don't deliver to this pincode yet.");
-      }
-    },
-  });
 
   // Create order mutation
   const createOrderMutation = useMutation({
@@ -72,7 +47,7 @@ export default function CheckoutPage() {
       const res = await orderAPI.create({
         items,
         useCart: true,
-        shippingAddress,
+        shippingAddress: address,
         couponCode : coupon,
       });
       return res.data;
@@ -130,8 +105,8 @@ export default function CheckoutPage() {
         }
       },
       prefill: {
-        name: shippingAddress.name,
-        contact: shippingAddress.phone,
+        name: address.name,
+        contact: address.phone,
       },
       theme: {
         color: "#3B82F6",
@@ -153,25 +128,7 @@ export default function CheckoutPage() {
     };
   }, []);
 
-  const handlePincodeBlur = () => {
-    if (shippingAddress.pincode.length === 6) {
-      checkPincodeMutation.mutate(shippingAddress.pincode);
-    }
-  };
-
-  const handleSubmitAddress = () => {
-    if (!shippingAddress.name || !shippingAddress.phone || !shippingAddress.pincode ||
-        !shippingAddress.line1 || !shippingAddress.city || !shippingAddress.state) {
-      alert("Please fill all required fields");
-      return;
-    }
-    if (pincodeValid === false) {
-      alert("Please enter a valid pincode where we deliver");
-      return;
-    }
-    setStep("payment");
-  };
-
+  
   const handlePlaceOrder = () => {
       createOrderMutation.mutate();
   };
@@ -201,142 +158,54 @@ export default function CheckoutPage() {
       <div className="container mx-auto p-4">
         <h1 className="text-3xl font-bold mb-8">Checkout</h1>
 
-        {/* Progress Steps */}
-        <ul className="steps w-full mb-8">
-          <li className={`step ${step === "address" || step === "payment" ? "step-primary" : ""}`}>
-            Address
-          </li>
-          <li className={`step ${step === "payment" ? "step-primary" : ""}`}>Payment</li>
-        </ul>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            {step === "address" && (
-              <div className="card bg-base-100 shadow">
-                <div className="card-body">
-                  <h2 className="card-title mb-4">Shipping Address</h2>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text">Full Name *</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="input input-bordered"
-                        value={shippingAddress.name}
-                        onChange={(e) =>
-                          setShippingAddress({ ...shippingAddress, name: e.target.value })
-                        }
-                      />
-                    </div>
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <div className="card bg-base-200 sticky top-20">
+              <div className="card-body">
+                <h2 className="card-title mb-4">Order Summary</h2>
 
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text">Phone Number *</span>
-                      </label>
-                      <input
-                        type="tel"
-                        className="input input-bordered"
-                        value={shippingAddress.phone}
-                        onChange={(e) =>
-                          setShippingAddress({ ...shippingAddress, phone: e.target.value })
-                        }
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {cart.items.map((item: any) => (
+                    <div key={item.variant} className="flex gap-2">
+                      <img
+                        src={item.product?.coverImage || "/placeholder.png"}
+                        alt={item.title}
+                        className="w-16 h-16 object-cover rounded"
                       />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold">{item.title}</p>
+                        <p className="text-xs text-gray-600">
+                          {item.size} × {item.quantity}
+                        </p>
+                        <p className="text-sm font-bold">₹{item.price * item.quantity}</p>
+                      </div>
                     </div>
+                  ))}
+                </div>
 
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text">Pincode *</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="input input-bordered"
-                        maxLength={6}
-                        value={shippingAddress.pincode}
-                        onChange={(e) =>
-                          setShippingAddress({ ...shippingAddress, pincode: e.target.value })
-                        }
-                        onBlur={handlePincodeBlur}
-                      />
-                      {pincodeValid === true && (
-                        <label className="label">
-                          <span className="label-text-alt text-success">✓ Delivery available</span>
-                        </label>
-                      )}
-                      {pincodeValid === false && (
-                        <label className="label">
-                          <span className="label-text-alt text-error">✗ Not serviceable</span>
-                        </label>
-                      )}
-                    </div>
+                <div className="divider"></div>
 
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text">City *</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="input input-bordered"
-                        value={shippingAddress.city}
-                        onChange={(e) =>
-                          setShippingAddress({ ...shippingAddress, city: e.target.value })
-                        }
-                      />
-                    </div>
-
-                    <div className="form-control md:col-span-2">
-                      <label className="label">
-                        <span className="label-text">Address Line 1 *</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="input input-bordered"
-                        value={shippingAddress.line1}
-                        onChange={(e) =>
-                          setShippingAddress({ ...shippingAddress, line1: e.target.value })
-                        }
-                      />
-                    </div>
-
-                    <div className="form-control md:col-span-2">
-                      <label className="label">
-                        <span className="label-text">Address Line 2</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="input input-bordered"
-                        value={shippingAddress.line2}
-                        onChange={(e) =>
-                          setShippingAddress({ ...shippingAddress, line2: e.target.value })
-                        }
-                      />
-                    </div>
-
-                    <div className="form-control md:col-span-2">
-                      <label className="label">
-                        <span className="label-text">State *</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="input input-bordered"
-                        value={shippingAddress.state}
-                        onChange={(e) =>
-                          setShippingAddress({ ...shippingAddress, state: e.target.value })
-                        }
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>₹{subtotal.toFixed(2)}</span>
                   </div>
-
-                  <button onClick={handleSubmitAddress} className="btn btn-primary w-full mt-6">
-                    Continue to Payment
-                  </button>
+                  <div className="flex justify-between">
+                    <span>Shipping</span>
+                    <span className="text-success">FREE</span>
+                  </div>
+                  <div className="divider"></div>
+                  <div className="flex justify-between text-xl font-bold">
+                    <span>Total</span>
+                    <span>₹{subtotal.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
-            )}
-
-            {step === "payment" && (
+            </div>
+          </div>
+          {/* Main Content */}
+          <div className="lg:col-span-2">
               <div className="card bg-base-100 shadow">
                 <div className="card-body">
                   <h2 className="card-title mb-4">Payment Method</h2>
@@ -396,10 +265,7 @@ export default function CheckoutPage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-4 mt-6">
-                    <button onClick={() => setStep("address")} className="btn btn-outline flex-1">
-                      Back
-                    </button>
+                  <div className="flex lg:hidden md:hidden gap-4 mt-6">
                     <button
                       onClick={handlePlaceOrder}
                       disabled={createOrderMutation.isPending}
@@ -414,53 +280,6 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="card bg-base-200 sticky top-20">
-              <div className="card-body">
-                <h2 className="card-title mb-4">Order Summary</h2>
-
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {cart.items.map((item: any) => (
-                    <div key={item.variant} className="flex gap-2">
-                      <img
-                        src={item.product?.coverImage || "/placeholder.png"}
-                        alt={item.title}
-                        className="w-16 h-16 object-cover rounded"
-                      />
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold">{item.title}</p>
-                        <p className="text-xs text-gray-600">
-                          {item.size} × {item.quantity}
-                        </p>
-                        <p className="text-sm font-bold">₹{item.price * item.quantity}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="divider"></div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>₹{subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Shipping</span>
-                    <span className="text-success">FREE</span>
-                  </div>
-                  <div className="divider"></div>
-                  <div className="flex justify-between text-xl font-bold">
-                    <span>Total</span>
-                    <span>₹{subtotal.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

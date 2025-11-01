@@ -13,6 +13,7 @@ import { BsBagHeartFill } from "react-icons/bs";
 import { useProfileStore } from '../store/useProfileStore';
 import { CiMenuBurger } from "react-icons/ci";
 import ProfileCard from './ProfileCard';
+import { IoSearchSharp } from "react-icons/io5";
 
 const Navbar = () => {
   const { theme, setTheme } = useTheme();
@@ -119,6 +120,11 @@ const Navbar = () => {
       </div>
 
       <div className="navbar-end gap-4">
+          
+          <button className="btn btn-ghost btn-circle" onClick={() => router.push('/search')}>
+            <IoSearchSharp size={22}/>
+          </button>
+
         {mounted && (
           <button className="btn hidden sm:block btn-ghost btn-circle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
             {theme === 'light' ? (

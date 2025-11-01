@@ -12,7 +12,6 @@ import Pagination from '../components/Pagination';
 import SearchBar from '../components/SearchBar';
 import FilterSidebar from '../components/FilterSidebar';
 import { useProductStore } from '../store/useProductStore';
-import { useCategoryStore } from '../store/useCategoryStore';
 
 function ProductsPageContent() {
   const router = useRouter();
@@ -26,36 +25,27 @@ function ProductsPageContent() {
     fetchProducts,
     setFilters,
   } = useProductStore();
-  const { categories, fetchCategories } = useCategoryStore();
 
   // --- Initialize filters from query params ---
   useEffect(() => {
-    const initialFilters = {
-      search: searchParams.get('q') || '',
-      sort: searchParams.get('sort') || 'newest',
-      category: searchParams.get('category') || '',
-      size: searchParams.get('size') || '',
-      sleeves: searchParams.get('sleeves') || '',
-      price: searchParams.get('price') || '',
-      priceRange: searchParams.get('price') || '',
-    };
-    setFilters(initialFilters);
-    fetchCategories();
+    const params: Record<string, any> = {};
+    searchParams.forEach((value, key) => {
+      params[key] = value;
+    });
+    setFilters(params);
   }, []);
 
   // --- Update URL and fetch data when filters/page changes ---
   useEffect(() => {
     const query = new URLSearchParams();
-    if (filters.search) query.set('q', filters.search);
-    if (filters.sort) query.set('sort', filters.sort);
-    if (filters.category) query.set('category', filters.category);
-    if (filters.size) query.set('size', filters.size);
-    if (filters.sleeves) query.set('sleeves', filters.sleeves);
-    if (filters.price) query.set('price', filters.price);
-    if (filters.priceRange) query.set('price', filters.priceRange);
+    for (const [key, value] of Object.entries(filters)) {
+      if (value) {
+        query.set(key, String(value));
+      }
+    }
     router.push(`${window.location.pathname}?${query.toString()}`);
     fetchProducts(filters, page);
-  }, [filters, page]);
+  }, [page]);
 
   // --- Fetch facets for dynamic filters ---
   const { data: facetsData } = useQuery({
@@ -66,8 +56,8 @@ function ProductsPageContent() {
     },
   });
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters({ ...filters, [key]: value });
+  const handleFilterChange = (newFilters: Record<string, any>) => {
+    setFilters(newFilters);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -75,15 +65,7 @@ function ProductsPageContent() {
   };
 
   const clearFilters = () => {
-    setFilters({
-      search: '',
-      sort: 'newest',
-      category: '',
-      size: '',
-      sleeves: '',
-      price: '',
-      priceRange: '',
-    });
+    setFilters({});
   };
 
   return (
@@ -98,13 +80,13 @@ function ProductsPageContent() {
             <SearchBar
               placeholder="Search products..."
               className="w-full md:w-80"
-              onSearch={(query) => handleFilterChange('search', query)}
+              onSearch={(query) => handleFilterChange({ ...filters, search: query })}
             />
 
             <div className="flex flex-row items-center gap-2">
               <select
-                value={filters.sort}
-                onChange={(e) => handleFilterChange('sort', e.target.value)}
+                value={filters.sort || 'newest'}
+                onChange={(e) => handleFilterChange({ ...filters, sort: e.target.value })}
                 className="select select-bordered select-sm md:select-md border-gray-300"
               >
                 <option value="newest">Newest</option>
@@ -121,7 +103,6 @@ function ProductsPageContent() {
                   handleFilterChange={handleFilterChange}
                   clearFilters={clearFilters}
                   facetsData={facetsData}
-                  categories={categories}
                 />
               </div>
             </div>
@@ -137,7 +118,6 @@ function ProductsPageContent() {
               handleFilterChange={handleFilterChange}
               clearFilters={clearFilters}
               facetsData={facetsData}
-              categories={categories}
             />
           </div>
 
