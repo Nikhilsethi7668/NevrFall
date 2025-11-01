@@ -82,7 +82,7 @@ const Navbar = () => {
         <div className="drawer md:hidden lg:hidden">
           <input id="my-drawer-1" type="checkbox" className="drawer-toggle" />
           <div className="drawer-content">
-            <label htmlFor="my-drawer-1" className="btn drawer-button"><CiMenuBurger/></label>
+            <label htmlFor="my-drawer-1" className="btn-ghost font-semibold drawer-button"><CiMenuBurger/></label>
           </div>
           <div className="drawer-side">
             <label htmlFor="my-drawer-1" aria-label="close sidebar" className="drawer-overlay"></label>
@@ -96,6 +96,15 @@ const Navbar = () => {
               )}
               <li><Link href='/products'>Products</Link></li>
               <li><Link href='/contact'>Contact</Link></li>
+              {mounted && (
+                <button className="btn hidden sm:block btn-ghost btn-circle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+                  {theme === 'light' ? (
+                    <IoMoonSharp size={22} />
+                  ) : (
+                    <IoSunny size={22} />
+                  )}
+                </button>
+              )}
             </ul>
           </div>
         </div>
@@ -111,7 +120,7 @@ const Navbar = () => {
 
       <div className="navbar-end gap-4">
         {mounted && (
-          <button className="btn btn-ghost btn-circle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+          <button className="btn hidden sm:block btn-ghost btn-circle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
             {theme === 'light' ? (
               <IoMoonSharp size={22} />
             ) : (

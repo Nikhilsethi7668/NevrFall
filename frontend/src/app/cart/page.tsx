@@ -4,17 +4,17 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { cartAPI, couponAPI } from "@/services/api";
+import { cartAPI, couponAPI, productAPI } from "@/services/api";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useOrderStore } from "../store/useOrderStore";
-import { RiDeleteBin6Line } from "react-icons/ri";
+import CartRecomendations from "../components/CartRecomendations";
 
 export default function CartPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const {coupon, setCoupon} = useOrderStore();
-  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const {coupon, setCoupon, cartRecomendation} = useOrderStore();
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null); // TODO: Type this
   const [mounted, setMounted] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -33,6 +33,24 @@ export default function CartPage() {
     },
     enabled: !!userId,
   });
+
+  const getCartRecomendation = async () => {
+    if (!userId) return null;
+    const res = await productAPI.getCartRecommended();
+    return res.data;
+  };
+
+  useEffect(() => {
+    if (cart) {
+      getCartRecomendation()
+        .then((data: any) => { // TODO: Type this
+          useOrderStore.setState({ cartRecomendation: data });
+        })
+        .catch((error) => {
+          console.error("Error fetching cart recommendations:", error);
+        });
+    }
+  }, [cart]);
 
   // Update quantity mutation
   const updateQuantityMutation = useMutation({
@@ -61,6 +79,9 @@ export default function CartPage() {
       queryClient.invalidateQueries({ queryKey: ["cart", userId] });
     },
   });
+
+  // const handleMoveItemToWishlist = (variantId: string) => {
+
 
   // Apply coupon mutation
   const applyCouponMutation = useMutation({
@@ -166,70 +187,92 @@ export default function CartPage() {
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
             {cart.items.map((item: any) => (
-              <div key={item.variant} className="card bg-base-100 shadow">
-                <div className="card-body">
+              <div key={item.variant} className="card bg-base-100 shadow-2xl">
+                <div className="card-body h-[16vh]">
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div
-                      className="flex gap-4 flex-1 cursor-pointer"
-                      onClick={() => router.push(`/products/${item.product._id}`)}
-                    >
+                      className="flex gap-4 flex-1 cursor-pointer"                    >
                       <img
-                        src={item.product?.coverImage || "/placeholder.png"}
+                        src={item.product?.coverImage}
                         alt={item.title}
+                        onClick={() => router.push(`/products/${item.product._id}`)}
                         className="w-24 h-24 object-cover rounded"
                       />
                       <div className="flex-1">
-                        <h3 className="font-bold text-sm sm:text-lg">{item.title}</h3>
+                        <h3 className="font-bold text-sm sm:text-lg" 
+                        onClick={() => router.push(`/products/${item.product._id}`)}
+                        >{item.title}</h3>
                         <p className="text-sm text-gray-600">
                           Color: {item.color} | Size: {item.size}
                         </p>
-                        <p className="text-lg font-semibold mt-2">₹{item.price}</p>
+                        <div className="flex justify-between items-center w-full sm:w-auto sm:flex-col sm:items-end sm:justify-between">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() =>
+                              updateQuantityMutation.mutate({
+                                variantId: item.variant,
+                                action: "remove",
+                              })
+                            }
+                            disabled={item.quantity <= 1}
+                            className="btn btn-xs btn-outline"
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center">{item.quantity}</span>
+                          <button
+                            onClick={() =>
+                              updateQuantityMutation.mutate({
+                                variantId: item.variant,
+                                action: "add",
+                              })
+                            }
+                            className="btn btn-xs btn-outline"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <div>
+                          <select name="size" id="size" className="select select-md rounded-md w-[16vw] p-2 select-bordered">
+                            {item.product.availableSizes &&
+                            item.product.availableSizes.length > 0 &&
+                            item.product.availableSizes.map((variant: any, index: number) => (
+                              <option
+                                key={index}
+                                value={variant}
+                                className={variant === item.size ? "selected" : ""}
+                              >
+                                {variant}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex justify-between items-center w-full sm:w-auto sm:flex-col sm:items-end sm:justify-between">
-                      <button
-                        onClick={() => removeItemMutation.mutate(item.variant)}
-                        className="btn btn-ghost btn-sm btn-circle"
-                      >
-                        <RiDeleteBin6Line className="text-red-500" size={20} />
-                      </button>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() =>
-                            updateQuantityMutation.mutate({
-                              variantId: item.variant,
-                              action: "remove",
-                            })
-                          }
-                          disabled={item.quantity <= 1}
-                          className="btn btn-sm btn-outline"
-                        >
-                          -
-                        </button>
-                        <span className="w-8 text-center">{item.quantity}</span>
-                        <button
-                          onClick={() =>
-                            updateQuantityMutation.mutate({
-                              variantId: item.variant,
-                              action: "add",
-                            })
-                          }
-                          className="btn btn-sm btn-outline"
-                        >
-                          +
-                        </button>
+                        <p className="text-xs font-semibold mt-2">₹{item.price}</p>
                       </div>
                     </div>
                   </div>
                 </div>
+                <div className="grid grid-cols-2 justify-around">
+                  <button
+                    onClick={() => removeItemMutation.mutate(item.variant)}
+                    className="btn btn-border text-center"
+                  >
+                    Remove
+                  </button>
+                  <button className="btn btn-border text-center">Move to Wishlist</button>
+                </div>
               </div>
             ))}
+
+          {/* You Might Also Like */}
+            <CartRecomendations cartRecomendation={cartRecomendation}/>
           </div>
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
             <div className="card bg-base-200 sticky top-20">
-              <div className="card-body">
+              <div className="p-3">
                 <h2 className="card-title mb-4">Order Summary</h2>
 
                 {/* Coupon Code */}

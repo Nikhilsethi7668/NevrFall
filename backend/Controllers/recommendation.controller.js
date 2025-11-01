@@ -71,7 +71,7 @@ export const getRecommendationsByProductId = async (req, res) => {
 export const getRecommendationsForUserCart = async (req, res) => {
   try {
     // assume user id is available as req.user._id; adjust if different
-    const userId = req.user && req.user._id ? String(req.user._id) : null;
+    const userId = req.user && req.user.id ? String(req.user.id) : null;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
     // limit param default 30, cap 30

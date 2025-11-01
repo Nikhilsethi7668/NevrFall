@@ -86,14 +86,16 @@ export default function Home() {
        {/* Recommended Products */}
       {isLoggedIn && recommendedProducts && recommendedProducts.items.length > 0 && (
         <div className="bg-base-300 py-12">
-          <div className="container mx-auto p-6">
+          <div className="p-2 lg:p-6">
             <h2 className="text-3xl font-bold text-center mb-8">Recommended For You</h2>
             {recommendedLoading ? (
               <LoadingSpinner size="lg" text="Loading recommendations..." />
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 lg:gap-6">
+            <div className="flex items-stretch overflow-x-auto py-4 gap-2">
                 {recommendedProducts?.items?.map((product: any) => (
-                  <ProductCard key={product._id} product={product} />
+                  <div key={product._id} className="shrink-0 w-[55vw] md:w-[45vw] lg:w-[45vw]">
+                    <ProductCard key={product._id} product={product} />
+                  </div>
                 ))}
               </div>
             )}
@@ -117,7 +119,7 @@ export default function Home() {
 
       {/* New Arrivals */}
       <div className="bg-base-200 py-12">
-        <div className="container mx-auto p-6">
+        <div className="p-2 lg:p-6">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold">New Arrivals</h2>
             <button
@@ -130,9 +132,11 @@ export default function Home() {
           {newArrivalsLoading ? (
             <LoadingSpinner size="lg" text="Loading new arrivals..." />
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 lg:gap-6">
+            <div className="flex items-stretch overflow-x-auto py-4 gap-6">
               {newArrivals?.items?.map((product: any) => (
-                <ProductCard key={product._id} product={product} />
+                <div key={product._id} className="shrink-0 w-[55vw] md:w-[45vw] lg:w-[45vw]">
+                  <ProductCard product={product} />
+                </div>
               ))}
             </div>
           )}
@@ -151,7 +155,7 @@ export default function Home() {
         </div>
 
         {/* Trending Products */}
-        <div className="container mx-auto p-6">
+        <div className="p-2 lg:p-6">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold">Trending Now</h2>
             <button
@@ -164,16 +168,20 @@ export default function Home() {
           {trendingLoading ? (
             <LoadingSpinner size="lg" text="Loading trending products..." />
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 lg:gap-6">
+            <div className="flex items-stretch overflow-x-auto py-4 gap-6">
               {trendingProducts?.items?.map((product: any) => (
-                <ProductCard key={product._id} product={product} />
+                <div key={product._id} className="shrink-0 w-[55vw] md:w-[45vw] lg:w-[45vw]">
+                  <ProductCard key={product._id} product={product} />
+                </div>
               ))}
             </div>
           )}
         </div>
       <ImageCarousel />
 
-      <Categories />
+      <div className="container mx-auto p-6">
+        <Categories />
+      </div>
       
       <div className="container mx-auto p-6">
         <div className="lg:col-span-3">
@@ -186,9 +194,9 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 lg:gap-6">
+              <div className="grid grid-cols-2 gap-2 lg:gap-6">
                 {products.map((product: any) => (
-                  <ProductCard key={product.id} product={product} />
+                  <ProductCard key={product._id} product={product} />
                 ))}
               </div>
 
