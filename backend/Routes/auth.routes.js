@@ -13,6 +13,12 @@ import {
   getProfile,
   updateProfile,
 } from "../Controllers/profile.controller.js";
+import {
+  addAddress,
+  deleteSelectedAddress,
+  getAllUserAddress,
+  markAddressDefault,
+} from "../Controllers/address.controller.js";
 
 const router = Router();
 router.post("/otp/request/mobile", requestOtp);
@@ -26,5 +32,11 @@ router.post("/logout", logout);
 router.get("/profile", auth, getProfile);
 //Update profile
 router.put("/profile", auth, updateProfile);
+
+//Add Address
+router.post("/profile/addAddress", auth, addAddress);
+router.delete("/profile/deleteAddress/:index", auth, deleteSelectedAddress);
+router.get("/profile/getAllAddresses", auth, getAllUserAddress);
+router.post("/profile/markAddressDefault/:index", auth, markAddressDefault);
 
 export default router;

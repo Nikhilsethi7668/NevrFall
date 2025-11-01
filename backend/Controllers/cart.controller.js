@@ -6,6 +6,7 @@ import { cacheGet, cacheSet, cacheDelPattern } from "../lib/cache.js";
 
 const CART_TTL = 120;
 
+//CARTSCHEMA->CARTITEMSCHEMA->PRODUCTID->
 const calculateCartTotal = (items) =>
   items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -17,8 +18,9 @@ export const getCart = async (req, res) => {
   if (cached) return res.json(cached);
 
   const cart = await Cart.findOne({ user: userId })
-    .populate("items.product items.variant")
+    .populate("items.product items.variant ")
     .lean();
+  console.log(cart);
 
   if (!cart) return res.json({ items: [], totalValue: 0 });
 
