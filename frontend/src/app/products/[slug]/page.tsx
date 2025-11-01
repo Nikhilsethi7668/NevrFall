@@ -6,7 +6,9 @@ import { useParams, useRouter } from "next/navigation";
 import { productAPI, cartAPI, wishlistAPI, reviewAPI } from "@/services/api";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
-import Image from "next/image";
+import { FaChevronDown } from "react-icons/fa";
+import { FaRegHeart } from "react-icons/fa6";
+import ProductRecomendations from "@/app/components/ProductRecomendations";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -168,31 +170,19 @@ export default function ProductDetailPage() {
 
           {/* Product Info */}
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{product.product.title}</h1>
+            <h1 className="lg:text-2xl font-semibold mb-2">{product.product.title}</h1>
             
             {/* Price */}
             <div className="flex items-center gap-4 mb-4">
-              <span className="text-2xl sm:text-3xl font-bold text-primary">
+              <span className="text-lg lg:text-2xl lg:font-bold text-primary">
                 ₹{selectedVariant?.price || product.product.priceFrom}
               </span>
-              {product.product.compareAtFrom && (
-                <span className="text-lg sm:text-xl line-through text-gray-500">
-                  ₹{product.product.compareAtFrom}
-                </span>
-              )}
             </div>
-
-            {/* Description */}
-            {product.parent?.description && (
-              <div className="prose mb-6">
-                <p>{product.parent.description}</p>
-              </div>
-            )}
 
             {/* Size Selection */}
             <div className="form-control mb-4">
               <label className="label">
-                <span className="label-text font-semibold">Select Size</span>
+                <span className="label-text mb-2 font-semibold">Select Size</span>
               </label>
               <div className="flex gap-2 flex-wrap">
                 {product.variants.map((variant: any) => (
@@ -214,7 +204,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Stock Status */}
-            {selectedVariant && (
+            {/* {selectedVariant && (
               <div className="mb-4">
                 <span className={`badge ${selectedVariant.stock > 0 ? "badge-success" : "badge-error"}`}>
                   {selectedVariant.stock > 0
@@ -222,10 +212,10 @@ export default function ProductDetailPage() {
                     : "Out of stock"}
                 </span>
               </div>
-            )}
+            )} */}
 
             {/* Quantity */}
-            <div className="form-control mb-6">
+            {/* <div className="form-control mb-6">
               <label className="label">
                 <span className="label-text font-semibold">Quantity</span>
               </label>
@@ -250,10 +240,10 @@ export default function ProductDetailPage() {
                   +
                 </button>
               </div>
-            </div>
+            </div> */}
 
             {/* Action Buttons */}
-            <div className="flex gap-4 mb-6">
+            <div className="flex hidden sm:block gap-4 mb-6">
               <button
                 onClick={() => addToCartMutation.mutate()}
                 disabled={!selectedSize || addToCartMutation.isPending}
@@ -262,32 +252,35 @@ export default function ProductDetailPage() {
                 {addToCartMutation.isPending ? (
                   <span className="loading loading-spinner"></span>
                 ) : (
-                  "Add to Cart"
+                  "ADD TO CART"
                 )}
               </button>
               <button
                 onClick={() => addToWishlistMutation.mutate()}
                 className="btn btn-outline"
               >
-                ❤️
+                ADD TO WISHLIST
               </button>
             </div>
-
-            <button
-              onClick={() => {
-                if (!selectedSize) {
-                  alert("Please select a size first");
-                  return;
-                }
-                addToCartMutation.mutate();
-                setTimeout(() => router.push("/cart"), 500);
-              }}
-              className="btn btn-secondary w-full"
-            >
-              Buy Now
-            </button>
           </div>
         </div>
+
+        {/* Description */}
+        <div className="bg-base-100 border-base-300 collapse border">
+          <input type="checkbox" className="peer" />
+          <div className="collapse-title flex flex-row justify-between items-center cursor-pointer font-semibold peer-checked:[&>p:last-child]:rotate-180"><p>PRODUCT DETAILS</p><p className="transition-transform duration-300"><FaChevronDown /></p></div>
+          <div className="collapse-content">
+          {product.parent?.description && (
+            <div className="prose">
+              <p className="text-sm lg:text-lg">{product.parent.description}</p>
+            </div>
+          )}
+          </div>
+        </div>
+
+                  
+          {/* Product Recomendations */}
+          <ProductRecomendations productId={product.product._id} />
 
         {/* Reviews Section */}
         <div className="mt-12">
@@ -349,7 +342,7 @@ export default function ProductDetailPage() {
               </div>
             </div>
           )}
-
+          
           {/* Reviews List */}
           <div className="space-y-4">
             {reviewsData?.items?.map((review: any) => (
@@ -393,6 +386,25 @@ export default function ProductDetailPage() {
               </div>
             )}
           </div>
+        </div>
+        <div className="flex md:hidden lg:hidden fixed justify-center p-4 bottom-0 left-0 mb-4 w-full bg-base-100 gap-4">
+          <button
+            onClick={() => addToCartMutation.mutate()}
+            disabled={!selectedSize || addToCartMutation.isPending}
+            className="btn btn-primary"
+          >
+            {addToCartMutation.isPending ? (
+              <span className="loading loading-spinner"></span>
+            ) : (
+              "ADD TO CART"
+            )}
+          </button>
+          <button
+            onClick={() => addToWishlistMutation.mutate()}
+            className="btn btn-outline"
+          >
+            <FaRegHeart /> ADD TO WISHLIST
+          </button>
         </div>
       </div>
       <Footer />

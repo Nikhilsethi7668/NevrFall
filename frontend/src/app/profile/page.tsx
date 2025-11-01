@@ -357,9 +357,7 @@ export default function ProfilePage() {
 
             {activeTab === "wishlist" && (
               <div className="card bg-base-100 shadow">
-                <div className="card-body">
                   <h2 className="card-title mb-6">My Wishlist</h2>
-
                   {!wishlistData || wishlistData.items?.length === 0 ? (
                     <div className="text-center py-8">
                       <h3 className="text-lg font-semibold mb-2">Your wishlist is empty</h3>
@@ -374,41 +372,30 @@ export default function ProfilePage() {
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {wishlistData.items.map((item: any) => (
-                        <div key={item._id} className="card bg-base-200">
-                          <figure>
-                            <img
-                              src={item.product?.coverImage || "/placeholder.png"}
-                              alt={item.product?.title}
-                              className="w-full h-48 object-cover"
-                            />
-                          </figure>
-                          <div className="card-body">
-                            <h3 className="card-title text-sm">{item.product?.title}</h3>
-                            <p className="text-lg font-bold">₹{item.product?.priceFrom}</p>
-                            <div className="card-actions justify-end">
-                              <button
-                                onClick={() => removeFromWishlistMutation.mutate(item.product._id)}
-                                className="btn btn-error btn-sm"
-                              >
-                                Remove
-                              </button>
-                              <button
-                                onClick={() => router.push(`/products/${item.product.slug || item.product._id}`)}
-                                className="btn btn-primary btn-sm"
-                              >
-                                View
-                              </button>
+                <div className="lg:col-span-2 space-y-4">
+                  {wishlistData.items.map((item: any) => (
+                    <div key={item._id} className="card bg-base-100 shadow-2xl">
+                      <div className="card-body h-[16vh]">
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="flex gap-4 flex-1 cursor-pointer">
+                            <img src={item.product?.coverImage} alt={item.product?.title} onClick={() => router.push(`/products/${item.product._id}`)} className="w-24 h-24 object-cover rounded" />
+                            <div className="flex flex-col justify-between align-middle">
+                              <h3 className="font-bold text-sm align-middle sm:text-lg" onClick={() => router.push(`/products/${item.product._id}`)}>{item.product?.title}</h3>
+                              <p className="text-xs align-middle font-semibold mt-2">₹{item.product?.priceFrom}</p>
+                              <p className="text-xs align-middle font-semibold mt-2">{item.product?.category ? "item.product?.category" : "No Category"}</p>
                             </div>
                           </div>
                         </div>
-                      ))}
+                      </div>
+                      <div className="grid grid-cols-2 justify-around">
+                        <button onClick={() => removeFromWishlistMutation.mutate(item.product._id)} className="btn btn-border text-center">Remove</button>
+                        <button className="btn btn-border text-center">ADD TO CART</button>
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
-              </div>
-            )}
+                )}
+            </div>)}
 
             {activeTab === "orders" && (
               <div className="card bg-base-100 shadow">

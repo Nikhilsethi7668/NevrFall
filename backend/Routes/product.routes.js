@@ -70,7 +70,7 @@ router.get("/variant/lookup", getVariantByKey);
 router.post("/:id/track-click", trackClick);
 
 //Get recommendations by product id
-// router.get("/:productId/recommendations", getRecommendationsByProductId);
+router.get("/recommendations/:productId", getRecommendationsByProductId);
 
 //Get recommendations for user cart
 router.get("/cart/recommendations", auth, getRecommendationsForUserCart);

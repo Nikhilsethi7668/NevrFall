@@ -4,12 +4,12 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { cartAPI, couponAPI, productAPI, authAPI } from "@/services/api";
+import { cartAPI, couponAPI, productAPI, authAPI, wishlistAPI } from "@/services/api";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useOrderStore } from "../store/useOrderStore";
 import CartRecomendations from "../components/CartRecomendations";
-import { FaChevronRight } from "react-icons/fa";
+import { FaChevronDown, FaChevronRight } from "react-icons/fa";
 
 export default function CartPage() {
   const router = useRouter();
@@ -18,7 +18,7 @@ export default function CartPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-
+  const [targetItem, setTargetItem] = useState<any>(null);
   const [showAddAddressForm, setShowAddAddressForm] = useState(false);
   const [newAddress, setNewAddress] = useState({
     name: "",
@@ -128,7 +128,18 @@ export default function CartPage() {
     },
   });
 
-  console.log(address);
+  const addToWishlistMutation = useMutation({
+    mutationFn: () => wishlistAPI.add({ productId: targetItem.product._id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+      alert("Added to wishlist!");
+    },
+  });
+  
+  const handleMoveToWishlist = (item: any) => {
+    addToWishlistMutation.mutate();
+    removeItemMutation.mutate(item.variant)
+  };
 
   const applyCouponMutation = useMutation({
     mutationFn: async () => {
@@ -234,7 +245,11 @@ export default function CartPage() {
                 </div>
                 <div className="grid grid-cols-2 justify-around">
                   <button onClick={() => removeItemMutation.mutate(item.variant)} className="btn btn-border text-center">Remove</button>
-                  <button className="btn btn-border text-center">Move to Wishlist</button>
+                  <button
+                    onClick={() => { setTargetItem(item); handleMoveToWishlist(item);}}
+                    className="btn btn-border text-center" >
+                      Move to Wishlist
+                  </button>
                 </div>
               </div>
             ))}
@@ -305,7 +320,7 @@ export default function CartPage() {
 
                 <div className="collapse border">
                   <input type="checkbox" className="peer" />
-                  <div className="collapse-title flex flex-row justify-between items-center cursor-pointer font-semibold peer-checked:[&>p:last-child]:rotate-180"><p>Have a coupon?</p><p className="transition-transform duration-300"><FaChevronRight /></p></div>
+                  <div className="collapse-title flex flex-row justify-between items-center cursor-pointer font-semibold peer-checked:[&>p:last-child]:rotate-180"><p>Have a coupon?</p><p className="transition-transform duration-300"><FaChevronDown /></p></div>
                   <div className="collapse-content">
                     <div className="join">
                       <input type="text" placeholder="Enter coupon code" className="input input-bordered join-item flex-1" value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())} />

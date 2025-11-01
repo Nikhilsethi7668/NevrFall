@@ -61,6 +61,7 @@ export const productAPI = {
     api.get('/api/products/color-feed', { params }),
   getAllCategories: () => api.get('/api/products/getAllCategories'),
   getCartRecommended: () => api.get('/api/products/cart/recommendations'),
+  getProductRecomendations: (productId: string) => api.get(`/api/products/recommendations/${productId}`),
 };
 
 // Cart APIs
