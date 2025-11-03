@@ -132,6 +132,14 @@ export const reviewAPI = {
     api.get('/api/reviews/my', { params }),
 };
 
+export const addressAPI = {
+  addAddress: (data: any) => api.post('/api/auth/profile/addAddress', data),
+  deleteSelectedAddress: (params: any) => api.post('/api/auth/delete-address/', {params}),
+  getAllUserAddress: () => api.get('/api/auth/profile/getAllAddresses'),
+  markAddressDefault: (params: any) => api.post('/api/auth/profile/markAddressDefault/', {params}),
+};
+
+
 // Delivery APIs
 export const deliveryAPI = {
   checkPincode: (pin: string) => 

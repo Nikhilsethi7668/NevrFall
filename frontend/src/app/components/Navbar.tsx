@@ -14,8 +14,11 @@ import { useProfileStore } from '../store/useProfileStore';
 import { CiMenuBurger } from "react-icons/ci";
 import ProfileCard from './ProfileCard';
 import { IoSearchSharp } from "react-icons/io5";
+import Categories from './Categories';
+import { useCategoryStore } from '../store/useCategoryStore';
 
 const Navbar = () => {
+  const { categories, loading, error, fetchCategories } = useCategoryStore();
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -23,6 +26,14 @@ const Navbar = () => {
   const { activeTab, setActiveTab } = useProfileStore();
   const [user, setUser] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  const handleCategoryClick = (categoryName: string) => {
+    router.push(`/products?categories=${categoryName}`);
+  };
 
   // Check if user is logged in
   useEffect(() => {
@@ -97,16 +108,34 @@ const Navbar = () => {
               )}
               <li><Link href='/products'>Products</Link></li>
               <li><Link href='/contact'>Contact</Link></li>
-              {mounted && (
-                <button className="btn hidden sm:block btn-ghost btn-circle" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-                  {theme === 'light' ? (
-                    <IoMoonSharp size={22} />
-                  ) : (
-                    <IoSunny size={22} />
-                  )}
-                </button>
-              )}
+              <li>
+                <>
+                  <h1 className='text-center font-semibold text-2xl my-2'>Categories</h1>
+                  <div className="flex flex-col justify-center items-center gap-4">
+                    {categories.map((category) => (
+                      <div
+                        key={category._id}
+                        className="flex flex-row justify-between rounded p-2 items-center mb-2 cursor-pointer overflow-hidden"
+                        onClick={() => handleCategoryClick(category.name)}
+                      >
+                        <img
+                          src={category.image}
+                          alt={category.name}
+                          className="h-[10vh] w-full object-cover object-center"
+                        />
+                        <h3 className='py-1 px-2 text-left text-sm'>
+                          {category.name}
+                        </h3>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              </li>
             </ul>
+            <button className="btn absolute bottom-5 btn-ghost" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+              {theme === 'light' ? <IoMoonSharp size={22} /> : <IoSunny size={22} />}
+              <span className="ml-2">{theme === 'light' ? 'Dark' : 'Light'} Mode</span>
+            </button>
           </div>
         </div>
         <Link href="/" className="btn btn-ghost text-lg sm:text-xl">NeverFall</Link>

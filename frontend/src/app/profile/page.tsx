@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { authAPI, wishlistAPI } from "@/services/api";
+import { authAPI, wishlistAPI, cartAPI, productAPI, addressAPI } from "@/services/api";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import secureLocalStorage from "react-secure-storage";
@@ -15,6 +15,7 @@ import { LuBadgeIndianRupee } from "react-icons/lu";
 import { FaStar } from "react-icons/fa6";
 import { FaAngleLeft } from "react-icons/fa6";
 import { FaChevronRight } from "react-icons/fa";
+import AddressForm from "../components/AddressForm";
 
 
 export default function ProfilePage() {
@@ -22,6 +23,7 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const { activeTab, setActiveTab } = useProfileStore();
   const [isEditing, setIsEditing] = useState(false);
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [profileData, setProfileData] = useState({
     name: "",
     email: "",
@@ -46,6 +48,15 @@ export default function ProfilePage() {
     enabled: !!userId,
   });
 
+  // Fetch addresses
+  const { data: addressesData } = useQuery({
+    queryKey: ["addresses"],
+    queryFn: async () => {
+      const res = await addressAPI.get();
+      return res.data;
+    },
+  });
+
   // Fetch wishlist
   const { data: wishlistData } = useQuery({
     queryKey: ["wishlist"],
@@ -68,6 +79,25 @@ export default function ProfilePage() {
     },
   });
 
+  const addAddressMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return addressAPI.create(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["addresses"] });
+      setIsAddingAddress(false);
+    },
+  });
+
+  const makeDefaultAddressMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return addressAPI.makeDefault(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["addresses"] });
+    },
+  });
+
   // Remove from wishlist mutation
   const removeFromWishlistMutation = useMutation({
     mutationFn: async (productId: string) => {
@@ -77,6 +107,41 @@ export default function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
     },
   });
+
+  const addToCartMutation = useMutation({
+    mutationFn: (variantId: string) => {
+      if (!userId) throw new Error("User not logged in");
+      return cartAPI.add({ userId, variantId, quantity: 1 });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      alert("Added to cart!");
+    },
+    onError: (error: any) => {
+      alert(error.response?.data?.message || "Failed to add to cart");
+    },
+  });
+
+  const handleAddToCartAndRemoveFromWishlist = async (item: any) => {
+    try {
+      const productDetails = await productAPI.getDetails(item.product._id);
+      const variants = productDetails.data.product.variants;
+
+      if (variants && variants.length === 1) {
+        const variantId = variants[0]._id;
+        addToCartMutation.mutate(variantId, {
+          onSuccess: () => {
+            removeFromWishlistMutation.mutate(item.product._id);
+          }
+        });
+      } else {
+        router.push(`/products/${item.product._id}`);
+      }
+    } catch (error) {
+      console.error("Error fetching product details:", error);
+      router.push(`/products/${item.product._id}`);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -180,6 +245,16 @@ export default function ProfilePage() {
                       }`}
                     >
                       Profile
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => setActiveTab("address")}
+                      className={`btn btn-ghost justify-start ${
+                        activeTab === "address" ? "btn-active" : ""
+                      }`}
+                    >
+                      Address
                     </button>
                   </li>
                   <li>
@@ -355,6 +430,55 @@ export default function ProfilePage() {
               </div>
             )}
 
+            {activeTab === "address" && (
+              <div className="card bg-base-100 shadow">
+                <div className="card-body">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="card-title">My Addresses</h2>
+                    <button
+                      onClick={() => setIsAddingAddress(true)}
+                      className="btn btn-primary"
+                    >
+                      Add Address
+                    </button>
+                  </div>
+
+                  {isAddingAddress && (
+                    <AddressForm
+                      onSave={(data) => addAddressMutation.mutate(data)}
+                      onCancel={() => setIsAddingAddress(false)}
+                    />
+                  )}
+
+                  <div className="space-y-4">
+                    {addressesData?.map((address: any) => (
+                      <div key={address._id} className="card bg-base-200">
+                        <div className="card-body">
+                          <p>{address.street}</p>
+                          <p>
+                            {address.city}, {address.state} {address.zip}
+                          </p>
+                          <p>{address.country}</p>
+                          <div className="card-actions justify-end">
+                            {!address.isDefault && (
+                              <button
+                                onClick={() =>
+                                  makeDefaultAddressMutation.mutate(address._id)
+                                }
+                                className="btn btn-xs btn-outline"
+                              >
+                                Make Default
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeTab === "wishlist" && (
               <div className="card bg-base-100 shadow">
                   <h2 className="card-title mb-6">My Wishlist</h2>
@@ -389,7 +513,7 @@ export default function ProfilePage() {
                       </div>
                       <div className="grid grid-cols-2 justify-around">
                         <button onClick={() => removeFromWishlistMutation.mutate(item.product._id)} className="btn btn-border text-center">Remove</button>
-                        <button className="btn btn-border text-center">ADD TO CART</button>
+                        <button onClick={() => handleAddToCartAndRemoveFromWishlist(item)} className="btn btn-border text-center">ADD TO CART</button>
                       </div>
                     </div>
                   ))}
@@ -477,6 +601,14 @@ export default function ProfilePage() {
               className='btn btn-ghost justify-start'
             >
               Profile
+            </button>
+            <FaChevronRight className='mr-2' />
+          </li>
+          <li onClick={() => setActiveTab("address")} className="flex flex-row justify-between rounded p-2 items-center mb-2">
+            <button
+              className='btn btn-ghost justify-start'
+            >
+              Address
             </button>
             <FaChevronRight className='mr-2' />
           </li>

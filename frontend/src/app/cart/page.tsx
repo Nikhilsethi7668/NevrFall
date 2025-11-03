@@ -18,7 +18,6 @@ export default function CartPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [targetItem, setTargetItem] = useState<any>(null);
   const [showAddAddressForm, setShowAddAddressForm] = useState(false);
   const [newAddress, setNewAddress] = useState({
     name: "",
@@ -109,8 +108,12 @@ export default function CartPage() {
       if (action === "add") {
         return cartAPI.add({ userId, variantId, quantity: 1 });
       } else {
-        const item = cart.items.find((i: any) => i.variant._id === variantId);
-        return cartAPI.remove({ userId, variantId, size: item.size });
+        const item = cart.items.find((i: any) => i.variant === variantId);
+        if (item) {
+          return cartAPI.remove({ userId, variantId, size: item.size });
+        }
+        // As a safeguard, we can throw an error or handle it gracefully.
+        throw new Error("Attempted to remove an item that is not in the cart.");
       }
     },
     onSuccess: () => {
@@ -129,16 +132,26 @@ export default function CartPage() {
   });
 
   const addToWishlistMutation = useMutation({
-    mutationFn: () => wishlistAPI.add({ productId: targetItem.product._id }),
+    mutationFn: (productId: string) => wishlistAPI.add({ productId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
       alert("Added to wishlist!");
     },
+    onError: (error: any) => {
+      alert(error.response?.data?.message || "Failed to move to wishlist");
+    },
   });
   
   const handleMoveToWishlist = (item: any) => {
-    addToWishlistMutation.mutate();
-    removeItemMutation.mutate(item.variant)
+    if (!item.product?._id) {
+      alert("Cannot move to wishlist: Product ID is missing.");
+      return;
+    }
+    addToWishlistMutation.mutate(item.product._id, {
+        onSuccess: () => {
+            removeItemMutation.mutate(item.variant);
+        }
+    });
   };
 
   const applyCouponMutation = useMutation({
@@ -224,7 +237,7 @@ export default function CartPage() {
                         <h3 className="font-bold text-sm sm:text-lg" onClick={() => router.push(`/products/${item.product._id}`)}>{item.title}</h3>
                         <p className="text-sm text-gray-600">Color: {item.color} | Size: {item.size}</p>
                         <div className="flex justify-between items-center w-full sm:w-auto sm:flex-col sm:items-end sm:justify-between">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center md:gap-2 lg:gap-2">
                             <button onClick={() => updateQuantityMutation.mutate({ variantId: item.variant, action: "remove" })} disabled={item.quantity <= 1} className="btn btn-xs btn-outline">-</button>
                             <span className="w-8 text-center">{item.quantity}</span>
                             <button onClick={() => updateQuantityMutation.mutate({ variantId: item.variant, action: "add" })} className="btn btn-xs btn-outline">+</button>
@@ -246,7 +259,7 @@ export default function CartPage() {
                 <div className="grid grid-cols-2 justify-around">
                   <button onClick={() => removeItemMutation.mutate(item.variant)} className="btn btn-border text-center">Remove</button>
                   <button
-                    onClick={() => { setTargetItem(item); handleMoveToWishlist(item);}}
+                    onClick={() => handleMoveToWishlist(item)}
                     className="btn btn-border text-center" >
                       Move to Wishlist
                   </button>

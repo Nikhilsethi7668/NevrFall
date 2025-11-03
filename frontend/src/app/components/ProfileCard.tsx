@@ -2,8 +2,12 @@
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 import { useProfileStore } from "../store/useProfileStore";
+import { authAPI } from "@/services/api";
+import secureLocalStorage from "react-secure-storage";
+import { useRouter } from "next/navigation";
 
 export default function AvatarMenu() {
+  const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const dropdown = useRef<HTMLDivElement | null>(null);
@@ -34,6 +38,17 @@ export default function AvatarMenu() {
     document.addEventListener("keydown", keyHandler);
     return () => document.removeEventListener("keydown", keyHandler);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await authAPI.logout();
+      secureLocalStorage.removeItem("auth_token");
+      localStorage.removeItem("userId");
+      router.push("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   return (
     <div className="flex justify-center py-10">
@@ -73,7 +88,7 @@ export default function AvatarMenu() {
             dropdownOpen ? "block animate-fadeIn" : "hidden"
           }`}
         >
-          <ul className="menu menu-sm p-2 space-y-1">
+          <ul className="menu menu-sm p-2 w-full space-y-1">
             <li>
               <Link
                 href="/profile"
@@ -100,6 +115,11 @@ export default function AvatarMenu() {
               >
                 My Returns
               </Link>
+            </li>
+            <li>
+              <button onClick={handleLogout} className="btn btn-error">
+                Logout
+              </button>
             </li>
           </ul>
         </div>

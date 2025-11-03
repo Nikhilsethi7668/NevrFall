@@ -55,13 +55,13 @@ export default function ProductCard({
 
   return (
     <div 
-      className={`shadow-sm hover:shadow-lg transition-all duration-300 rounded-md overflow-hidden ${className}`}
+      className={`hover:shadow-lg transition-all duration-300 overflow-hidden ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <Link href={`/products/${product.slug || product._id}`} className="block">
         <div 
-          className="imgBlockNew custom-border listhover h-72 lg:h-[576px] bg-[#FFEEE7] flex items-center justify-center overflow-hidden rounded-md"
+          className="imgBlockNew custom-border listhover h-72 lg:h-[576px] bg-[#FFEEE7] flex items-center justify-center overflow-hidden"
         >
           <Image
             src={product.coverImage || '/placeholder.png'}
