@@ -1,10 +1,13 @@
 // Controllers/delivery.controller.js
 import Delivery from "../Models/Delivery.js";
 import Order from "../Models/Order.js"; // optional: update order status as needed
+import WarehouseLocation from "../Models/WarehouseLocation.js";
 import * as Delhivery from "../Services/delivery.service.js";
 import { validateCreateShipmentPayload } from "../utils/validators.js";
 
 /* ---------- 1. PINCODE ---------- */
+
+//Working Properly
 export async function pincodeServiceability(req, res) {
   try {
     const pin = req.query.pin || req.query.filter_codes;
@@ -21,6 +24,7 @@ export async function pincodeServiceability(req, res) {
   }
 }
 
+//working
 export async function heavyPincodeServiceability(req, res) {
   try {
     const { pincode, product_type } = req.query;
@@ -38,14 +42,28 @@ export async function heavyPincodeServiceability(req, res) {
 }
 
 /* ---------- 2. Expected TAT ---------- */
+//Working
 export async function expectedTatController(req, res) {
   try {
-    const { origin_pin, destination_pin, mot, pdt, expected_pickup_date } =
-      req.query;
-    if (!origin_pin || !destination_pin || !mot)
+    let {
+      origin_pin,
+      destination_pin,
+      mot = "E",
+      pdt,
+      expected_pickup_date = Date.now().year,
+    } = req.query;
+    if (!destination_pin || !mot)
       return res
         .status(400)
         .json({ ok: false, error: "origin_pin,destination_pin,mot required" });
+
+    const warehouse = await WarehouseLocation.findOne({ default: true });
+    if (!warehouse) {
+      return res
+        .status(404)
+        .json({ ok: false, error: "Default warehouse not found" });
+    }
+    if (!origin_pin) origin_pin = warehouse?.pincode;
     const data = await Delhivery.expectedTAT(
       { origin_pin, destination_pin, mot, pdt, expected_pickup_date },
       req.query.configName || "default"
@@ -58,9 +76,11 @@ export async function expectedTatController(req, res) {
 }
 
 /* ---------- 3. Calculate cost ---------- */
+//Working
 export async function calculateCostController(req, res) {
   try {
     const params = req.query; // md,cgm,o_pin,d_pin,ss,pt
+    // will include md= s/e , cgm=wt grms , o_pin , d_pin , ss->shipment status  , pt- "Pre-paid" /"cod"
     const data = await Delhivery.calculateShippingCost(
       params,
       req.query.configName || "default"
@@ -73,6 +93,7 @@ export async function calculateCostController(req, res) {
 }
 
 /* ---------- 4. Waybills ---------- */
+//Working
 export async function fetchWaybillsController(req, res) {
   try {
     const count = Number(req.query.count || req.body.count || 1);
@@ -89,7 +110,7 @@ export async function fetchWaybillsController(req, res) {
     return res.status(500).json({ ok: false, error: err.raw || err.message });
   }
 }
-
+//Working
 export async function fetchWaybillSingleController(req, res) {
   try {
     const data = await Delhivery.fetchWaybillSingle(

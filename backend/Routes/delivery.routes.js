@@ -4,7 +4,6 @@ import { auth } from "../Middlewares/auth.js";
 import Delivery from "../Models/Delivery.js";
 
 import {
-  // serviceability & misc
   pincodeServiceability,
   heavyPincodeServiceability,
   expectedTatController,

@@ -15,6 +15,7 @@ export async function checkPincode(filter_code, configName = "default") {
     const r = await client.get(
       `/c/api/pin-codes/json/?filter_codes=${encodeURIComponent(filter_code)}`
     );
+    console.log(r);
     return r.data;
   } catch (e) {
     wrapError(e);

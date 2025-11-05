@@ -32,11 +32,14 @@ app.set("trust proxy", 1);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
 const isProd = process.env.PRODUCTION === "true";
 app.use(
   cors({
-    origin: ['http://13.61.7.132:3000', 'http://13.61.7.132:5173', 'http://localhost:3000'],
+    origin: [
+      "http://13.61.7.132:3000",
+      "http://13.61.7.132:5173",
+      "http://localhost:3000",
+    ],
     credentials: true,
   })
 );
@@ -45,7 +48,6 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false }));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-
 
 app.get("/health", (req, res) =>
   res.json({
@@ -90,7 +92,10 @@ const PORT = Number(process.env.PORT || 8080);
     try {
       await connectRedis();
     } catch (err) {
-      console.warn('Redis connection failed, continuing without cache:', err.message);
+      console.warn(
+        "Redis connection failed, continuing without cache:",
+        err.message
+      );
     }
     const server = app.listen(PORT, () => {
       console.log(`Server started on PORT ${PORT}`);
