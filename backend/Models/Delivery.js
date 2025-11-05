@@ -19,6 +19,34 @@ const deliverySchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    // Multi-piece shipment support
+    pieceNumber: {
+      type: Number,
+      default: 1,
+      required: true,
+    }, // 1, 2, 3... for multi-piece orders
+    totalPieces: {
+      type: Number,
+      default: 1,
+      required: true,
+    }, // Total number of pieces for this order
+    // Track which order items are in this shipment piece
+    items: [
+      {
+        product: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
+          required: true,
+        },
+        variant: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "ProductVariant",
+          required: true,
+        },
+        quantity: { type: Number, required: true, min: 1 },
+        itemIndex: { type: Number }, // Index in order.items array
+      },
+    ],
     status: {
       type: String,
       enum: [
@@ -62,6 +90,9 @@ const deliverySchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Index for finding all pieces of an order
+deliverySchema.index({ order: 1, pieceNumber: 1 });
 
 const Delivery = mongoose.model("Delivery", deliverySchema);
 

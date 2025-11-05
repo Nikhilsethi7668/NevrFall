@@ -5,6 +5,200 @@ import WarehouseLocation from "../Models/WarehouseLocation.js";
 import * as Delhivery from "../Services/delivery.service.js";
 import { validateCreateShipmentPayload } from "../utils/validators.js";
 
+/* ---------- Helper Functions for Multi-Piece Shipments ---------- */
+
+/**
+ * Split order items into shipment pieces
+ * @param {Array} orderItems - Array of order items
+ * @param {Object} options - { maxItemsPerPiece, maxWeightPerPiece (in grams) }
+ * @returns {Array} Array of pieces, each containing items for that piece
+ */
+export function splitOrderIntoPieces(orderItems, options = {}) {
+  const { maxItemsPerPiece = 5, maxWeightPerPiece = 5000 } = options; // Default: 5 items or 5kg per piece
+
+  const pieces = [];
+  let currentPiece = [];
+  let currentWeight = 0;
+  let currentItemCount = 0;
+
+  for (let i = 0; i < orderItems.length; i++) {
+    const item = orderItems[i];
+    // Estimate weight (you may want to get actual weight from product/variant)
+    const itemWeight = (item.weight || 500) * item.quantity; // Default 500g per item
+    const itemCount = item.quantity;
+
+    // Check if adding this item would exceed limits
+    const wouldExceedWeight = currentWeight + itemWeight > maxWeightPerPiece;
+    const wouldExceedCount = currentItemCount + itemCount > maxItemsPerPiece;
+
+    // If current piece is not empty and adding this item would exceed limits, start new piece
+    if (currentPiece.length > 0 && (wouldExceedWeight || wouldExceedCount)) {
+      pieces.push([...currentPiece]);
+      currentPiece = [];
+      currentWeight = 0;
+      currentItemCount = 0;
+    }
+
+    // Add item to current piece
+    currentPiece.push({
+      ...item,
+      itemIndex: i, // Track original index in order.items
+    });
+    currentWeight += itemWeight;
+    currentItemCount += itemCount;
+  }
+
+  // Add remaining items as last piece
+  if (currentPiece.length > 0) {
+    pieces.push(currentPiece);
+  }
+
+  return pieces.length > 0 ? pieces : [orderItems]; // Fallback to single piece if empty
+}
+
+/**
+ * Build Delhivery shipment payload from order items
+ * @param {Object} order - Order document
+ * @param {Array} itemsForPiece - Items to include in this piece
+ * @param {Object} pickupLocation - Pickup location object
+ * @param {Number} pieceNumber - Piece number (1, 2, 3...)
+ * @param {Number} totalPieces - Total number of pieces
+ * @returns {Object} Delhivery shipment payload
+ */
+export function buildDelhiveryShipmentPayload(
+  order,
+  itemsForPiece,
+  pickupLocation,
+  pieceNumber = 1,
+  totalPieces = 1
+) {
+  const shippingAddress = order.shippingAddress || {};
+  const paymentMode = order.paymentMethod === "cod" ? "COD" : "Prepaid";
+
+  // Build order string for Delhivery (order ID + piece number for multi-piece)
+  const orderIdString =
+    totalPieces > 1
+      ? `${order._id.toString()}-P${pieceNumber}/${totalPieces}`
+      : order._id.toString();
+
+  // Calculate COD amount for this piece (if COD)
+  let codAmount = 0;
+  if (paymentMode === "COD") {
+    codAmount = itemsForPiece.reduce(
+      (sum, item) => sum + item.priceAfterDiscount * item.quantity,
+      0
+    );
+    // Add proportional discount if any
+    const pieceSubtotal = itemsForPiece.reduce(
+      (sum, item) => sum + item.lineTotal,
+      0
+    );
+    const orderTotal = order.total || 0;
+    const orderSubtotal = order.subtotal || 0;
+    if (orderTotal < orderSubtotal && orderSubtotal > 0) {
+      const discountRatio = orderTotal / orderSubtotal;
+      codAmount = Math.round(pieceSubtotal * discountRatio);
+    }
+  }
+
+  // Build shipments array for Delhivery
+  const shipments = [
+    {
+      order: orderIdString, // Unique order ID per piece
+      name: shippingAddress.name || "Customer",
+      phone: shippingAddress.phone || "",
+      pin: shippingAddress.pincode || shippingAddress.pin || "",
+      address: [
+        shippingAddress.line1 || "",
+        shippingAddress.line2 || "",
+        shippingAddress.city || "",
+        shippingAddress.state || "",
+      ]
+        .filter(Boolean)
+        .join(", "),
+      payment_mode: paymentMode,
+      ...(codAmount > 0 && { amount: codAmount.toString() }),
+      // Add item details
+      products_desc: itemsForPiece
+        .map(
+          (item) =>
+            `${item.title || "Product"} ${item.color || ""} ${
+              item.size || ""
+            } x${item.quantity}`
+        )
+        .join(", "),
+      quantity: itemsForPiece.reduce((sum, item) => sum + item.quantity, 0),
+      // Add weight if available
+      ...(itemsForPiece[0]?.weight && {
+        total_amount: itemsForPiece
+          .reduce((sum, item) => sum + (item.weight || 500) * item.quantity, 0)
+          .toString(),
+      }),
+    },
+  ];
+
+  return {
+    shipments,
+    pickup_location: pickupLocation,
+  };
+}
+
+/**
+ * Extract waybills from Delhivery response (handles both single and multi-piece)
+ * @param {Object} response - Delhivery API response
+ * @returns {Array} Array of waybill objects { waybill, shipmentIndex }
+ */
+export function extractWaybillsFromResponse(response) {
+  const waybills = [];
+
+  // Handle different response formats
+  if (response?.shipments && Array.isArray(response.shipments)) {
+    response.shipments.forEach((shipment, index) => {
+      if (shipment.waybill) {
+        waybills.push({
+          waybill: shipment.waybill,
+          shipmentIndex: index,
+          shipment: shipment,
+        });
+      }
+    });
+  } else if (response?.packages && Array.isArray(response.packages)) {
+    response.packages.forEach((pkg, index) => {
+      if (pkg.waybill) {
+        waybills.push({
+          waybill: pkg.waybill,
+          shipmentIndex: index,
+          shipment: pkg,
+        });
+      }
+    });
+  } else if (response?.data?.waybill) {
+    waybills.push({
+      waybill: response.data.waybill,
+      shipmentIndex: 0,
+      shipment: response.data,
+    });
+  } else if (response?.waybill) {
+    waybills.push({
+      waybill: response.waybill,
+      shipmentIndex: 0,
+      shipment: response,
+    });
+  } else if (Array.isArray(response) && response.length > 0) {
+    response.forEach((item, index) => {
+      if (item.waybill) {
+        waybills.push({
+          waybill: item.waybill,
+          shipmentIndex: index,
+          shipment: item,
+        });
+      }
+    });
+  }
+
+  return waybills;
+}
+
 /* ---------- 1. PINCODE ---------- */
 
 //Working Properly
@@ -125,81 +319,214 @@ export async function fetchWaybillSingleController(req, res) {
 
 /* ---------- 5. Create Shipment (manifest) ---------- */
 /**
- * body: { orderId, clientId, payload: { shipments: [...], pickup_location: {...} }, configName }
+ * Enhanced to support multi-piece shipments
+ *
+ * Option 1 (Manual): body: { payload: { shipments: [...], pickup_location: {...} }, configName }
+ * Option 2 (Auto from Order): body: { orderId, configName, splitOptions?: { maxItemsPerPiece, maxWeightPerPiece } }
  */
 export async function createShipmentController(req, res) {
   try {
-    const { orderId, clientId, payload, configName } = req.body;
-    if (!payload)
-      return res.status(400).json({ ok: false, error: "payload required" });
-    const v = validateCreateShipmentPayload(payload);
-    if (!v.ok) return res.status(400).json({ ok: false, error: v.error });
+    const { orderId, clientId, payload, configName, splitOptions } = req.body;
 
-    // create Delivery doc
-    const delivery = await Delivery.create({
-      order: orderId || null,
-      client: clientId || null,
-      status: "created",
-      pickup_location: payload.pickup_location?.name || "unknown",
-      payment_mode: payload?.shipments?.[0]?.payment_mode || "Prepaid",
-      delhiveryRaw: null,
-    });
+    let finalPayload = payload;
+    let order = null;
+    let pieces = [];
+    let totalPieces = 1;
+
+    // If orderId provided, fetch order and auto-generate payload
+    if (orderId) {
+      order = await Order.findById(orderId).lean();
+      if (!order) {
+        return res.status(404).json({ ok: false, error: "Order not found" });
+      }
+
+      // Get default warehouse/pickup location
+      const warehouse = await WarehouseLocation.findOne({ default: true });
+      if (!warehouse) {
+        return res
+          .status(404)
+          .json({ ok: false, error: "Default warehouse not found" });
+      }
+
+      const pickupLocation = {
+        name: warehouse.name || "Default Warehouse",
+        phone: warehouse.phone || "",
+        address: [
+          warehouse.line1 || "",
+          warehouse.line2 || "",
+          warehouse.city || "",
+          warehouse.state || "",
+        ]
+          .filter(Boolean)
+          .join(", "),
+        pin: warehouse.pincode || "",
+        city: warehouse.city || "",
+        state: warehouse.state || "",
+      };
+
+      // Split order into pieces if needed
+      pieces = splitOrderIntoPieces(order.items || [], splitOptions || {});
+      totalPieces = pieces.length;
+
+      // Build payload for all pieces (single API call for all pieces)
+      if (totalPieces > 1) {
+        // Multi-piece: combine all pieces into one payload
+        const allShipments = [];
+        pieces.forEach((pieceItems, index) => {
+          const piecePayload = buildDelhiveryShipmentPayload(
+            order,
+            pieceItems,
+            pickupLocation,
+            index + 1,
+            totalPieces
+          );
+          allShipments.push(...piecePayload.shipments);
+        });
+        finalPayload = {
+          shipments: allShipments,
+          pickup_location: pickupLocation,
+        };
+      } else {
+        // Single piece
+        finalPayload = buildDelhiveryShipmentPayload(
+          order,
+          pieces[0] || order.items,
+          pickupLocation,
+          1,
+          1
+        );
+      }
+
+      // Validate payload
+      const v = validateCreateShipmentPayload(finalPayload);
+      if (!v.ok) return res.status(400).json({ ok: false, error: v.error });
+    } else if (!payload) {
+      return res
+        .status(400)
+        .json({ ok: false, error: "payload or orderId required" });
+    } else {
+      // Manual payload provided
+      const v = validateCreateShipmentPayload(payload);
+      if (!v.ok) return res.status(400).json({ ok: false, error: v.error });
+      totalPieces = payload.shipments?.length || 1;
+    }
+
+    // Create Delivery documents for each piece
+    const deliveryDocs = [];
+    for (let i = 0; i < totalPieces; i++) {
+      const pieceItems = pieces[i] || [];
+      const delivery = await Delivery.create({
+        order: orderId || order?._id || null,
+        client: clientId || order?.user || null,
+        pieceNumber: i + 1,
+        totalPieces: totalPieces,
+        items: pieceItems.map((item) => ({
+          product: item.product,
+          variant: item.variant,
+          quantity: item.quantity,
+          itemIndex: item.itemIndex !== undefined ? item.itemIndex : i,
+        })),
+        status: "created",
+        pickup_location: finalPayload.pickup_location?.name || "unknown",
+        payment_mode:
+          finalPayload?.shipments?.[i]?.payment_mode ||
+          finalPayload?.shipments?.[0]?.payment_mode ||
+          "Prepaid",
+        delhiveryRaw: null,
+      });
+      deliveryDocs.push(delivery);
+    }
 
     try {
+      // Call Delhivery API with combined payload
       const resp = await Delhivery.createShipment(
-        payload,
+        finalPayload,
         configName || "default"
       );
-      // Map response to waybill(s). Response shape may vary — adapt to actual API response.
-      // Many Delhivery responses return "packages" or "shipments" arrays or a direct object.
-      const waybill =
-        resp?.shipments?.[0]?.waybill ||
-        resp?.packages?.[0]?.waybill ||
-        resp?.data?.waybill ||
-        (Array.isArray(resp) && resp[0]) ||
-        null;
 
-      delivery.waybill = waybill || delivery.waybill;
-      delivery.delhiveryRaw = resp;
-      delivery.status = waybill ? "manifested" : "manifest_failed";
-      delivery.history.push({
-        status: delivery.status,
-        note: "manifest created",
-        raw: resp,
-      });
-      await delivery.save();
+      // Extract waybills from response
+      const waybills = extractWaybillsFromResponse(resp);
 
-      // optional: update Order status
-      if (orderId) {
+      // Update each delivery document with its waybill
+      const updatedDeliveries = [];
+      for (let i = 0; i < deliveryDocs.length; i++) {
+        const delivery = deliveryDocs[i];
+        const waybillData = waybills[i] || waybills[0] || null; // Fallback to first if fewer waybills
+
+        if (waybillData?.waybill) {
+          delivery.waybill = waybillData.waybill;
+          delivery.status = "manifested";
+        } else {
+          delivery.status = "manifest_failed";
+        }
+
+        delivery.delhiveryRaw = resp;
+        delivery.history.push({
+          status: delivery.status,
+          note:
+            totalPieces > 1
+              ? `Piece ${delivery.pieceNumber}/${totalPieces} manifest ${
+                  delivery.status === "manifested" ? "created" : "failed"
+                }`
+              : "manifest created",
+          raw: waybillData?.shipment || resp,
+        });
+
+        await delivery.save();
+        updatedDeliveries.push(delivery);
+      }
+
+      // Update Order with delivery references
+      if (orderId || order?._id) {
         try {
+          const deliveryIds = updatedDeliveries.map((d) => d._id);
           await Order.updateOne(
-            { _id: orderId },
-            { $set: { status: "manifested" } }
+            { _id: orderId || order._id },
+            {
+              $set: {
+                status: "manifested",
+                deliveryDetails: deliveryIds[0], // Keep first for backward compatibility
+              },
+              $addToSet: { deliveries: { $each: deliveryIds } }, // Add all delivery IDs
+            }
           );
         } catch (e) {
-          /* ignore */
+          console.error("Error updating order:", e);
         }
       }
 
-      return res.json({ ok: true, data: delivery });
-    } catch (err) {
-      delivery.meta = delivery.meta || {};
-      delivery.meta.delhiveryError = err.raw || err.message;
-      delivery.status = "manifest_failed";
-      delivery.history.push({
-        status: "manifest_failed",
-        note: "manifest failed",
-        raw: err.raw || err.message,
+      return res.json({
+        ok: true,
+        data:
+          totalPieces === 1
+            ? updatedDeliveries[0]
+            : { deliveries: updatedDeliveries, totalPieces },
+        totalPieces,
+        waybills: waybills.map((w) => w.waybill),
       });
-      await delivery.save();
+    } catch (err) {
+      // Mark all deliveries as failed
+      for (const delivery of deliveryDocs) {
+        delivery.meta = delivery.meta || {};
+        delivery.meta.delhiveryError = err.raw || err.message;
+        delivery.status = "manifest_failed";
+        delivery.history.push({
+          status: "manifest_failed",
+          note: "manifest failed",
+          raw: err.raw || err.message,
+        });
+        await delivery.save();
+      }
+
       return res.status(500).json({
         ok: false,
         error: err.raw || err.message,
-        deliveryId: delivery._id,
+        deliveryIds: deliveryDocs.map((d) => d._id),
+        totalPieces,
       });
     }
   } catch (err) {
-    console.error(err);
+    console.error("createShipmentController error:", err);
     return res.status(500).json({ ok: false, error: err.message });
   }
 }

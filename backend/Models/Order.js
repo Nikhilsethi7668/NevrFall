@@ -97,7 +97,7 @@ const OrderSchema = new mongoose.Schema(
       enum: ["cod", "wallet", "razorpay", "payu", "none"],
       default: "none",
     },
-    
+
     walletTransactionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "WalletTransaction",
@@ -105,11 +105,19 @@ const OrderSchema = new mongoose.Schema(
     },
     payments: { type: [PaymentDetailSchema], default: [] },
     shippingAddress: { type: Object, default: {} },
+    // Support multiple delivery pieces for multi-piece shipments
     deliveryDetails: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Delivery",
       default: null,
     },
+    // Array to track all delivery pieces for multi-piece shipments
+    deliveries: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Delivery",
+      },
+    ],
     meta: { type: Object, default: {} },
   },
   { timestamps: true }
