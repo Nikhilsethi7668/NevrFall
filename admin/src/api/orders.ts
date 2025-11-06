@@ -42,4 +42,9 @@ export const orderApi = {
       statusDistribution: StatusDistribution[];
     };
   },
+
+  getOrderById: async (id: string) => {
+    const { data } = await axios.get(`admin/orders/${id}`);
+    return data;
+  },
 };

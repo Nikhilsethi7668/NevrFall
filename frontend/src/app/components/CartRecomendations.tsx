@@ -36,9 +36,9 @@ export default function YouMightAlsoLike({ cartRecomendation }: any) {
   if (!cartRecomendation || !cartRecomendation.items?.length) return null;
 
   return (
-    <div className="bg-base-200 py-10">
-      <div className="container mx-auto px-4 md:px-8">
-        <h2 className="text-3xl font-bold text-center mb-8">
+    <div className="bg-base-200 py-5">
+      <div className="container mx-auto md:px-8">
+        <h2 className="lg:text-3xl font-bold text-center mb-2">
           You Might Also Like
         </h2>
 
@@ -55,7 +55,7 @@ export default function YouMightAlsoLike({ cartRecomendation }: any) {
                 className="block shadow-sm hover:shadow-lg transition-all duration-300 rounded-md overflow-hidden bg-white"
               >
                 {/* Product Image */}
-                <div className="h-[20vh] lg:h-[576px] bg-[#FFEEE7] flex items-center justify-center overflow-hidden rounded-md">
+                <div className="h-[16vh] lg:h-[20vh] bg-[#FFEEE7] flex items-center justify-center overflow-hidden rounded-md">
                   <Image
                     src={product.coverImage || "/placeholder.png"}
                     alt={product.title}
@@ -69,7 +69,7 @@ export default function YouMightAlsoLike({ cartRecomendation }: any) {
                 {/* Product Details */}
                 <div className="mx-1 py-2 lg:px-4">
                   <div className="flex justify-between items-start">
-                    <h5 className="text-left text-[#585c70] font-semibold line-clamp-1">
+                    <h5 className="text-left text-[#585c70] text-xs md:text-lg lg:text-lg font-semibold line-clamp-1">
                       {product.title}
                     </h5>
 

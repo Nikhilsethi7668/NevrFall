@@ -108,6 +108,7 @@ export async function createShipment(payload, configName = "default") {
     const r = await client.post(`/api/cmu/create.json`, form, {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
     });
+    console.log(r);
     return r.data;
   } catch (e) {
     wrapError(e);

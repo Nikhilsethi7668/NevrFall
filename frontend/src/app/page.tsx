@@ -183,7 +183,7 @@ export default function Home() {
         <Categories />
       </div>
       
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-2">
         <div className="lg:col-span-3">
           <h1 className="text-center font-semibold text-2xl my-2">Products</h1>
           {loading ? (
@@ -194,7 +194,7 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-2 lg:gap-6">
+              <div className="grid grid-cols-2 gap-2 lg:gap-2">
                 {products.map((product: any) => (
                   <ProductCard key={product._id} product={product} />
                 ))}

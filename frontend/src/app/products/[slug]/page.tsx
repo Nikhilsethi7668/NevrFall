@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { productAPI, cartAPI, wishlistAPI, reviewAPI } from "@/services/api";
+import { productAPI, cartAPI, wishlistAPI, reviewAPI, deliveryAPI } from "@/services/api";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
 import { FaChevronDown } from "react-icons/fa";
 import { FaRegHeart } from "react-icons/fa6";
 import ProductRecomendations from "@/app/components/ProductRecomendations";
+import { toast } from "react-toastify";
+import { DELIVERY_CHECK_PINCODE } from "@/app/constants/Constant";
+import axios from "axios";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -17,6 +20,7 @@ export default function ProductDetailPage() {
   const slug = params.slug as string;
 
   const [selectedSize, setSelectedSize] = useState<string>("");
+  const [pinCode, setPinCode] = useState<string>("");
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -44,6 +48,25 @@ export default function ProductDetailPage() {
     },
     enabled: !!product?.product?._id,
   });
+
+  const handleCheckServiceability = async () => {
+    const URL = DELIVERY_CHECK_PINCODE+ `?pin=` + pinCode;
+    try {
+      const res = await axios.get(URL,{
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const result = res.data.data.delivery_codes;
+      if (result.length > 0){
+        toast.success("We deliver at your location");
+      } else {
+        toast.error("We do not deliver at your location");
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message);
+    }
+  };
 
   // Add to cart mutation
   const addToCartMutation = useMutation({
@@ -200,6 +223,39 @@ export default function ProductDetailPage() {
                     {variant.stock === 0 && " (Out)"}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Check Serviceability */}
+            <div className="bg-base-300 border-base-300 collapse border">
+              <input type="checkbox" className="peer" />
+              <div className="collapse-title">Check Serviceability</div>
+              <div className="collapse-content">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    value={pinCode}
+                    onChange={(e) => {
+                        let value = e.target.value.replace(/\D/g, "");
+                        value = value.replace(/^0+/, "");
+                        if (Number(value) < 1000000) {
+                          setPinCode(value);
+                        }
+                      }
+                    }
+                  />
+                  <button
+                    onClick={() => {
+                      if (pinCode.length === 6){
+                        handleCheckServiceability();
+                      }
+                    }}
+                    className={`btn ${pinCode.length === 6 ? "btn-primary" : "btn-outline"}`}
+                  >
+                    Check Serviceability
+                  </button>
+                </div>
               </div>
             </div>
 

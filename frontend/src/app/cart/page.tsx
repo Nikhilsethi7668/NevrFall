@@ -10,6 +10,10 @@ import Footer from "../components/Footer";
 import { useOrderStore } from "../store/useOrderStore";
 import CartRecomendations from "../components/CartRecomendations";
 import { FaChevronDown, FaChevronRight } from "react-icons/fa";
+import { toast } from "react-toastify";
+import { DELIVERY_CHECK_PINCODE } from "../constants/Constant";
+import axios from "axios";
+import { FaCaretDown } from "react-icons/fa";
 
 export default function CartPage() {
   const router = useRouter();
@@ -19,6 +23,8 @@ export default function CartPage() {
   const [mounted, setMounted] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [showAddAddressForm, setShowAddAddressForm] = useState(false);
+  const [notDeliverable, setNotDeliverable] = useState(true);
+  const [message, setMessage] = useState("");
   const [newAddress, setNewAddress] = useState({
     name: "",
     phone: "",
@@ -34,6 +40,33 @@ export default function CartPage() {
     setMounted(true);
     setUserId(localStorage.getItem("userId"));
   }, []);
+
+  const handleCheckServiceability = async () => {
+    const URL = DELIVERY_CHECK_PINCODE+ `?pin=` + address.pincode;
+    try {
+      const res = await axios.get(URL,{
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const result = res.data.data.delivery_codes;
+      if (result.length > 0){
+        setNotDeliverable(false);
+        setMessage("")
+      } else {
+        setNotDeliverable(true);
+        setMessage("Change Delivery Address")
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to check serviceability");
+    }
+  };
+
+  useEffect(() => {
+    if (address) {
+      handleCheckServiceability();
+    }
+  }, [address]);
 
   // Fetch cart
   const { data: cart, isLoading } = useQuery({
@@ -51,6 +84,16 @@ export default function CartPage() {
     queryFn: () => authAPI.getAllUserAddress().then(res => res.data.addresses),
     enabled: !!userId,
   });
+
+  const isDisabled = () => {
+    if (!address) {
+      return true;
+    }
+    if (notDeliverable) {
+      return true;
+    }
+    return false;
+  };
 
   const addAddressMutation = useMutation({
     mutationFn: (addressData: any) => authAPI.addAddress(addressData),
@@ -229,29 +272,31 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-4">
             {cart.items.map((item: any) => (
               <div key={item.variant} className="card bg-base-100 shadow-2xl">
-                <div className="card-body h-[16vh]">
+                <div className="px-1 h-[17vh]">
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex gap-4 flex-1 cursor-pointer">
-                      <img src={item.product?.coverImage} alt={item.title} onClick={() => router.push(`/products/${item.product._id}`)} className="w-24 h-24 object-cover rounded" />
+                      <img src={item.product?.coverImage} alt={item.title} onClick={() => router.push(`/products/${item.product._id}`)} className="w-20 h-30 object-cover rounded" />
                       <div className="flex-1">
                         <h3 className="font-bold text-sm sm:text-lg" onClick={() => router.push(`/products/${item.product._id}`)}>{item.title}</h3>
                         <p className="text-sm text-gray-600">Color: {item.color} | Size: {item.size}</p>
-                        <div className="flex justify-between items-center w-full sm:w-auto sm:flex-col sm:items-end sm:justify-between">
-                          <div className="flex items-center md:gap-2 lg:gap-2">
-                            <button onClick={() => updateQuantityMutation.mutate({ variantId: item.variant, action: "remove" })} disabled={item.quantity <= 1} className="btn btn-xs btn-outline">-</button>
-                            <span className="w-8 text-center">{item.quantity}</span>
-                            <button onClick={() => updateQuantityMutation.mutate({ variantId: item.variant, action: "add" })} className="btn btn-xs btn-outline">+</button>
-                          </div>
-                          <div>
-                            <select name="size" id="size" className="select select-md rounded-md w-[16vw] p-2 select-bordered">
-                              {item.product.availableSizes && item.product.availableSizes.length > 0 &&
-                                item.product.availableSizes.map((variant: any, index: number) => (
-                                  <option key={index} value={variant} className={variant === item.size ? "selected" : ""}>{variant}</option>
-                                ))}
-                            </select>
+                        <div className="flex flex-col justify-between">
+                          <p className="text-xs font-semibold mt-2">₹{item.price}</p>
+                          <div className="flex justify-between items-center w-full gap-2 sm:w-auto sm:flex-col sm:items-end sm:justify-between">
+                            <div className="flex items-center md:gap-2 lg:gap-2">
+                              <button onClick={() => updateQuantityMutation.mutate({ variantId: item.variant, action: "remove" })} disabled={item.quantity <= 1} className="btn btn-xs btn-outline">-</button>
+                              <span className="w-8 text-center">{item.quantity}</span>
+                              <button onClick={() => updateQuantityMutation.mutate({ variantId: item.variant, action: "add" })} className="btn btn-xs btn-outline">+</button>
+                            </div>
+                            <div>
+                              <select name="size" id="size" className="select select-sm lg:select-md rounded-md lg:w-[16vw] p-2 select-bordered">
+                                {item.product.availableSizes && item.product.availableSizes.length > 0 &&
+                                  item.product.availableSizes.map((variant: any, index: number) => (
+                                    <option key={index} value={variant} className={`text-xs md:text-lg lg:text-lg ${variant === item.size ? "selected" : ""}`}>{variant}</option>
+                                  ))}
+                              </select>
+                            </div>
                           </div>
                         </div>
-                        <p className="text-xs font-semibold mt-2">₹{item.price}</p>
                       </div>
                     </div>
                   </div>
@@ -274,18 +319,23 @@ export default function CartPage() {
               <div className="p-3">
                 <h2 className="card-title mb-4">Order Summary</h2>
 
-                <div>
-                  <h3 className="font-bold mb-2">Shipping Address</h3>
+                <div className="bg-base-100 border-base-300 collapse border">
+                  <input type="checkbox" className="peer" />
+                  <div className="collapse-title flex flex-row justify-between peer-checked:[&>p:last-child]:rotate-180"><p>Shipping Address</p><p className="transition-transform duration-300"><FaCaretDown /></p></div>
+                  <div className="collapse-content">
                   {isLoadingAddresses ? (
                     <p>Loading addresses...</p>
                   ) : (
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {addresses && addresses.map((addr: any, index: number) => (
-                        <div key={addr.index} className={`border p-2 rounded-md cursor-pointer ${address === addr ? 'border-primary' : 'border-dashed border-neutral'}`} onClick={() => handleSelectAddress(addr)}>
+                        <>
+                        <div key={addr.index} className={`border p-2 rounded-md cursor-pointer ${address === addr ?  !notDeliverable ? 'border-primary' : 'border-error' : 'border-dashed border-neutral'}`} onClick={() => handleSelectAddress(addr)}>
+                          {message && address == addr && (<p className="text-error">{message}</p>)}
                           <p className="font-semibold">{addr.name}</p>
                           <p>{addr.line1}</p>
                           <p>{addr.city}, {addr.state} {addr.pincode}</p>
                         </div>
+                        </>
                       ))}
                     </div>
                   )}
@@ -310,6 +360,7 @@ export default function CartPage() {
                         </div>
                     </div>
                   </dialog>
+                </div>
                 </div>
 
                 {showAddAddressForm && (
@@ -352,7 +403,7 @@ export default function CartPage() {
                   <div className="flex justify-between text-xl font-bold"><span>Total</span><span>₹{total.toFixed(2)}</span></div>
                 </div>
 
-                <button onClick={() => router.push("/checkout")} className="btn hidden sm:block btn-primary w-full mt-6" disabled={!address}>
+                <button onClick={() => router.push("/checkout")} className="btn hidden sm:block btn-primary w-full mt-6" disabled={isDisabled()}>
                   Proceed to Checkout
                 </button>
 

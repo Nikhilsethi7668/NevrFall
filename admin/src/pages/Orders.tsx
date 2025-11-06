@@ -7,6 +7,8 @@ import Modal from '@/components/Modal';
 import { Order, OrderStatus } from '@/types';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
+import { DISPATCH_ORDER, GET_ORDER_BY_ID } from '@/constants/Constant';
+import axios from 'axios';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -19,8 +21,8 @@ const statusColors: Record<string, string> = {
 };
 
 const Orders: React.FC = () => {
-  const { orders, page, totalPages, loading, fetchOrders, updateOrderStatus, approveRefund } =
-    useOrderStore();
+  const { orders, page, totalPages, loading, fetchOrders, updateOrderStatus, approveRefund } = useOrderStore();
+  const [order, setOrder] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
@@ -28,6 +30,13 @@ const Orders: React.FC = () => {
   useEffect(() => {
     fetchOrders({ status: statusFilter || undefined });
   }, [statusFilter]);
+
+  const payload = {
+    orderId: order._id,
+    clientId: order?.user?._id,
+  }
+  console.log(payload);
+  console.log(order);
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     try {
@@ -49,6 +58,45 @@ const Orders: React.FC = () => {
       toast.error('Failed to process refund');
     }
   };
+
+  const getOrderById = async () => {
+    const URL = GET_ORDER_BY_ID + selectedOrder._id;
+    const token = localStorage.getItem('adminToken');
+    
+    try {
+      const res = await axios.get(URL, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+      });
+      console.log(res.data)
+      setOrder(res.data);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message);
+    }
+  };
+
+  const dispatchOrder = async () => {
+    const URL = DISPATCH_ORDER;
+    const token = localStorage.getItem('adminToken');
+    
+    try {
+      const res = axios.post(URL, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+      });
+      const result = res.data.data;
+      console.log(result);
+      toast.success('Order dispatched');
+    }
+    catch {
+      toast.error('Failed to dispatch order');
+    }
+  };
+        
 
   const columns = [
     {
@@ -97,6 +145,7 @@ const Orders: React.FC = () => {
             onClick={() => {
               setSelectedOrder(item);
               setIsModalOpen(true);
+              getOrderById();
             }}
             className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700"
           >
@@ -171,14 +220,14 @@ const Orders: React.FC = () => {
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Total</p>
-                <p className="font-medium">₹{selectedOrder.total.toLocaleString()}</p>
-              </div>
-              <div>
                 <p className="text-sm text-gray-600">Date</p>
                 <p className="font-medium">
                   {format(new Date(selectedOrder.createdAt), 'PPP')}
                 </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Payment Method</p>
+                <p className="font-medium">{selectedOrder.paymentMethod}</p>
               </div>
             </div>
 
@@ -200,6 +249,55 @@ const Orders: React.FC = () => {
                 <option value="cancelled">Cancelled</option>
                 <option value="returned">Returned</option>
               </select>
+            </div>
+
+            {selectedOrder.shippingAddress && (
+              <div>
+                <p className="mb-2 text-sm font-medium text-gray-900">
+                  Shipping Address
+                </p>
+                <div className="rounded border border-gray-200 p-2 text-sm">
+                  <p>{selectedOrder.shippingAddress.name}</p>
+                  <p>{selectedOrder.shippingAddress.line1}</p>
+                  {selectedOrder.shippingAddress.line2 && <p>{selectedOrder.shippingAddress.line2}</p>}
+                  <p>{selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state} {selectedOrder.shippingAddress.pincode}</p>
+                  <p>{selectedOrder.shippingAddress.phone}</p>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <p className="mb-2 text-sm font-medium text-gray-900">Items</p>
+              <div className="space-y-2">
+                {selectedOrder.items.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between rounded border border-gray-200 p-2 text-sm">
+                    <div>
+                      <p className="font-medium">{item.title}</p>
+                      <p className="text-gray-600">SKU: {item.variant.sku}</p>
+                      <p className="text-gray-600">Quantity: {item.quantity}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">₹{item.priceAfterDiscount.toLocaleString()}</p>
+                      <p className="text-gray-600 line-through">₹{item.price.toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2 border-t border-gray-200 pt-4">
+              <div className="flex justify-between text-sm">
+                <p className="text-gray-600">Subtotal</p>
+                <p>₹{selectedOrder.subtotal.toLocaleString()}</p>
+              </div>
+              <div className="flex justify-between text-sm">
+                <p className="text-gray-600">Discount</p>
+                <p>- ₹{selectedOrder.discountAmount.toLocaleString()}</p>
+              </div>
+              <div className="flex justify-between font-medium">
+                <p>Total</p>
+                <p>₹{selectedOrder.total.toLocaleString()}</p>
+              </div>
             </div>
 
             {selectedOrder.meta?.statusHistory && (
@@ -224,6 +322,9 @@ const Orders: React.FC = () => {
             )}
           </div>
         )}
+        <div className='flex justify-end'>
+          <button onClickCapture={()=> dispatchOrder()} className="rounded bg-blue-600 px-5 py-2 text-lg text-white hover:bg-blue-700" onClick={() => setIsModalOpen(false)}>Dispatch</button>
+        </div>
       </Modal>
     </div>
   );

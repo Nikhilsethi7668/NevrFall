@@ -47,6 +47,7 @@ router.get("/delivery/pincode/heavy", heavyPincodeServiceability);
 
 router.get("/delivery/expected-tat", expectedTatController);
 // Query: ?origin_pin=xxxx&destination_pin=yyyy&mot=xxx&pdt=...
+//workng
 
 router.get("/delivery/cost", calculateCostController);
 // Query params as required by calculateShippingCost
@@ -56,11 +57,14 @@ router.get("/delivery/cost", calculateCostController);
  */
 router.get("/delivery/waybills/fetch", auth, fetchWaybillsController);
 // Query: ?count=10
+//working
 
 router.get("/delivery/waybill/fetch", auth, fetchWaybillSingleController);
+//working
 
 router.get("/delivery/label", auth, generateLabelController);
 // Query: ?deliveryId=... or ?waybill=...&pdf_size=A4
+//working
 
 /**
  * Dispatch / pickup / cancel / edit (admin)
@@ -70,12 +74,14 @@ router.get("/delivery/label", auth, generateLabelController);
  */
 router.post("/delivery/dispatch", auth, createShipmentController);
 // body: { orderId, clientId, payload: { shipments: [...], pickup_location: {...} }, configName }
+// working
 
 router.post("/delivery/pickup", auth, createPickupController);
 // body: { deliveryId / pickup_location, pickup_time, pickup_date, expected_package_count }
 
 router.post("/delivery/cancel", auth, cancelShipmentController);
 // body: { deliveryId, waybill, configName }
+// working
 
 router.post("/delivery/edit", auth, editShipmentController);
 // body: { waybill, ...editableFields }

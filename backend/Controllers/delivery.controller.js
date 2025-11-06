@@ -101,14 +101,16 @@ export function buildDelhiveryShipmentPayload(
     }
   }
 
+  const totalWeight = itemsForPiece.reduce(
+    (sum, item) => sum + (item.weight || 500) * item.quantity,
+    0
+  );
+
   // Build shipments array for Delhivery
   const shipments = [
     {
-      order: orderIdString, // Unique order ID per piece
       name: shippingAddress.name || "Customer",
-      phone: shippingAddress.phone || "",
-      pin: shippingAddress.pincode || shippingAddress.pin || "",
-      address: [
+      add: [
         shippingAddress.line1 || "",
         shippingAddress.line2 || "",
         shippingAddress.city || "",
@@ -116,9 +118,19 @@ export function buildDelhiveryShipmentPayload(
       ]
         .filter(Boolean)
         .join(", "),
+      pin: shippingAddress.pincode || shippingAddress.pin || "",
+      city: shippingAddress.city || "",
+      state: shippingAddress.state || "",
+      country: shippingAddress.country || "India",
+      phone: shippingAddress.phone || "",
+      order: orderIdString,
       payment_mode: paymentMode,
-      ...(codAmount > 0 && { amount: codAmount.toString() }),
-      // Add item details
+      return_pin: pickupLocation.pin || "",
+      return_city: pickupLocation.city || "",
+      return_phone: pickupLocation.phone || "",
+      return_add: pickupLocation.address || "",
+      return_state: pickupLocation.state || "",
+      return_country: pickupLocation.country || "India",
       products_desc: itemsForPiece
         .map(
           (item) =>
@@ -127,19 +139,34 @@ export function buildDelhiveryShipmentPayload(
             } x${item.quantity}`
         )
         .join(", "),
-      quantity: itemsForPiece.reduce((sum, item) => sum + item.quantity, 0),
-      // Add weight if available
-      ...(itemsForPiece[0]?.weight && {
-        total_amount: itemsForPiece
-          .reduce((sum, item) => sum + (item.weight || 500) * item.quantity, 0)
-          .toString(),
-      }),
+      hsn_code: itemsForPiece.map((item) => item.hsnCode || "").join(", "),
+      cod_amount: codAmount > 0 ? codAmount.toString() : "0",
+      order_date: order.createdAt
+        ? new Date(order.createdAt).toISOString().split("T")[0]
+        : "",
+      total_amount: itemsForPiece
+        .reduce((sum, item) => sum + item.price * item.quantity, 0)
+        .toString(),
+      seller_add: pickupLocation.address || "",
+      seller_name: pickupLocation.name || "",
+      seller_inv: orderIdString,
+      quantity: itemsForPiece
+        .reduce((sum, item) => sum + item.quantity, 0)
+        .toString(),
+      waybill: "",
+      shipment_width: "10",
+      shipment_height: "10",
+      weight: (totalWeight / 1000).toFixed(2), // Convert grams to kg
+      shipping_mode: "Surface",
+      address_type: shippingAddress.addressType || "home",
     },
   ];
 
   return {
     shipments,
-    pickup_location: pickupLocation,
+    pickup_location: {
+      name: pickupLocation.name,
+    },
   };
 }
 
@@ -363,6 +390,7 @@ export async function createShipmentController(req, res) {
         city: warehouse.city || "",
         state: warehouse.state || "",
       };
+      console.log("pickupLocation", pickupLocation);
 
       // Split order into pieces if needed
       pieces = splitOrderIntoPieces(order.items || [], splitOptions || {});
@@ -381,6 +409,7 @@ export async function createShipmentController(req, res) {
             totalPieces
           );
           allShipments.push(...piecePayload.shipments);
+          console.log("piecePayload", piecePayload);
         });
         finalPayload = {
           shipments: allShipments,
@@ -396,6 +425,7 @@ export async function createShipmentController(req, res) {
           1
         );
       }
+      console.log("finalPayload", finalPayload);
 
       // Validate payload
       const v = validateCreateShipmentPayload(finalPayload);

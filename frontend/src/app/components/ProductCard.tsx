@@ -61,7 +61,7 @@ export default function ProductCard({
     >
       <Link href={`/products/${product.slug || product._id}`} className="block">
         <div 
-          className="imgBlockNew custom-border listhover h-72 lg:h-[576px] bg-[#FFEEE7] flex items-center justify-center overflow-hidden"
+          className="imgBlockNew custom-border listhover h-[30vh] lg:h-[576px] bg-[#FFEEE7] flex items-center justify-center overflow-hidden"
         >
           <Image
             src={product.coverImage || '/placeholder.png'}
@@ -74,9 +74,9 @@ export default function ProductCard({
         </div>
         <div className="mx-1 py-2 lg:px-4">
           <div className="flex justify-between items-start">
-            <h5 className="text-left product-name-text text-[#585c70] font-semibold line-clamp-1">
+            <p className="text-left text-xs lg:text-xl text-[#585c70] font-semibold line-clamp-2">
               {product.title}
-            </h5>
+            </p>
             {showWishlist && (
               <button
                 onClick={handleAddToWishlist}
@@ -102,7 +102,7 @@ export default function ProductCard({
               <span className="line-clamp-1">{product.slug}</span>
             </div>
           )}
-          <div className="row mt-1">
+          <div>
             <div className="col-12 special-products_pricingicing">
               <div className="price-block">
                 <span className="offer font-semibold text-sm">
