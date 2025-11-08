@@ -9,7 +9,6 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useOrderStore } from "../store/useOrderStore";
 import CartRecomendations from "../components/CartRecomendations";
-import { FaChevronDown, FaChevronRight } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { DELIVERY_CHECK_PINCODE } from "../constants/Constant";
 import axios from "axios";
@@ -384,7 +383,7 @@ export default function CartPage() {
 
                 <div className="collapse border">
                   <input type="checkbox" className="peer" />
-                  <div className="collapse-title flex flex-row justify-between items-center cursor-pointer font-semibold peer-checked:[&>p:last-child]:rotate-180"><p>Have a coupon?</p><p className="transition-transform duration-300"><FaChevronDown /></p></div>
+                  <div className="collapse-title flex flex-row justify-between items-center cursor-pointer font-semibold peer-checked:[&>p:last-child]:rotate-180"><p>Have a coupon?</p><p className="transition-transform duration-300"><FaCaretDown /></p></div>
                   <div className="collapse-content">
                     <div className="join">
                       <input type="text" placeholder="Enter coupon code" className="input input-bordered join-item flex-1" value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())} />

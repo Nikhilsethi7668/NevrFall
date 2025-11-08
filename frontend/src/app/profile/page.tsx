@@ -21,7 +21,7 @@ import AddressForm from "../components/AddressForm";
 export default function ProfilePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { activeTab, setActiveTab } = useProfileStore();
+  const { activeTab, setActiveTab, isLoggedIn } = useProfileStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [profileData, setProfileData] = useState({
@@ -46,6 +46,12 @@ export default function ProfilePage() {
       return res.data;
     },
     enabled: !!userId,
+  });
+
+  setProfileData({
+    name: localStorage.getItem("userName") || "",
+    email: localStorage.getItem("userEmail") || "",
+    phone: localStorage.getItem("userPhone") || "",
   });
 
   // Fetch addresses

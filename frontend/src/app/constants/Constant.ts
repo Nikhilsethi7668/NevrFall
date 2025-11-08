@@ -8,6 +8,7 @@ export const SEND_EMAIL_OTP = `${API_BASE_URL}/api/auth/otp/request/email`;
 export const VERIFY_EMAIL_OTP = `${API_BASE_URL}/api/auth/otp/verify/email`;
 export const ME = `${API_BASE_URL}/api/auth/me`;
 export const LOGOUT = `${API_BASE_URL}/api/auth/logout`;
+export const UPDATE_PROFILE = `${API_BASE_URL}/api/auth/profile`;
 
 // Product API Endpoints
 export const PRODUCTS_ALL = `${API_BASE_URL}/api/products/all`;
@@ -85,3 +86,6 @@ export const THEME_STORAGE_KEY = "theme";
 // Local Storage Keys
 export const AUTH_TOKEN_KEY = "auth_token";
 export const USER_ID_KEY = "userId";
+export const USER_NAME = "userName";
+export const USER_EMAIL = "userEmail";
+export const USER_MOBILE = "userMobile";

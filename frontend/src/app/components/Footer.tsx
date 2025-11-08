@@ -4,6 +4,7 @@ import React from 'react'
 const Footer = () => {
   return (
     <footer className="footer sm:footer-vertical bg-base-200 text-base-content p-10">
+        <div className='grid grid-cols-3'>
         <nav>
             <h6 className="footer-title">Services</h6>
             <a className="link link-hover">Branding</a>
@@ -24,6 +25,7 @@ const Footer = () => {
             <a className="link link-hover">Privacy policy</a>
             <a className="link link-hover">Cookie policy</a>
         </nav>
+        </div>
         <form>
             <h6 className="footer-title">Newsletter</h6>
             <fieldset className="form-control w-full sm:w-80">

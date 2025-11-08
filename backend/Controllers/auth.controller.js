@@ -86,7 +86,7 @@ export async function verifyOtpByMobile(req, res) {
       })
       .json({
         token,
-        user: { id: user._id, phone: user.phone, role: user.role },
+        user: { id: user._id, phone: user.phone, role: user.role, name: user.name},
       });
   } catch (err) {
     console.error(err);

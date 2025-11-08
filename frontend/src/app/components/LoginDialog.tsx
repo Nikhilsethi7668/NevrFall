@@ -3,19 +3,22 @@
 import { useState } from "react";
 import secureLocalStorage from "react-secure-storage";
 import { useRouter } from "next/navigation";
-import { LOGOUT, SEND_OTP, VERIFY_OTP, AUTH_TOKEN_KEY, USER_ID_KEY } from "../constants/Constant";
+import { LOGOUT, SEND_OTP, VERIFY_OTP, AUTH_TOKEN_KEY, USER_ID_KEY, UPDATE_PROFILE, USER_NAME, USER_EMAIL } from "../constants/Constant";
 import * as Dialog from "@radix-ui/react-dialog";
 import { toast } from "react-toastify";
+import { useProfileStore } from "../store/useProfileStore";
 
 export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) {
+  const {setIsLoggedIn} = useProfileStore();
   const router = useRouter();
-  const [step, setStep] = useState<"request" | "verify" | "loggedin">("request");
+  const [step, setStep] = useState<"request" | "verify" | "loggedin" | "updateProfile">("request");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-
+  const [userName, setUserName] = useState("");
+  const [email, setEmail] = useState("");
 
   // Request OTP
   const handleRequestOtp = async () => {
@@ -62,12 +65,18 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
         secureLocalStorage.setItem(AUTH_TOKEN_KEY, data.token);
         localStorage.setItem(USER_ID_KEY, data.user.id);
         setUser(data.user);
-        setStep("loggedin");
-        // Close dialog and refresh page after successful login
-        setTimeout(() => {
+        setIsLoggedIn(true);
+        if(data.user.name === "User"){
+          setStep("updateProfile");
+        }else{
+          localStorage.setItem(USER_NAME, data.user.name);
+          localStorage.setItem(USER_EMAIL, data.user.email);
+          setStep("loggedin");
+          setTimeout(() => {
           setOpen(false);
           window.location.reload();
         }, 1500);
+        }
       } else {
         setMessage(data.error || "Invalid OTP");
         toast.error(data.error || "Invalid OTP");
@@ -75,6 +84,43 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
     } catch (err) {
       setMessage("Server error, try again later");
     } finally {
+      setLoading(false);
+    }
+  };
+  console.log(user);
+
+  const updateProfile = async () => {
+    if (!userName) return setMessage("Please enter name");
+    setLoading(true);
+    const URL = UPDATE_PROFILE;
+    try {
+      const res = await fetch(URL, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${secureLocalStorage.getItem(AUTH_TOKEN_KEY)}`,
+        },
+        body: JSON.stringify({ name: userName, email: email}),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUser({ ...user, name: userName });
+        setStep("loggedin");
+        localStorage.setItem(USER_NAME, userName);
+        toast.success("Profile updated successfully");
+        setTimeout(() => {
+          setOpen(false);
+          window.location.reload();
+        }, 1500);
+      } else {
+        setMessage(data.error || "Failed to update profile");
+        toast.error(data.error || "Failed to update profile");
+      }
+    }
+    catch (err) {
+      setMessage("Server error, try again later");
+    }
+    finally {
       setLoading(false);
     }
   };
@@ -143,7 +189,33 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
                 className="btn btn-error w-full"
                 onClick={() => setOpen(false)}
               >
-                Continue Browsing
+                Continue
+              </button>
+            </div>
+          )}
+
+          {step === "updateProfile" && (
+            <div className="text-center">
+              <p className="text-gray-700 mb-4">Update Profile</p>
+              <input
+                type="text"
+                placeholder="Enter Name"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                className="input input-bordered w-full mb-3"
+              />
+              <input
+                type="text"
+                placeholder="Enter Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input input-bordered w-full mb-3"
+              />
+              <button
+                className="btn btn-error w-full"
+                onClick={() => updateProfile()}
+              >
+                Update Profile
               </button>
             </div>
           )}

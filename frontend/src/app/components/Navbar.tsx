@@ -26,6 +26,7 @@ const Navbar = () => {
   const { activeTab, setActiveTab } = useProfileStore();
   const [user, setUser] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
+  const userName = localStorage.getItem('userName');
 
   useEffect(() => {
     fetchCategories();
@@ -192,7 +193,7 @@ const Navbar = () => {
               <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
                 <div className="w-10 rounded-full">
                   <div className="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
-                    {userData?.name?.charAt(0) || 'U'}
+                    {userName?.charAt(0)?.toUpperCase()}
                   </div>
                 </div>
               </div>

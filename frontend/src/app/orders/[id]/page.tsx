@@ -21,6 +21,8 @@ export default function OrderDetailsPage() {
   const orderId = params.id as string;
   const [exchangeSteps, setExchangeSteps] = useState("selectOrder");
   const [products, setProducts] = useState([]);
+  const [currentPrice, setCurrentPrice] = useState(0);
+  const [exchangePrice, setExchangePrice] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState<{
     skuId: string;
     productId: string;
@@ -300,12 +302,13 @@ export default function OrderDetailsPage() {
                         </p>
                       </div>
                       {/* Open the modal using document.getElementById('ID').showModal() method */}
-                      <button className="btn" onClick={()=>{getAllProducts(); setItemToReplace(index); (document.getElementById('my_modal_5') as HTMLDialogElement)?.showModal();}}>Exchange Item</button>
+                      <button className="btn" onClick={()=>{getAllProducts(); setItemToReplace(index); setCurrentPrice(item.price); (document.getElementById('my_modal_5') as HTMLDialogElement)?.showModal();}}>Exchange Item</button>
                       <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
                         <div className="modal-box">
-                          <div className="font-bold sticky top-0 bg-base-100 text-lg"><p>Select Item to Porceed Exchange</p><button onClick={() => {setExchangeSteps('selectOrder'); (document.getElementById('my_modal_5') as HTMLDialogElement)?.close();}}><IoCloseSharp /></button></div>
+                          <div className="font-bold modal-top bg-base-100 flex flex-row sticky top-0 justify-between text-lg"><p>Exchange</p><button onClick={() => {setExchangeSteps('selectOrder'); (document.getElementById('my_modal_5') as HTMLDialogElement)?.close();}}><IoCloseSharp /></button></div>
                           <div className="modal-action">
                             {exchangeSteps === "selectOrder" && ( <div>
+                              <h1>Select Item to Proceed with Exchange</h1>
                                 {products && products.map((product: any, index: number) => (
                                   <div>
                                     <div className="imgBlockNew custom-border listhover h-[30vh] lg:h-[576px] bg-[#FFEEE7] flex items-center justify-center overflow-hidden">
@@ -351,7 +354,7 @@ export default function OrderDetailsPage() {
                                                                 productId: product._id,
                                                                 priceAtSelection: product.cardVariant.price,
                                                                 quantity: 0,
-                                          }); setExchangeSteps("selected");}}>Select Item</button>
+                                          }); setExchangePrice(product.priceFrom); setExchangeSteps("selected");}}>Select Item</button>
                                       </div>
                                     </div>
                                   </div>
@@ -420,7 +423,6 @@ export default function OrderDetailsPage() {
                                             className="btn btn-success w-full"
                                             disabled={!selectedProduct.skuId}
                                             onClick={() => {
-                                              createExchange();
                                               setExchangeSteps("payment");
                                             }}
                                           >
@@ -438,16 +440,60 @@ export default function OrderDetailsPage() {
                               </div>
                             )}
                             {exchangeSteps === "payment" && (
-                              <div className="fieldset">
-                                <h1>Are you sure you want to exchange this item?</h1>
-                                <p>We are currently accepting exchange request on COD only</p>
-                                <div className="flex flex-row justify-center">
-                                <input type="radio" name="COD" value="COD" defaultChecked />
-                                <label htmlFor="COD">COD</label>
+                             <div className="p-6 bg-white rounded-2xl shadow-lg space-y-4 text-center max-w-md mx-auto">
+                              <h1 className="text-lg font-semibold text-gray-800">
+                                Are you sure you want to exchange this item?
+                              </h1>
+                              <p className="text-sm text-gray-500">
+                                We are currently accepting exchange requests on <span className="font-medium text-gray-700">Cash on Delivery (COD)</span> only.
+                              </p>
+                              <div className="flex flex-col items-center space-y-3 mt-4">
+                                {/* Price Condition */}
+                                <h3 className="text-base font-medium text-gray-800 bg-gray-100 px-4 py-2 rounded-md">
+                                  {currentPrice === exchangePrice
+                                    ? "Amount to Pay: ₹0"
+                                    : currentPrice > exchangePrice 
+                                    ? `₹${(currentPrice - exchangePrice).toFixed(2)} will be added to your wallet`
+                                    : `Amount to Pay: ₹${(exchangePrice - currentPrice).toFixed(2)}`}
+                                </h3>
+                                {/* COD Option */}
+                                <div className="flex items-center space-x-2 mt-2">
+                                  <input
+                                    type="radio"
+                                    name="payment"
+                                    value="COD"
+                                    id="COD"
+                                    defaultChecked
+                                    className="radio checked:bg-primary"
+                                  />
+                                  <label htmlFor="COD" className="text-gray-700 font-medium">
+                                    Cash on Delivery (COD)
+                                  </label>
                                 </div>
-                                <button onClick={() => {setExchangeSteps("selectOrder"); (document.getElementById('my_modal_5') as HTMLDialogElement)?.close();}} className="btn btn-secondary">Cancel</button>
-                                <button onClick={() => {confirmPayment(); (document.getElementById('my_modal_5') as HTMLDialogElement)?.close(); setExchangeSteps("selectOrder");}} className="btn btn-primary">Yes</button>
                               </div>
+                              {/* Action Buttons */}
+                              <div className="flex justify-center gap-4 mt-6">
+                                <button
+                                  onClick={() => {
+                                    setExchangeSteps("selectOrder");
+                                    (document.getElementById("my_modal_5") as HTMLDialogElement)?.close();
+                                  }}
+                                  className="btn btn-outline btn-sm w-24"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    createExchange();
+                                    (document.getElementById("my_modal_5") as HTMLDialogElement)?.close();
+                                    setExchangeSteps("selectOrder");
+                                  }}
+                                  className="btn btn-primary btn-sm w-24"
+                                >
+                                  Yes
+                                </button>
+                              </div>
+                            </div>
                             )}
                           </div>
                         </div>
