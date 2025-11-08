@@ -5,7 +5,6 @@ import Order from "../Models/Order.js";
 import InventoryReservation from "../Models/InventoryReservation.js";
 import ProductVariant from "../Models/ProductVariant.js";
 
-
 const reversePickupFee = 100; // Example fee, fetch from config
 
 const computeEstimatedCredit = (originalPrice, fees) => {
@@ -25,12 +24,8 @@ export const createExchange = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const {
-      orderId,
-      orderItemId,
-      selectedReplacement,
-      idempotencyKey,
-    } = req.body;
+    const { orderId, orderItemId, selectedReplacement, idempotencyKey } =
+      req.body;
     const userId = req.user.id;
 
     // Idempotency check
@@ -49,7 +44,7 @@ export const createExchange = async (req, res) => {
     const order = await Order.findById(orderId).session(session);
     console.log("order:", order);
     console.log("Order ID", orderId);
-    console.log(req.body, "req.body")
+    console.log(req.body, "req.body");
     if (!order) throw new Error("Order not found");
     if (!order.user.equals(userId)) throw new Error("Not your order");
 
@@ -149,10 +144,13 @@ export const createExchange = async (req, res) => {
         { session }
       );
     }
+    order.items[orderItemId].returnedQuantity +=
+      selectedReplacement.quantity || 1;
+    await order.save({ session });
 
     // Commit transaction
     await session.commitTransaction();
-    return res.status(201).json(ex);
+    return res.status(201).json({ ex, order });
   } catch (err) {
     await session.abortTransaction();
     console.error("createExchange err:", err);
