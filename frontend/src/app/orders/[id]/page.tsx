@@ -3,15 +3,41 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { orderAPI } from "@/services/api";
+import Image from "next/image";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import Link from "next/link";
+import secureLocalStorage from "react-secure-storage";
+import { EXCHANGE_CONFIRM_PAYMENT, EXCHANGE_CREATE, PRODUCT_DETAILS, PRODUCTS_ALL } from "@/app/constants/Constant";
+import AllProducts from "../../products/page";
+import { useEffect, useState } from "react";
+import { FaRegHeart } from "react-icons/fa";
+import { IoCloseSharp } from "react-icons/io5";
 
 export default function OrderDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
   const orderId = params.id as string;
+  const [exchangeSteps, setExchangeSteps] = useState("selectOrder");
+  const [products, setProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState<{
+    skuId: string;
+    productId: string;
+    priceAtSelection: number;
+    quantity: number;
+    coverImage?: string;
+    title?: string;
+    priceFrom?: number;
+  }>({
+    skuId: "",
+    productId: "",
+    priceAtSelection: 0,
+    quantity: 1,
+  });
+  const [itemToReplace, setItemToReplace] = useState(-1);
+  const [productDetail, setProductDetail] = useState({});
+  const [exchangeData, setExchangeData] = useState({});
 
   // Fetch order details
   const { data: order, isLoading } = useQuery({
@@ -48,6 +74,92 @@ export default function OrderDetailsPage() {
     };
     return statusMap[status] || "badge-neutral";
   };
+
+  const getAllProducts = async () => {
+    const URL = PRODUCTS_ALL;
+    try {
+      const res = await fetch(URL, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      setProducts(data.items);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const payload = {
+    orderId: order?._id,
+    orderItemId: itemToReplace,
+    selectedReplacement: selectedProduct,
+    idempotencyKey: order?.meta?.idempotencyKey,
+  };
+
+  const createExchange = async () => {
+    const URL = EXCHANGE_CREATE;
+    const token = secureLocalStorage.getItem("auth_token");
+    try {
+    const res = await fetch(URL, {
+      method: "POST",
+      headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      })
+      const data = await res.json();
+      setExchangeData(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getProductById = async () => {
+    if (!selectedProduct.productId) return;
+    const URL = PRODUCT_DETAILS+"/"+selectedProduct.productId;
+    try {
+      const res = await fetch(URL, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      console.log(data);
+      setProductDetail(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const confirmPayment = async () => {
+    const URL = EXCHANGE_CONFIRM_PAYMENT;
+    const token = secureLocalStorage.getItem("auth_token");
+    
+    try {
+      const res = await fetch(URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          exchangeId: exchangeData._id,
+        })
+      });
+      const data = await res.json();
+      console.log(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    getProductById();
+  }, [selectedProduct.productId]);
 
   const getStatusText = (status: string) => {
     const statusMap: { [key: string]: string } = {
@@ -187,6 +299,159 @@ export default function OrderDetailsPage() {
                           ₹{(item.price * item.quantity).toFixed(2)}
                         </p>
                       </div>
+                      {/* Open the modal using document.getElementById('ID').showModal() method */}
+                      <button className="btn" onClick={()=>{getAllProducts(); setItemToReplace(index); (document.getElementById('my_modal_5') as HTMLDialogElement)?.showModal();}}>Exchange Item</button>
+                      <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
+                        <div className="modal-box">
+                          <div className="font-bold sticky top-0 bg-base-100 text-lg"><p>Select Item to Porceed Exchange</p><button onClick={() => {setExchangeSteps('selectOrder'); (document.getElementById('my_modal_5') as HTMLDialogElement)?.close();}}><IoCloseSharp /></button></div>
+                          <div className="modal-action">
+                            {exchangeSteps === "selectOrder" && ( <div>
+                                {products && products.map((product: any, index: number) => (
+                                  <div>
+                                    <div className="imgBlockNew custom-border listhover h-[30vh] lg:h-[576px] bg-[#FFEEE7] flex items-center justify-center overflow-hidden">
+                                      <Image
+                                        src={product.coverImage || '/placeholder.png'}
+                                        alt={product.title}
+                                        className="custom-border img-auto object-cover h-full w-full"
+                                        width={300}
+                                        height={310}
+                                        loading="lazy"
+                                      />
+                                    </div>
+                                    <div className="mx-1 py-2 lg:px-4">
+                                      <div className="flex justify-between items-start">
+                                        <p className="text-left text-xs lg:text-xl text-[#585c70] font-semibold line-clamp-2">
+                                          {product.title}
+                                        </p>
+                                      </div>
+                                      {product.brand && (
+                                        <div className="listprice ecltext text-sm text-gray-500">
+                                          <span>{product.brand}</span>
+                                        </div>
+                                      )}
+                                      {product.collections && product.collections.length > 0 ? (
+                                        <div className="listprice ecltext text-sm text-gray-500">
+                                          <span>{product.collections.join(", ")}</span>
+                                        </div>
+                                      ) : (
+                                        <div className="listprice ecltext text-sm text-gray-500">
+                                          <span className="line-clamp-1">{product.slug}</span>
+                                        </div>
+                                      )}
+                                      <div>
+                                        <div className="col-12 special-products_pricingicing">
+                                          <div className="price-block">
+                                            <span className="offer font-semibold text-sm">
+                                              ₹{product.priceFrom}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <button onClick={()=> {setSelectedProduct({
+                                                                skuId: product.cardVariant.sku,
+                                                                productId: product._id,
+                                                                priceAtSelection: product.cardVariant.price,
+                                                                quantity: 0,
+                                          }); setExchangeSteps("selected");}}>Select Item</button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {exchangeSteps === "selected" && (
+                              <div>
+                                {productDetail && productDetail.product && (
+                                  <div className="p-4">
+                                    <h3 className="text-xl font-bold mb-2">{productDetail.product.title}</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <Image
+                                          src={productDetail.product.coverImage}
+                                          alt={productDetail.product.title}
+                                          width={500}
+                                          height={500}
+                                          className="rounded-lg object-cover w-full"
+                                        />
+                                      </div>
+                                      <div>
+                                        <p className="text-lg font-semibold">
+                                          Price: ₹{productDetail.product.priceFrom}
+                                        </p>
+                                        <div className="mt-4">
+                                          <p className="font-semibold">Available Sizes:</p>
+                                          <div className="flex flex-wrap gap-2 mt-2">
+                                            {productDetail.variants && productDetail.variants.map((variant: any) => (
+                                              <button
+                                                key={variant._id}
+                                                className={`btn ${selectedProduct.skuId === variant.sku ? 'btn-primary' : 'btn-outline'}`}
+                                                onClick={() => {
+                                                  setSelectedProduct(prev => ({
+                                                    ...prev,
+                                                    skuId: variant.sku,
+                                                    priceAtSelection: variant.price,
+                                                    quantity: 1, // Reset quantity to 1 when size changes
+                                                  }));
+                                                }}
+                                              >
+                                                {variant.size}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                        <div className="mt-4">
+                                            <p className="font-semibold">Quantity:</p>
+                                            <div className="flex flex-row">
+                                            <button className={`btn btn-outline ${selectedProduct.quantity > 1 ? "bg-base-100" : "bg-base-300"}`} onClick={() => {
+                                                  if (selectedProduct.quantity > 1) {
+                                                  setSelectedProduct(prev => ({
+                                                    ...prev,
+                                                    quantity: selectedProduct.quantity - 1,
+                                                  }));}}}>-</button>
+                                            <button className="btn" >{selectedProduct.quantity || 1}</button>
+                                            <button className="btn btn-outline bg-base-100" onClick={() => {
+                                                  setSelectedProduct(prev => ({
+                                                    ...prev,
+                                                    quantity: selectedProduct.quantity + 1,
+                                                  }));}}>+</button>
+                                            </div>
+                                        </div>
+                                        <div className="mt-6">
+                                          <button
+                                            className="btn btn-success w-full"
+                                            disabled={!selectedProduct.skuId}
+                                            onClick={() => {
+                                              createExchange();
+                                              setExchangeSteps("payment");
+                                            }}
+                                          >
+                                            Confirm Exchange
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="mt-4">
+                                      <h4 className="font-bold">Description</h4>
+                                      <p>{productDetail.parent?.description}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {exchangeSteps === "payment" && (
+                              <div className="fieldset">
+                                <h1>Are you sure you want to exchange this item?</h1>
+                                <p>We are currently accepting exchange request on COD only</p>
+                                <div className="flex flex-row justify-center">
+                                <input type="radio" name="COD" value="COD" defaultChecked />
+                                <label htmlFor="COD">COD</label>
+                                </div>
+                                <button onClick={() => {setExchangeSteps("selectOrder"); (document.getElementById('my_modal_5') as HTMLDialogElement)?.close();}} className="btn btn-secondary">Cancel</button>
+                                <button onClick={() => {confirmPayment(); (document.getElementById('my_modal_5') as HTMLDialogElement)?.close(); setExchangeSteps("selectOrder");}} className="btn btn-primary">Yes</button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </dialog>
                     </div>
                   ))}
                 </div>

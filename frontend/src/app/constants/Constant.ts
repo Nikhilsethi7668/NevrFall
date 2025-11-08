@@ -17,7 +17,7 @@ export const PRODUCTS_FACETS = `${API_BASE_URL}/api/products/facets`;
 export const PRODUCTS_NEW_ARRIVALS = `${API_BASE_URL}/api/products/new-arrivals`;
 export const PRODUCTS_FEATURED = `${API_BASE_URL}/api/products/featured`;
 export const PRODUCTS_TRENDING = `${API_BASE_URL}/api/products/trending`;
-export const PRODUCT_DETAILS = (id: string) => `${API_BASE_URL}/api/products/${id}`;
+export const PRODUCT_DETAILS = `${API_BASE_URL}/api/products`;
 export const PRODUCT_VARIANT = `${API_BASE_URL}/api/products/variant/lookup`;
 
 // Cart API Endpoints

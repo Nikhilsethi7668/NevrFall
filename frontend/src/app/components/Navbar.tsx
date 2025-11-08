@@ -132,10 +132,12 @@ const Navbar = () => {
                 </>
               </li>
             </ul>
+            {mounted && (
             <button className="btn absolute bottom-5 btn-ghost" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
               {theme === 'light' ? <IoMoonSharp size={22} /> : <IoSunny size={22} />}
               <span className="ml-2">{theme === 'light' ? 'Dark' : 'Light'} Mode</span>
             </button>
+            )}
           </div>
         </div>
         <Link href="/" className="btn btn-ghost text-lg sm:text-xl">NeverFall</Link>
