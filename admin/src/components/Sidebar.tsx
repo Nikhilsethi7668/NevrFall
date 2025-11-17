@@ -16,7 +16,10 @@ import clsx from 'clsx';
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Products', href: '/products', icon: Package },
+  { name: 'All Products', href: '/products/all', icon: Package },
   { name: 'Orders', href: '/orders', icon: ShoppingCart },
+  { name: 'Exchanges', href: '/exchanges', icon: ShoppingCart },
+  { name: 'Returns', href: '/returns', icon: ShoppingCart },
   { name: 'Payments', href: '/payments', icon: CreditCard },
   { name: 'Reviews', href: '/reviews', icon: Star },
 ];

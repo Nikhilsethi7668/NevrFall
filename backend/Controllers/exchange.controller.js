@@ -4,6 +4,7 @@ import ExchangeRequest from "../Models/ExchangeRequest.js";
 import Order from "../Models/Order.js";
 import InventoryReservation from "../Models/InventoryReservation.js";
 import ProductVariant from "../Models/ProductVariant.js";
+import { createOrderFromSelection } from "../Services/orderService.js";
 
 const reversePickupFee = 100; // Example fee, fetch from config
 
@@ -144,8 +145,16 @@ export const createExchange = async (req, res) => {
         { session }
       );
     }
-    order.items[orderItemId].returnedQuantity +=
-      selectedReplacement.quantity || 1;
+    const remainingQty = Math.max(
+      0,
+      orderItem.quantity - (orderItem.returnedQuantity || 0)
+    );
+    const exchangeQty = Math.min(
+      (selectedReplacement?.quantity) || 1,
+      remainingQty
+    );
+    order.items[orderItemId].returnedQuantity =
+      (order.items[orderItemId].returnedQuantity || 0) + exchangeQty;
     await order.save({ session });
 
     // Commit transaction
@@ -434,6 +443,74 @@ export const confirmPaymentAndPlaceOrder = async (req, res) => {
   } catch (err) {
     await session.abortTransaction();
     console.error("confirmPaymentAndPlaceOrder err:", err);
+    return res.status(400).json({ error: err.message });
+  } finally {
+    session.endSession();
+  }
+};
+
+export const listExchanges = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page || "1", 10);
+    const limit = parseInt(req.query.limit || "20", 10);
+    const status = req.query.status || null;
+    const filter = status ? { status } : {};
+    const [items, total] = await Promise.all([
+      ExchangeRequest.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate("user")
+        .populate("originalOrder")
+        .populate({ path: "selectedReplacement.product" })
+        .populate({ path: "selectedReplacement.variant" }),
+      ExchangeRequest.countDocuments(filter),
+    ]);
+    return res.json({ items, total, page, limit });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+};
+
+export const approveExchange = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { exchangeId } = req.params;
+    const adminUser = req.user.id;
+    const ex = await ExchangeRequest.findById(exchangeId).session(session);
+    if (!ex) throw new Error("Exchange not found");
+    if (!ex.selectedReplacement || !ex.selectedReplacement.variant)
+      throw new Error("Selected replacement missing");
+
+    ex.status = "APPROVED";
+    ex.history.push({ status: "APPROVED", by: adminUser, at: new Date() });
+
+    const orderPayload = {
+      userId: ex.user,
+      items: [
+        {
+          variantId: ex.selectedReplacement.variant,
+          quantity: 1,
+        },
+      ],
+      paymentMethod: "none",
+      meta: { exchangeId: ex._id },
+    };
+
+    const newOrder = await createOrderFromSelection(orderPayload, session);
+
+    ex.linkedNewOrder = newOrder._id;
+    await InventoryReservation.deleteMany({
+      reservedForId: ex._id,
+      reservedBy: "exchange",
+    }).session(session);
+
+    await ex.save({ session });
+    await session.commitTransaction();
+    return res.json({ ok: true, exchange: ex, newOrder });
+  } catch (err) {
+    await session.abortTransaction();
     return res.status(400).json({ error: err.message });
   } finally {
     session.endSession();

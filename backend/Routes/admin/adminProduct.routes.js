@@ -9,6 +9,7 @@ import {
   updateStock,
   bulkUpdateStock,
   getAllParentProducts,
+  createParentProduct,
 } from "../../Controllers/admin/adminProduct.controller.js";
 
 const router = Router();
@@ -17,6 +18,7 @@ router.use(auth, isAdmin);
 
 router.get("/", getAllProductsAdmin);
 router.get("/parents", getAllParentProducts);
+router.post("/parent", createParentProduct);
 router.post("/", upload.fields([{ name: 'coverImage', maxCount: 1 }, { name: 'imageFiles', maxCount: 5 }]), createProduct);
 router.put("/:id", upload.fields([{ name: 'coverImage', maxCount: 1 }, { name: 'imageFiles', maxCount: 5 }]), updateProduct);
 router.delete("/:id", deleteProduct);

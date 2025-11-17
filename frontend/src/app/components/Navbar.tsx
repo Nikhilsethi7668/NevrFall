@@ -26,11 +26,11 @@ const Navbar = () => {
   const { activeTab, setActiveTab } = useProfileStore();
   const [user, setUser] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
-  const userName = localStorage.getItem('userName');
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCategories();
-  }, [fetchCategories]);
+  }, []);
 
   const handleCategoryClick = (categoryName: string) => {
     router.push(`/products?categories=${categoryName}`);
@@ -41,8 +41,10 @@ const Navbar = () => {
     setMounted(true);
     const token = secureLocalStorage.getItem('auth_token');
     const userId = localStorage.getItem('userId');
+    const storedUserName = localStorage.getItem('userName');
     if (token && userId) {
       setIsLoggedIn(true);
+      setUserName(storedUserName);
     }
   }, []);
 
@@ -73,8 +75,10 @@ const Navbar = () => {
       await authAPI.logout();
       secureLocalStorage.removeItem('auth_token');
       localStorage.removeItem('userId');
+      localStorage.removeItem('userName');
       setIsLoggedIn(false);
       setUser(null);
+      setUserName(null);
       router.push('/');
     } catch (error) {
       console.error('Logout error:', error);

@@ -646,10 +646,33 @@ export const getReturn = async (req, res) => {
   }
 };
 
+export const listAllReturns = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page || "1", 10);
+    const limit = parseInt(req.query.limit || "20", 10);
+    const status = req.query.status || null;
+    const filter = status ? { status } : {};
+    const [items, total] = await Promise.all([
+      ReturnRequest.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate("user")
+        .populate("order")
+        .populate("variant"),
+      ReturnRequest.countDocuments(filter),
+    ]);
+    res.json({ items, total, page, limit });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
 export default {
   createReturnRequest,
   adminApproveReturn,
   adminReceiveAndProcessRefund,
   listReturnsForUser,
   getReturn,
+  listAllReturns,
 };

@@ -35,6 +35,11 @@ export default function ProfilePage() {
   useEffect(() => {
     setMounted(true);
     setUserId(localStorage.getItem("userId"));
+    setProfileData({
+      name: localStorage.getItem("userName") || "",
+      email: localStorage.getItem("userEmail") || "",
+      phone: localStorage.getItem("userPhone") || "",
+    });
   }, []);
 
   // Fetch user profile
@@ -46,12 +51,6 @@ export default function ProfilePage() {
       return res.data;
     },
     enabled: !!userId,
-  });
-
-  setProfileData({
-    name: localStorage.getItem("userName") || "",
-    email: localStorage.getItem("userEmail") || "",
-    phone: localStorage.getItem("userPhone") || "",
   });
 
   // Fetch addresses

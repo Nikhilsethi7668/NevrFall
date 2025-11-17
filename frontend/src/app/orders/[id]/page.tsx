@@ -353,7 +353,7 @@ export default function OrderDetailsPage() {
                                                                 skuId: product.cardVariant.sku,
                                                                 productId: product._id,
                                                                 priceAtSelection: product.cardVariant.price,
-                                                                quantity: 0,
+                                                                quantity: 1,
                                           }); setExchangePrice(product.priceFrom); setExchangeSteps("selected");}}>Select Item</button>
                                       </div>
                                     </div>

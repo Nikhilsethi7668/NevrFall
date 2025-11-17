@@ -202,3 +202,56 @@ export interface PaginatedResponse<T> {
   totalPages?: number;
   limit?: number;
 }
+
+export interface ExchangeSelectedReplacement {
+  product: Product | string;
+  variant: ProductVariant | string;
+  sku: string;
+  priceAtSelection: number;
+  selectionType: 'auto_place' | 'user_place';
+}
+
+export interface ExchangeHistory {
+  status: string;
+  by?: string;
+  at: string | Date;
+  meta?: Record<string, any>;
+}
+
+export interface ExchangeRequest {
+  _id: string;
+  user: User | string;
+  originalOrder: Order | string;
+  originalOrderItemIndex: number;
+  selectedReplacement?: ExchangeSelectedReplacement | null;
+  estimatedCredit?: number;
+  fees?: Record<string, any>;
+  status: 'REQUESTED' | 'APPROVED' | 'PICKUP_SCHEDULED' | 'PICKED_UP' | 'IN_WAREHOUSE' | 'QC_PENDING' | 'QC_PASSED' | 'QC_FAILED' | 'CREDITED' | 'NEW_ORDER_PLACED' | 'EXCHANGE_COMPLETED' | 'CLOSED' | 'REJECTED';
+  history: ExchangeHistory[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ReturnRequest {
+  _id: string;
+  order: Order | string;
+  orderItemIndex: number;
+  variant: ProductVariant | string;
+  user: User | string;
+  quantity: number;
+  reason?: string;
+  status:
+    | 'requested'
+    | 'pickup_scheduled'
+    | 'picked_up'
+    | 'received'
+    | 'inspected'
+    | 'approved'
+    | 'rejected'
+    | 'refunded'
+    | 'closed';
+  refund?: { amount?: number; currency?: string; refundedAt?: Date };
+  pickup?: { carrier?: string; scheduledAt?: Date; trackingId?: string };
+  createdAt: Date;
+  updatedAt: Date;
+}

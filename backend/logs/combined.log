@@ -4,6 +4,7 @@
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-23T14:20:02.205Z"}
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-23T14:20:03.625Z"}
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-23T17:36:37.641Z"}
+<<<<<<< Updated upstream
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T16:09:44.260Z"}
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T16:16:51.108Z"}
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T16:17:02.861Z"}
@@ -58,3 +59,7 @@
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-27T10:23:07.135Z"}
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-27T10:23:09.685Z"}
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-27T10:23:09.705Z"}
+=======
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T16:04:11.289Z"}
+{"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-27T07:30:18.051Z"}
+>>>>>>> Stashed changes

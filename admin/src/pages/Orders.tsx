@@ -20,6 +20,17 @@ const statusColors: Record<string, string> = {
   refunded: 'bg-gray-100 text-gray-800',
 };
 
+const statusTiles: OrderStatus[] = [
+  'pending',
+  'paid',
+  'processing',
+  'confirmed',
+  'out-for-delivery',
+  'delivered',
+  'cancelled',
+  'refunded',
+];
+
 const Orders: React.FC = () => {
   const { orders, page, totalPages, loading, fetchOrders, updateOrderStatus, approveRefund } = useOrderStore();
   const [order, setOrder] = useState<Order[]>([]);
@@ -166,22 +177,29 @@ const Orders: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="space-y-4">
         <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-lg border border-gray-300 px-4 py-2 focus:border-primary-500 focus:outline-none"
-        >
-          <option value="">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="paid">Paid</option>
-          <option value="processing">Processing</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
-          <option value="refunded">Refunded</option>
-        </select>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setStatusFilter('')}
+            className={`rounded-full px-3 py-1 text-sm border ${
+              statusFilter === '' ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300'
+            }`}
+          >
+            All
+          </button>
+          {statusTiles.map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`rounded-full px-3 py-1 text-sm border ${
+                statusFilter === s ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300'
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="rounded-lg bg-white shadow">

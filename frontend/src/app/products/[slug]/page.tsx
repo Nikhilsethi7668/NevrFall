@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { productAPI, cartAPI, wishlistAPI, reviewAPI, deliveryAPI } from "@/services/api";
+import Image from "next/image";
+import { productAPI, cartAPI, wishlistAPI, reviewAPI } from "@/services/api";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
 import { FaChevronDown } from "react-icons/fa";
@@ -12,6 +13,29 @@ import ProductRecomendations from "@/app/components/ProductRecomendations";
 import { toast } from "react-toastify";
 import { DELIVERY_CHECK_PINCODE } from "@/app/constants/Constant";
 import axios from "axios";
+
+interface Product {
+  _id: string;
+  title: string;
+  priceFrom: number;
+  images: { url: string }[];
+  description: string;
+}
+
+interface Variant {
+  _id: string;
+  size: string;
+  price: number;
+  stock: number;
+}
+
+interface Review {
+  _id: string;
+  rating: number;
+  body: string;
+  images: { url: string }[];
+  createdAt: string;
+}
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -22,12 +46,12 @@ export default function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [pinCode, setPinCode] = useState<string>("");
   const [selectedImage, setSelectedImage] = useState(0);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity] = useState(1);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewData, setReviewData] = useState({ rating: 5, body: "" });
 
   // Fetch product details
-  const { data: product, isLoading } = useQuery({
+  const { data: product, isLoading } = useQuery<{product: Product, variants: Variant[], parent: {description: string}}>({
     queryKey: ["product", slug],
     queryFn: async () => {
       const res = await productAPI.getDetails(slug);
@@ -36,7 +60,7 @@ export default function ProductDetailPage() {
   });
 
   // Fetch reviews
-  const { data: reviewsData } = useQuery({
+  const { data: reviewsData } = useQuery<{items: Review[]}>({
     queryKey: ["reviews", product?.product?._id],
     queryFn: async () => {
       if (!product?.product?._id) return null;
@@ -49,24 +73,28 @@ export default function ProductDetailPage() {
     enabled: !!product?.product?._id,
   });
 
-  const handleCheckServiceability = async () => {
-    const URL = DELIVERY_CHECK_PINCODE+ `?pin=` + pinCode;
+  const handleCheckServiceability = useCallback(async () => {
+    const URL = DELIVERY_CHECK_PINCODE + `?pin=` + pinCode;
     try {
-      const res = await axios.get(URL,{
+      const res = await axios.get(URL, {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
       const result = res.data.data.delivery_codes;
-      if (result.length > 0){
+      if (result.length > 0) {
         toast.success("We deliver at your location");
       } else {
         toast.error("We do not deliver at your location");
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data?.message);
+      } else {
+        toast.error("An unexpected error occurred");
+      }
     }
-  };
+  }, [pinCode]);
 
   // Add to cart mutation
   const addToCartMutation = useMutation({
@@ -74,8 +102,8 @@ export default function ProductDetailPage() {
       const userId = localStorage.getItem("userId");
       if (!userId) throw new Error("Please login first");
       
-      const selectedVariant = product.variants.find(
-        (v: any) => v.size === selectedSize
+      const selectedVariant = product?.variants.find(
+        (v: Variant) => v.size === selectedSize
       );
       
       if (!selectedVariant) throw new Error("Please select a size");
@@ -90,14 +118,14 @@ export default function ProductDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       alert("Added to cart successfully!");
     },
-    onError: (error: any) => {
-      alert(error.response?.data?.message || "Failed to add to cart");
+    onError: (error: Error) => {
+      alert(error.message || "Failed to add to cart");
     },
   });
 
   // Add to wishlist mutation
   const addToWishlistMutation = useMutation({
-    mutationFn: () => wishlistAPI.add({ productId: product.product._id }),
+    mutationFn: () => wishlistAPI.add({ productId: product!.product._id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
       alert("Added to wishlist!");
@@ -108,12 +136,12 @@ export default function ProductDetailPage() {
   const submitReviewMutation = useMutation({
     mutationFn: () =>
       reviewAPI.create({
-        productId: product.product._id,
+        productId: product!.product._id,
         rating: reviewData.rating,
         body: reviewData.body,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reviews", product.product._id] });
+      queryClient.invalidateQueries({ queryKey: ["reviews", product!.product._id] });
       setShowReviewForm(false);
       setReviewData({ rating: 5, body: "" });
       alert("Review submitted successfully!");
@@ -147,7 +175,7 @@ export default function ProductDetailPage() {
   }
 
   const images = product.product.images || [];
-  const selectedVariant = product.variants.find((v: any) => v.size === selectedSize);
+  const selectedVariant = product.variants.find((v: Variant) => v.size === selectedSize);
 
   return (
     <>
@@ -166,14 +194,16 @@ export default function ProductDetailPage() {
           {/* Image Gallery */}
           <div>
             <div className="mb-4">
-              <img
+              <Image
                 src={images[selectedImage]?.url}
                 alt={product.product.title}
+                width={500}
+                height={500}
                 className="w-full h-[300px] sm:h-[400px] lg:h-[500px] object-cover rounded-lg"
               />
             </div>
             <div className="flex gap-2 overflow-x-auto">
-              {images.map((img: any, idx: number) => (
+              {images.map((img: { url: string }, idx: number) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedImage(idx)}
@@ -181,9 +211,11 @@ export default function ProductDetailPage() {
                     selectedImage === idx ? "ring-2 ring-primary" : ""
                   }`}
                 >
-                  <img
+                  <Image
                     src={img.url}
                     alt={`${product.product.title} ${idx + 1}`}
+                    width={80}
+                    height={80}
                     className="w-20 h-20 object-cover rounded"
                   />
                 </button>
@@ -208,7 +240,7 @@ export default function ProductDetailPage() {
                 <span className="label-text mb-2 font-semibold">Select Size</span>
               </label>
               <div className="flex gap-2 flex-wrap">
-                {product.variants.map((variant: any) => (
+                {product.variants.map((variant: Variant) => (
                   <button
                     key={variant._id}
                     onClick={() => setSelectedSize(variant.size)}
@@ -401,7 +433,7 @@ export default function ProductDetailPage() {
           
           {/* Reviews List */}
           <div className="space-y-4">
-            {reviewsData?.items?.map((review: any) => (
+            {reviewsData?.items?.map((review: Review) => (
               <div key={review._id} className="card bg-base-100 shadow">
                 <div className="card-body">
                   <div className="flex items-center justify-between mb-2">
@@ -423,11 +455,13 @@ export default function ProductDetailPage() {
                   <p>{review.body}</p>
                   {review.images && review.images.length > 0 && (
                     <div className="flex gap-2 mt-2">
-                      {review.images.map((img: any, idx: number) => (
-                        <img
+                      {review.images.map((img: { url: string }, idx: number) => (
+                        <Image
                           key={idx}
                           src={img.url}
                           alt={`Review ${idx + 1}`}
+                          width={80}
+                          height={80}
                           className="w-20 h-20 object-cover rounded"
                         />
                       ))}

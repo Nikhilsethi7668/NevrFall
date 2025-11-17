@@ -59,6 +59,7 @@ const ExchangeRequestSchema = new mongoose.Schema(
       type: String,
       enum: [
         "REQUESTED",
+        "APPROVED",
         "PICKUP_SCHEDULED",
         "PICKED_UP",
         "IN_WAREHOUSE",

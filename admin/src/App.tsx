@@ -4,9 +4,12 @@ import { Toaster } from 'react-hot-toast';
 import DashboardLayout from './layouts/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
+import AllProducts from './pages/AllProducts';
 import Orders from './pages/Orders';
 import Payments from './pages/Payments';
 import Reviews from './pages/Reviews';
+import Exchanges from './pages/Exchanges';
+import Returns from './pages/Returns';
 import Login from './pages/Login';
 import { useAuthStore } from './store/useAuthStore';
 
@@ -84,7 +87,10 @@ const App: React.FC = () => {
         >
           <Route index element={<Dashboard />} />
           <Route path="products" element={<Products />} />
+          <Route path="products/all" element={<AllProducts />} />
           <Route path="orders" element={<Orders />} />
+          <Route path="exchanges" element={<Exchanges />} />
+          <Route path="returns" element={<Returns />} />
           <Route path="payments" element={<Payments />} />
           <Route path="reviews" element={<Reviews />} />
         </Route>

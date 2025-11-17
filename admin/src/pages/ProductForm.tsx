@@ -8,6 +8,7 @@ import { Plus, X, Trash2 } from 'lucide-react';
 
 interface ProductFormProps {
   product?: Product | null;
+  parentProductId?: string;
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -28,6 +29,7 @@ interface FormData {
 
 const ProductForm: React.FC<ProductFormProps> = ({
   product,
+  parentProductId,
   onSuccess,
   onCancel,
 }) => {
@@ -109,6 +111,39 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
+      let parentId = parentProductId || data.parent || '';
+
+      if (!product) {
+        if (variants.length === 0 || !variants.some((v) => v.size && v.sku)) {
+          toast.error('Please add at least one valid variant');
+          setLoading(false);
+          return;
+        }
+      }
+
+      if (!parentId) {
+        try {
+          const resp = await productApi.createParentProduct({
+            title: data.title,
+            slug: data.slug,
+            description: data.description || '',
+            categories: data.primaryCategoryId || undefined,
+          });
+          parentId = resp?.parent?._id || resp?._id || '';
+          if (!parentId) {
+            throw new Error('Failed to resolve parent product id');
+          }
+          toast.success('Parent product created');
+        } catch (err: any) {
+          if (err?.response?.status === 409 && err.response?.data?.parent?._id) {
+            parentId = err.response.data.parent._id;
+            toast.success('Existing parent product linked');
+          } else {
+            throw err;
+          }
+        }
+      }
+
       const formData = new FormData();
       formData.append('title', data.title);
       formData.append('slug', data.slug);
@@ -120,7 +155,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
       }
       formData.append('collections', data.collections || '');
       formData.append('primaryCategoryId', data.primaryCategoryId || '');
-      formData.append('parent', data.parent || '');
+      formData.append('parent', parentId);
       formData.append('isTrending', data.isTrending ? 'true' : 'false');
 
       imageFiles.forEach((file) => {
@@ -143,18 +178,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
         await productApi.updateProduct(product._id, formData);
         toast.success('Product updated successfully');
       } else {
-        if (variants.length === 0 || !variants.some(v => v.size && v.sku)) {
-          toast.error('Please add at least one valid variant');
-          setLoading(false);
-          return;
-        }
-
         await productApi.createProduct(formData);
         toast.success('Product created successfully');
       }
       onSuccess();
     } catch (error: any) {
-      console.error('Product operation error:', error);
       toast.error(error.response?.data?.message || 'Operation failed');
     } finally {
       setLoading(false);
@@ -292,25 +320,41 @@ const ProductForm: React.FC<ProductFormProps> = ({
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Parent Product
-          </label>
-          <select
-            {...register('parent')}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none"
-          >
-            <option value="">Select a parent product</option>
-            {parentProducts.map((p) => (
-              <option key={p._id} value={p._id}>
-                {p.title}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-xs text-gray-500">
-            Leave empty to create a new parent product
-          </p>
-        </div>
+        {!parentProductId ? (
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Parent Product
+            </label>
+            <select
+              {...register('parent')}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none"
+            >
+              <option value="">Select a parent product</option>
+              {parentProducts.map((p) => (
+                <option key={p._id} value={p._id}>
+                  {p.title}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Leave empty to create a new parent product
+            </p>
+          </div>
+        ) : (
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Parent Product
+            </label>
+            <input
+              value={
+                parentProducts.find((p) => p._id === parentProductId)?.title ||
+                parentProductId
+              }
+              readOnly
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 bg-gray-50"
+            />
+          </div>
+        )}
 
         <div className="flex items-center">
           <input

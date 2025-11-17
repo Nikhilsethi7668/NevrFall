@@ -4,6 +4,8 @@ import {
   createExchange,
   qcHandler,
   confirmPaymentAndPlaceOrder,
+  listExchanges,
+  approveExchange,
   // Optional controllers if implemented
   // listExchanges,
   // getExchangeDetails,
@@ -33,9 +35,13 @@ router.post(
  */
 router.post(
   "/qc",
+  auth,
   isAdmin, // only admin/QC personnel
   qcHandler
 );
+
+router.get("/", auth, isAdmin, listExchanges);
+router.post("/:exchangeId/approve", auth, isAdmin, approveExchange);
 
 // Optional future routes
 // router.get("/", isAdmin, listExchanges);

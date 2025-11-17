@@ -28,18 +28,9 @@ router.get("/:id", auth, returnController.getReturn);
 /**
  * Admin routes
  */
-// Approve a return and optionally schedule pickup
-router.post(
-  "/:id/approve",
-  isAdmin, // admin-only
-  returnController.adminApproveReturn
-);
+router.get("/", auth, isAdmin, returnController.listAllReturns);
 
-// Mark return received and process refund
-router.post(
-  "/:id/receive",
-  isAdmin, // admin-only
-  returnController.adminReceiveAndProcessRefund
-);
+router.post("/:id/approve", auth, isAdmin, returnController.adminApproveReturn);
+router.post("/:id/receive", auth, isAdmin, returnController.adminReceiveAndProcessRefund);
 
 export default router;
