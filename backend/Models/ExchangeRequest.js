@@ -86,6 +86,11 @@ const ExchangeRequestSchema = new mongoose.Schema(
       ref: "Order",
       default: null,
     },
+    linkedReturnRequest: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ReturnRequest",
+      default: null,
+    },
     walletTxId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "WalletTransaction",

@@ -61,6 +61,16 @@ export interface Category {
   isActive: boolean;
 }
 
+export interface Collection {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  meta?: string;
+  isActive: 'yes' | 'no';
+  priority: 'high' | 'moderate' | 'low';
+}
 
 export interface ProductVariant {
   _id: string;

@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { orderAPI } from "@/services/api";
+import { orderAPI, returnAPI } from "@/services/api";
 import Image from "next/image";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
@@ -40,6 +40,16 @@ export default function OrderDetailsPage() {
   const [itemToReplace, setItemToReplace] = useState(-1);
   const [productDetail, setProductDetail] = useState({});
   const [exchangeData, setExchangeData] = useState({});
+  const [pendingExchangeItems, setPendingExchangeItems] = useState<number[]>([]);
+  useEffect(() => {
+    const key = `exchange_pending_${orderId}`;
+    const saved = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+    if (saved) {
+      try {
+        setPendingExchangeItems(JSON.parse(saved));
+      } catch {}
+    }
+  }, [orderId]);
 
   // Fetch order details
   const { data: order, isLoading } = useQuery({
@@ -49,6 +59,32 @@ export default function OrderDetailsPage() {
       return res.data;
     },
   });
+
+  const { data: myReturns } = useQuery({
+    queryKey: ["returns"],
+    queryFn: async () => {
+      const res = await returnAPI.list({ page: 1, limit: 100 });
+      return res.data;
+    },
+  });
+
+  const returnedItemIds = (myReturns || [])
+    .filter((r: any) => r.orderId === orderId && r.status !== "cancelled")
+    .flatMap((r: any) => r.items?.map((i: any) => i.itemId) || []);
+
+  useEffect(() => {
+    if (!order) return;
+    if (!returnedItemIds?.length) return;
+    const updated = pendingExchangeItems.filter((idx) => {
+      const item = order.items[idx];
+      return item && !returnedItemIds.includes(item._id);
+    });
+    setPendingExchangeItems(updated);
+    const key = `exchange_pending_${orderId}`;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(key, JSON.stringify(updated));
+    }
+  }, [myReturns, order]);
 
   // Cancel order mutation
   const cancelOrderMutation = useMutation({
@@ -103,20 +139,17 @@ export default function OrderDetailsPage() {
   const createExchange = async () => {
     const URL = EXCHANGE_CREATE;
     const token = secureLocalStorage.getItem("auth_token");
-    try {
     const res = await fetch(URL, {
       method: "POST",
       headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      })
-      const data = await res.json();
-      setExchangeData(data);
-    } catch (error) {
-      console.log(error);
-    }
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    setExchangeData(data);
+    return data;
   };
 
   const getProductById = async () => {
@@ -137,26 +170,54 @@ export default function OrderDetailsPage() {
     }
   };
 
-  const confirmPayment = async () => {
+  const confirmPayment = async (exchangeId: string) => {
     const URL = EXCHANGE_CONFIRM_PAYMENT;
     const token = secureLocalStorage.getItem("auth_token");
-    
-    try {
-      const res = await fetch(URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+    const res = await fetch(URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ exchangeId })
+    });
+    const data = await res.json();
+    return data;
+  };
+
+  const placeReturnForExchangedItem = async () => {
+    if (!order) return;
+    const originalItem = order.items[itemToReplace];
+    if (!originalItem) return;
+    const returnData = {
+      orderId: order._id,
+      items: [
+        {
+          itemId: originalItem._id,
+          quantity: originalItem.quantity,
+          reason: "Exchange",
         },
-        body: JSON.stringify({
-          exchangeId: exchangeData._id,
-        })
-      });
-      const data = await res.json();
-      console.log(data);
-    } catch (error) {
-      console.log(error);
-    }
+      ],
+      reason: "Exchange",
+      description: "Auto-created return for exchange",
+    };
+    await returnAPI.create(returnData);
+  };
+
+  const placeOrderForReplacementItem = async () => {
+    if (!order || !productDetail || !productDetail.variants) return;
+    const variant = productDetail.variants.find((v: any) => v.sku === selectedProduct.skuId);
+    if (!variant) return;
+    await orderAPI.create({
+      items: [
+        {
+          variantId: variant._id,
+          quantity: selectedProduct.quantity || 1,
+        },
+      ],
+      shippingAddress: order.shippingAddress,
+      paymentMethod: "cod",
+    });
   };
 
   useEffect(() => {
@@ -300,9 +361,16 @@ export default function OrderDetailsPage() {
                         <p className="text-lg font-bold">
                           ₹{(item.price * item.quantity).toFixed(2)}
                         </p>
+                        {pendingExchangeItems.includes(index) && <div className="badge badge-warning mt-2">Exchange Pending</div>}
+                        {!!returnedItemIds && returnedItemIds.includes(item._id) && <div className="badge badge-neutral mt-2">Returned</div>}
                       </div>
                       {/* Open the modal using document.getElementById('ID').showModal() method */}
-                      <button className="btn" onClick={()=>{getAllProducts(); setItemToReplace(index); setCurrentPrice(item.price); (document.getElementById('my_modal_5') as HTMLDialogElement)?.showModal();}}>Exchange Item</button>
+                      <button
+                        className="btn"
+                        disabled={pendingExchangeItems.includes(index) || (!!returnedItemIds && returnedItemIds.includes(item._id))}
+                        onClick={()=>{getAllProducts(); setItemToReplace(index); setCurrentPrice(item.price); (document.getElementById('my_modal_5') as HTMLDialogElement)?.showModal();}}>
+                        {pendingExchangeItems.includes(index) ? "Exchange Pending" : (!!returnedItemIds && returnedItemIds.includes(item._id)) ? "Returned" : "Exchange Item"}
+                      </button>
                       <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
                         <div className="modal-box">
                           <div className="font-bold modal-top bg-base-100 flex flex-row sticky top-0 justify-between text-lg"><p>Exchange</p><button onClick={() => {setExchangeSteps('selectOrder'); (document.getElementById('my_modal_5') as HTMLDialogElement)?.close();}}><IoCloseSharp /></button></div>
@@ -483,8 +551,15 @@ export default function OrderDetailsPage() {
                                   Cancel
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    createExchange();
+                                  onClick={async () => {
+                                    const ex = await createExchange();
+                                    await confirmPayment(ex._id);
+                                    const updated = Array.from(new Set([...pendingExchangeItems, itemToReplace]));
+                                    setPendingExchangeItems(updated);
+                                    const key = `exchange_pending_${orderId}`;
+                                    if (typeof window !== 'undefined') {
+                                      localStorage.setItem(key, JSON.stringify(updated));
+                                    }
                                     (document.getElementById("my_modal_5") as HTMLDialogElement)?.close();
                                     setExchangeSteps("selectOrder");
                                   }}

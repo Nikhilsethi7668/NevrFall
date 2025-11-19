@@ -60,6 +60,7 @@ export const productAPI = {
   getColorFeed: (params: { limit?: number; cursor?: string; sort?: string; seed?: string }) =>
     api.get('/api/products/color-feed', { params }),
   getAllCategories: () => api.get('/api/products/getAllCategories'),
+  getAllCollections: () => api.get('/api/products/getAllCollections'),
   getCartRecommended: () => api.get('/api/products/cart/recommendations'),
   getProductRecomendations: (productId: string) => api.get(`/api/products/recommendations/${productId}`),
 };

@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Product from "../Models/Product.js";
 import ParentProduct from "../Models/ParentProduct.js";
 import Category from "../Models/Category.js";
+import Collection from "../Models/Collection.js";
 import ProductVariant from "../Models/ProductVariant.js";
 import Cart from "../Models/Cart.js";
 import WishlistItem from "../Models/WishlistItem.js";
@@ -116,6 +117,13 @@ const buildFilter = async (q) => {
   const tagParam = q.tag || q.tags || q.sleeve || q.sleeves;
   const tags = toArr(tagParam);
   if (tags.length) filter.tags = { $in: tags.map((t) => t.toLowerCase()) };
+
+  // Handle collections (support both singular and plural)
+  const collectionParam = q.collection || q.collections;
+  const collections = toArr(collectionParam);
+  if (collections.length) {
+    filter.collections = { $in: collections };
+  }
 
   // price range applies to priceFrom (handle both price and priceMin/priceMax)
   const priceMin = toNum(q.priceMin, null);
@@ -657,6 +665,32 @@ export const GetAllCategories = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error while fetching categories",
+      error: error.message,
+    });
+  }
+};
+
+export const GetAllCollections = async (req, res) => {
+  try {
+    const collections = await Collection.find({});
+
+    if (!collections || collections.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No collections found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "All collections returned successfully",
+      data: collections,
+    });
+  } catch (error) {
+    console.error("Error fetching collections:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching collections",
       error: error.message,
     });
   }

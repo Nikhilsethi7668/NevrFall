@@ -24,6 +24,9 @@ const Products: React.FC = () => {
   const [childProducts, setChildProducts] = useState<Product[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
+  const [isParentEditModalOpen, setIsParentEditModalOpen] = useState(false);
+  const [editingParent, setEditingParent] = useState<ParentProduct | null>(null);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -99,6 +102,34 @@ const Products: React.FC = () => {
             className="rounded-lg bg-gray-100 px-3 py-1 text-sm text-gray-800 hover:bg-gray-200"
           >
             View Products
+          </button>
+          <button
+            onClick={() => {
+              setEditingParent(item);
+              setParentTitle(item.title);
+              setParentSlug(item.slug);
+              setParentDescription(item.description || '');
+              setParentCategoryId(item.categories || '');
+              setIsParentEditModalOpen(true);
+            }}
+            className="rounded-lg bg-yellow-500 px-3 py-1 text-sm text-white hover:bg-yellow-600"
+          >
+            Edit Parent
+          </button>
+          <button
+            onClick={async () => {
+              if (!confirm('Delete this parent product? This will remove its products too.')) return;
+              try {
+                await productApi.deleteParentProduct(item._id);
+                setParentProducts((prev) => prev.filter((p) => p._id !== item._id));
+                toast.success('Parent product deleted');
+              } catch (e: any) {
+                toast.error(e?.response?.data?.message || 'Failed to delete');
+              }
+            }}
+            className="rounded-lg bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
+          >
+            Delete Parent
           </button>
         </div>
       ),
@@ -323,6 +354,92 @@ const Products: React.FC = () => {
               className="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700"
             >
               Save
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isParentEditModalOpen}
+        onClose={() => setIsParentEditModalOpen(false)}
+        title={"Edit Parent Product"}
+        size="md"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Title *</label>
+            <input
+              value={parentTitle}
+              onChange={(e) => setParentTitle(e.target.value)}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Slug *</label>
+            <input
+              value={parentSlug}
+              onChange={(e) => setParentSlug(e.target.value)}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <textarea
+              value={parentDescription}
+              onChange={(e) => setParentDescription(e.target.value)}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Category</label>
+            <select
+              value={parentCategoryId}
+              onChange={(e) => setParentCategoryId(e.target.value)}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2"
+            >
+              <option value="">Select a category</option>
+              {categories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end space-x-3 border-t pt-4">
+            <button
+              type="button"
+              onClick={() => setIsParentEditModalOpen(false)}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!editingParent) return;
+                if (!parentTitle) {
+                  toast.error('Title is required');
+                  return;
+                }
+                try {
+                  const resp = await productApi.updateParentProduct(editingParent._id, {
+                    title: parentTitle,
+                    slug: parentSlug,
+                    description: parentDescription,
+                    categories: parentCategoryId || null,
+                  });
+                  toast.success('Parent product updated');
+                  setIsParentEditModalOpen(false);
+                  setEditingParent(null);
+                  const parents = await productApi.getParentProducts();
+                  setParentProducts(parents);
+                } catch (err: any) {
+                  toast.error(err?.response?.data?.message || 'Failed to update parent');
+                }
+              }}
+              className="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700"
+            >
+              Save Changes
             </button>
           </div>
         </div>

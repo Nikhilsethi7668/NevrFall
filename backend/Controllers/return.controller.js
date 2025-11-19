@@ -579,6 +579,16 @@ export const adminReceiveAndProcessRefund = async (req, res) => {
 
     // Update order returnedQuantity and optionally restock inventory
     line.returnedQuantity = (line.returnedQuantity || 0) + rr.quantity;
+
+    // Check if all items in the order have been returned
+    const allItemsReturned = order.items.every(
+      (item) => item.returnedQuantity >= item.quantity
+    );
+
+    if (allItemsReturned) {
+      order.status = "returned";
+    }
+
     await order.save({ session });
 
     if (restockToInventory) {

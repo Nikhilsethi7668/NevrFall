@@ -33,7 +33,7 @@ export default function Categories() {
             <img
               src={category.image}
               alt={category.name}
-              className="h-[30vh] w-full object-cover object-center"
+              className="h-[20vh] w-full justify-around object-cover object-center"
             />
             <h3 className='py-1 px-2 text-left text-sm'>
               {category.name}

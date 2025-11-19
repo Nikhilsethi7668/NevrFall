@@ -4,6 +4,7 @@ import ParentProduct from "../../Models/ParentProduct.js";
 import ProductVariant from "../../Models/ProductVariant.js";
 import { cacheDelPattern } from "../../lib/cache.js";
 import Category from "../../Models/Category.js";
+import Collection from "../../Models/Collection.js";
 
 console.log("Using cacheDelPattern");
 
@@ -531,5 +532,248 @@ export const getAllParentProducts = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Error fetching parent products", error });
+  }
+};
+
+export const updateParentProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const payload = req.body?.data || req.body || {};
+    const { title, slug: rawSlug, description = "", categories = null } = payload;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid parent product id" });
+    }
+
+    let update = {};
+    if (title) update.title = title.trim();
+    if (rawSlug || title) update.slug = normalizeSlug(rawSlug || title);
+    if (description !== undefined) update.description = description;
+
+    if (categories) {
+      if (!mongoose.isValidObjectId(categories)) {
+        return res.status(400).json({ message: "Invalid category id" });
+      }
+      const exists = await Category.findById(categories).lean();
+      if (!exists) return res.status(400).json({ message: "Referenced category not found" });
+      update.categories = categories;
+    } else if (categories === null) {
+      update.categories = null;
+    }
+
+    if (update.slug) {
+      const conflict = await ParentProduct.findOne({ slug: update.slug, _id: { $ne: id } }).lean();
+      if (conflict) {
+        return res.status(409).json({ message: "Slug already in use" });
+      }
+    }
+
+    const updated = await ParentProduct.findByIdAndUpdate(id, update, { new: true }).lean();
+    if (!updated) return res.status(404).json({ message: "Parent product not found" });
+    res.json({ message: "Parent product updated", parent: updated });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update parent product", error: err.message });
+  }
+};
+
+export const deleteParentProduct = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid parent product id" });
+    }
+
+    await session.withTransaction(async () => {
+      const parent = await ParentProduct.findById(id).session(session);
+      if (!parent) throw new Error("Parent product not found");
+
+      const products = await Product.find({ parent: id }).select("_id").session(session);
+      const productIds = products.map((p) => p._id);
+
+      if (productIds.length) {
+        await ProductVariant.deleteMany({ product: { $in: productIds } }).session(session);
+        await Product.deleteMany({ _id: { $in: productIds } }).session(session);
+      }
+
+      await ParentProduct.findByIdAndDelete(id).session(session);
+    });
+
+    res.json({ message: "Parent product deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete parent product", error: err.message });
+  } finally {
+    session.endSession();
+  }
+};
+
+export const createCategoryAdmin = async (req, res) => {
+  try {
+    const payload = req.body?.data || req.body || {};
+    const { name, slug: rawSlug, parent = null, image = null, sortOrder = 0, isActive = true } = payload;
+    if (!name) return res.status(400).json({ message: "name is required" });
+    const slug = normalizeSlug(rawSlug || name);
+
+    const existingSlug = await Category.findOne({ slug }).lean();
+    if (existingSlug) {
+      return res.status(409).json({ message: "Category slug already exists", category: existingSlug });
+    }
+
+    let parentId = null;
+    if (parent) {
+      if (!mongoose.isValidObjectId(parent)) return res.status(400).json({ message: "Invalid parent category id" });
+      const parentCat = await Category.findById(parent).lean();
+      if (!parentCat) return res.status(400).json({ message: "Parent category not found" });
+      parentId = parent;
+    }
+
+    const cat = await Category.create({
+      name: name.trim(),
+      slug,
+      parent: parentId,
+      image: image || null,
+      sortOrder: Number(sortOrder) || 0,
+      isActive: Boolean(isActive),
+    });
+    res.status(201).json({ message: "Category created", category: cat });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to create category", error: err.message });
+  }
+};
+
+export const updateCategoryAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: "Invalid category id" });
+
+    const payload = req.body?.data || req.body || {};
+    const { name, slug: rawSlug, parent = undefined, image, sortOrder, isActive } = payload;
+
+    const cat = await Category.findById(id);
+    if (!cat) return res.status(404).json({ message: "Category not found" });
+
+    if (name !== undefined) cat.name = String(name).trim();
+    if (rawSlug !== undefined || name !== undefined) {
+      const newSlug = normalizeSlug(rawSlug || name || cat.name);
+      const conflict = await Category.findOne({ slug: newSlug, _id: { $ne: id } }).lean();
+      if (conflict) return res.status(409).json({ message: "Category slug already exists" });
+      cat.slug = newSlug;
+    }
+
+    if (parent !== undefined) {
+      if (parent === null || parent === "") {
+        cat.parent = null;
+      } else {
+        if (!mongoose.isValidObjectId(parent)) return res.status(400).json({ message: "Invalid parent category id" });
+        if (String(parent) === String(id)) return res.status(400).json({ message: "Category cannot be its own parent" });
+        const parentCat = await Category.findById(parent).lean();
+        if (!parentCat) return res.status(400).json({ message: "Parent category not found" });
+        cat.parent = parent;
+      }
+    }
+
+    if (image !== undefined) cat.image = image || null;
+    if (sortOrder !== undefined) cat.sortOrder = Number(sortOrder) || 0;
+    if (isActive !== undefined) cat.isActive = Boolean(isActive);
+
+    await cat.save();
+    res.json({ message: "Category updated", category: cat });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update category", error: err.message });
+  }
+};
+
+export const deleteCategoryAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: "Invalid category id" });
+
+    const childCount = await Category.countDocuments({ parent: id });
+    if (childCount > 0) {
+      return res.status(409).json({ message: "Cannot delete category with child categories" });
+    }
+
+    await ParentProduct.updateMany({ categories: id }, { $set: { categories: null } });
+    await Product.updateMany({ primaryCategoryId: id }, { $set: { primaryCategoryId: null } });
+
+    const deleted = await Category.findByIdAndDelete(id).lean();
+    if (!deleted) return res.status(404).json({ message: "Category not found" });
+
+    res.json({ message: "Category deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete category", error: err.message });
+  }
+};
+
+export const createCollectionAdmin = async (req, res) => {
+  try {
+    const payload = req.body?.data || req.body || {};
+    const { name, slug: rawSlug, description = "", image = null, isActive = "yes", priority = "moderate", meta = "" } = payload;
+    if (!name) return res.status(400).json({ message: "name is required" });
+    const slug = (rawSlug || name).trim().toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+
+    const existing = await Collection.findOne({ slug }).lean();
+    if (existing) {
+      return res.status(409).json({ message: "Collection slug already exists", collection: existing });
+    }
+
+    const col = await Collection.create({
+      name: name.trim(),
+      slug,
+      description,
+      image: image || "",
+      meta,
+      isActive,
+      priority,
+    });
+    res.status(201).json({ message: "Collection created", collection: col });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to create collection", error: err.message });
+  }
+};
+
+export const updateCollectionAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: "Invalid collection id" });
+
+    const payload = req.body?.data || req.body || {};
+    const { name, slug: rawSlug, description, image, isActive, priority, meta } = payload;
+
+    const col = await Collection.findById(id);
+    if (!col) return res.status(404).json({ message: "Collection not found" });
+
+    if (name !== undefined) col.name = String(name).trim();
+    if (rawSlug !== undefined || name !== undefined) {
+      const newSlug = (rawSlug || name || col.name).trim().toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+      const conflict = await Collection.findOne({ slug: newSlug, _id: { $ne: id } }).lean();
+      if (conflict) return res.status(409).json({ message: "Collection slug already exists" });
+      col.slug = newSlug;
+    }
+
+    if (description !== undefined) col.description = description || "";
+    if (image !== undefined) col.image = image || "";
+    if (isActive !== undefined) col.isActive = isActive;
+    if (priority !== undefined) col.priority = priority;
+    if (meta !== undefined) col.meta = meta || "";
+
+    await col.save();
+    res.json({ message: "Collection updated", collection: col });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update collection", error: err.message });
+  }
+};
+
+export const deleteCollectionAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: "Invalid collection id" });
+
+    const deleted = await Collection.findByIdAndDelete(id).lean();
+    if (!deleted) return res.status(404).json({ message: "Collection not found" });
+
+    res.json({ message: "Collection deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete collection", error: err.message });
   }
 };

@@ -7,6 +7,7 @@ import {
   CreditCard,
   Star,
   LogOut,
+  Tags,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authApi } from '@/api/auth';
@@ -22,6 +23,8 @@ const navigation = [
   { name: 'Returns', href: '/returns', icon: ShoppingCart },
   { name: 'Payments', href: '/payments', icon: CreditCard },
   { name: 'Reviews', href: '/reviews', icon: Star },
+  { name: 'Categories', href: '/categories', icon: Tags },
+  { name: 'Collections', href: '/collections', icon: Tags },
 ];
 
 const Sidebar: React.FC = () => {

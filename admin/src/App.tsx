@@ -10,6 +10,8 @@ import Payments from './pages/Payments';
 import Reviews from './pages/Reviews';
 import Exchanges from './pages/Exchanges';
 import Returns from './pages/Returns';
+import Categories from './pages/Categories';
+import Collections from './pages/Collections';
 import Login from './pages/Login';
 import { useAuthStore } from './store/useAuthStore';
 
@@ -93,6 +95,8 @@ const App: React.FC = () => {
           <Route path="returns" element={<Returns />} />
           <Route path="payments" element={<Payments />} />
           <Route path="reviews" element={<Reviews />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="collections" element={<Collections />} />
         </Route>
 
         {/* Catch all - redirect to home */}

@@ -4,6 +4,7 @@ import ExchangeRequest from "../Models/ExchangeRequest.js";
 import Order from "../Models/Order.js";
 import InventoryReservation from "../Models/InventoryReservation.js";
 import ProductVariant from "../Models/ProductVariant.js";
+import ReturnRequest from "../Models/ReturnRequest.js";
 import { createOrderFromSelection } from "../Services/orderService.js";
 
 const reversePickupFee = 100; // Example fee, fetch from config
@@ -478,11 +479,48 @@ export const approveExchange = async (req, res) => {
   try {
     const { exchangeId } = req.params;
     const adminUser = req.user.id;
-    const ex = await ExchangeRequest.findById(exchangeId).session(session);
+
+    const ex = await ExchangeRequest.findById(exchangeId)
+      .populate("originalOrder")
+      .session(session);
+
     if (!ex) throw new Error("Exchange not found");
     if (!ex.selectedReplacement || !ex.selectedReplacement.variant)
       throw new Error("Selected replacement missing");
 
+    // 1. Create a return for the original item
+    const order = ex.originalOrder;
+    const item = order.items[ex.originalOrderItemIndex];
+
+    const returnRequest = new ReturnRequest({
+      user: ex.user,
+      order: ex.originalOrder,
+      orderItemIndex: ex.originalOrderItemIndex,
+      variant: item.variant,
+      quantity: ex.selectedReplacement.quantity || 1,
+      reason: "Exchange",
+      description: `Exchange for new order`,
+      status: "approved",
+      approvedBy: adminUser,
+      history: [
+        {
+          status: "requested",
+          by: ex.user,
+          at: ex.createdAt,
+          meta: { note: "Auto-created for exchange." },
+        },
+        {
+          status: "approved",
+          by: adminUser,
+          at: new Date(),
+          meta: { note: "Auto-approved for exchange." },
+        },
+      ],
+    });
+
+    await returnRequest.save({ session });
+
+    // 2. Create a new order for the replacement item
     ex.status = "APPROVED";
     ex.history.push({ status: "APPROVED", by: adminUser, at: new Date() });
 
@@ -491,16 +529,21 @@ export const approveExchange = async (req, res) => {
       items: [
         {
           variantId: ex.selectedReplacement.variant,
-          quantity: 1,
+          quantity: ex.selectedReplacement.quantity || 1,
+          price: ex.selectedReplacement.priceAtSelection,
         },
       ],
-      paymentMethod: "none",
+      paymentMethod: "none", // Assuming exchange covers the cost
       meta: { exchangeId: ex._id },
+      shippingAddress: order.shippingAddress, // Use original shipping address
     };
 
     const newOrder = await createOrderFromSelection(orderPayload, session);
 
     ex.linkedNewOrder = newOrder._id;
+    ex.linkedReturnRequest = returnRequest._id; // Link the return request
+
+    // 3. Clean up inventory reservation
     await InventoryReservation.deleteMany({
       reservedForId: ex._id,
       reservedBy: "exchange",
@@ -508,9 +551,15 @@ export const approveExchange = async (req, res) => {
 
     await ex.save({ session });
     await session.commitTransaction();
+
+    // Update the new order with the return request ID
+    newOrder.meta.returnRequestId = returnRequest._id;
+    await newOrder.save({ session: session });
+    
     return res.json({ ok: true, exchange: ex, newOrder });
   } catch (err) {
     await session.abortTransaction();
+    console.error("approveExchange err:", err);
     return res.status(400).json({ error: err.message });
   } finally {
     session.endSession();

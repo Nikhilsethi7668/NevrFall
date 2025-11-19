@@ -61,7 +61,7 @@ export default function ProductCard({
     >
       <Link href={`/products/${product.slug || product._id}`} className="block">
         <div 
-          className="imgBlockNew custom-border listhover h-[30vh] lg:h-[576px] bg-[#FFEEE7] flex items-center justify-center overflow-hidden"
+          className="imgBlockNew custom-border listhover h-[25vh] lg:h-[576px] bg-[#FFEEE7] flex items-center justify-center overflow-hidden"
         >
           <Image
             src={product.coverImage || '/placeholder.png'}

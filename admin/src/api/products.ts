@@ -23,6 +23,18 @@ export const productApi = {
     return data;
   },
 
+  // Update parent product
+  updateParentProduct: async (id: string, payload: Partial<ParentProduct>) => {
+    const { data } = await axios.put(`/admin/products/parent/${id}`, payload);
+    return data;
+  },
+
+  // Delete parent product
+  deleteParentProduct: async (id: string) => {
+    const { data } = await axios.delete(`/admin/products/parent/${id}`);
+    return data;
+  },
+
   // Create product
   createProduct: async (payload: any) => {
     const { data } = await axios.post('/admin/products', payload, {
