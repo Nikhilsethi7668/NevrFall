@@ -129,7 +129,7 @@ export default function OrdersPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="select select-bordered w-full sm:w-auto"
+            className="select select-bordered w-full p-2 sm:w-auto"
           >
             <option value="all">All Orders</option>
             <option value="pending">Pending</option>
@@ -158,7 +158,7 @@ export default function OrdersPage() {
             {orders && orders.map((order: any) => (
               <div key={order._id} className="card bg-base-100 shadow">
                 <div className="card-body p-4 sm:p-6">
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-4">
+                  <div className="flex flex-row justify-between sm:items-start mb-4">
                     <div className="mb-4 sm:mb-0">
                       <h3 className="text-lg font-semibold">Order #{order._id.slice(-6)}</h3>
                       <p className="text-sm text-gray-600">
@@ -176,22 +176,42 @@ export default function OrdersPage() {
                   {/* Order Items */}
                   <div className="space-y-3 mb-4">
                     {order.items.map((item: any, index: number) => (
-                      <div key={index} className="flex flex-col sm:flex-row gap-4 p-3 bg-base-200 rounded-lg">
-                        <img
-                          src={item.product?.coverImage || "/placeholder.png"}
-                          alt={item.title}
-                          className="w-full h-48 sm:w-24 sm:h-24 object-cover rounded"
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-semibold">{item.title}</h4>
-                          <p className="text-sm text-gray-600">
-                            Size: {item.size} | Color: {item.color} | Qty: {item.quantity}
-                          </p>
-                          <p className="font-semibold mt-2">₹{item.price}</p>
+                      <div key={index} className="card bg-base-100 shadow-2xl">
+                        <div className="px-1 h-[17vh]">
+                          <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="flex gap-4 flex-1">
+                              {/* Image */}
+                              <img
+                                src={item.product?.coverImage || "/placeholder.png"}
+                                alt={item.title}
+                                className="w-20 h-30 object-cover rounded"
+                              />
+
+                              {/* Content */}
+                              <div className="flex-1">
+                                <h3 className="font-bold text-sm sm:text-lg">{item.title}</h3>
+
+                                <p className="text-sm text-gray-600">
+                                  Color: {item.color} | Size: {item.size}
+                                </p>
+
+                                <div className="flex flex-col justify-between">
+                                  <p className="text-xs font-semibold mt-2">₹{item.price}</p>
+
+                                  {/* Quantity (read-only, as in orders) */}
+                                  <div className="flex items-center md:gap-2 lg:gap-2 mt-1">
+                                    <span className="text-sm">Qty:</span>
+                                    <span className="w-8 text-center font-medium">{item.quantity}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
+
 
                   {/* Shipping Address */}
                   {order.shippingAddress && (

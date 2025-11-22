@@ -71,9 +71,9 @@ function ProductsPageContent() {
   return (
     <>
       <Navbar />
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto p-1">
         {/* --- Header with search and sort --- */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div className="bg-base-100 border-b py-3 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h1 className="text-3xl font-bold">Products</h1>
 
           <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
@@ -139,7 +139,7 @@ function ProductsPageContent() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-1">
                   {products.map((product: any) => (
                     <ProductCard key={product._id} product={product} />
                   ))}

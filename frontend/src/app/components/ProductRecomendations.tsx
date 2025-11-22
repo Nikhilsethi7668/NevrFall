@@ -42,7 +42,7 @@ export default function ProductRecomendations({ productId }: { productId: string
   return (
     <div className="bg-base-200 py-10">
       <div className="container mx-auto px-4 md:px-8">
-        <h2 className="text-3xl font-bold text-center mb-8">
+        <h2 className="text-xl font-bold text-center mb-8">
           You Might Also Like
         </h2>
 

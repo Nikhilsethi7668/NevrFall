@@ -48,6 +48,8 @@ const ExchangeRequestSchema = new mongoose.Schema(
       index: true,
     },
     originalOrderItemIndex: { type: Number, required: true }, // index in Order.items array to identify which item
+    reason: { type: String, required: true },
+    comments: { type: String },
     requestedAt: { type: Date, default: Date.now },
     estimatedCredit: { type: Number, required: true }, // original paid price - fees (est)
     fees: {

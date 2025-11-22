@@ -26,8 +26,14 @@ export const createExchange = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const { orderId, orderItemId, selectedReplacement, idempotencyKey } =
-      req.body;
+    const {
+      orderId,
+      orderItemId,
+      selectedReplacement,
+      idempotencyKey,
+      reason,
+      comments,
+    } = req.body;
     const userId = req.user.id;
 
     // Idempotency check
@@ -102,6 +108,8 @@ export const createExchange = async (req, res) => {
           originalOrderId: order._id,
           originalOrderItemId: order.items[orderItemId]._id,
           originalOrderItemIndex: orderItemId,
+          reason,
+          comments,
           originalItemPrice: originalPrice,
           selectedReplacement: dbSafeSelectedReplacement,
           estimatedCredit,

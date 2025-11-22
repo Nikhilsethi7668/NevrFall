@@ -22,18 +22,18 @@ export default function Categories() {
 
   return (
     <>
-      <h1 className='text-center font-semibold text-2xl my-2'>Categories</h1>
-      <div className="grid my-2 mx-2 grid-cols-2 md:grid-cols-4 gap-4">
+      <h1 className='text-center font-bold text-3xl md:text-4xl tracking-tight my-6 uppercase'>Categories</h1>
+      <div className="grid my-4 mx-2 grid-cols-2 md:grid-cols-4 gap-6">
         {categories.map((category) => (
           <div
             key={category._id}
-            className="flex flex-col cursor-pointer overflow-hidden"
+            className="group flex flex-col cursor-pointer overflow-hidden rounded-md border border-base-300 hover:border-base-400 transition"
             onClick={() => handleCategoryClick(category.name)}
           >
             <img
               src={category.image}
               alt={category.name}
-              className="h-[20vh] w-full justify-around object-cover object-center"
+              className="h-[22vh] w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
             />
             <h3 className='py-1 px-2 text-left text-sm'>
               {category.name}

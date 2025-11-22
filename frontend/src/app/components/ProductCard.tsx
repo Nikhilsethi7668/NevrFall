@@ -27,10 +27,10 @@ interface ProductCardProps {
   className?: string;
 }
 
-export default function ProductCard({ 
-  product, 
-  showWishlist = true, 
-  className = ""
+export default function ProductCard({
+  product,
+  showWishlist = true,
+  className = "",
 }: ProductCardProps) {
   const queryClient = useQueryClient();
   const [isHovered, setIsHovered] = useState(false);
@@ -48,68 +48,62 @@ export default function ProductCard({
   });
 
   const handleAddToWishlist = (e: React.MouseEvent) => {
+    // prevent Link navigation when clicking heart
     e.preventDefault();
     e.stopPropagation();
     addToWishlistMutation.mutate();
   };
 
   return (
-    <div 
-      className={`hover:shadow-lg transition-all duration-300 overflow-hidden ${className}`}
+    <div
+      className={`group bg-base-100 overflow-hidden transition-shadow hover:shadow-md ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Link href={`/products/${product.slug || product._id}`} className="block">
-        <div 
-          className="imgBlockNew custom-border listhover h-[25vh] lg:h-[576px] bg-[#FFEEE7] flex items-center justify-center overflow-hidden"
-        >
+      <Link
+        href={`/products/${product.slug || product._id}`}
+        className="block"
+        aria-label={product.title}
+      >
+        {/* Image container - perfectly square */}
+        <div className="relative w-full h-0 pt-[140%] bg-base-200 overflow-hidden">
+          {/* Wishlist button overlay on top-right of image */}
+          {showWishlist && (
+            <button
+              onClick={handleAddToWishlist}
+              aria-label="Add to wishlist"
+              className={`absolute top-2 right-3 z-10 rounded-full p-2 shadow-sm focus:outline-none transform transition-transform duration-200 ${
+                isHovered ? "scale-110" : "scale-100"
+              }`}
+            >
+              <FaRegHeart size={10} />
+            </button>
+          )}
+
           <Image
-            src={product.coverImage || '/placeholder.png'}
+            src={product.coverImage || "/placeholder.png"}
             alt={product.title}
-            className="custom-border img-auto object-cover h-full w-full"
-            width={300}
-            height={310}
+            fill
+            sizes="(max-width: 768px) 50vw, 33vw"
+            className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
+            priority={false}
             loading="lazy"
           />
         </div>
-        <div className="mx-1 py-2 lg:px-4">
-          <div className="flex justify-between items-start">
-            <p className="text-left text-xs lg:text-xl text-[#585c70] font-semibold line-clamp-2">
-              {product.title}
-            </p>
-            {showWishlist && (
-              <button
-                onClick={handleAddToWishlist}
-                className={`p-1 wishlistIconNew cursor-pointer ${
-                  isHovered ? "transform scale-125" : ""
-                } transition-opacity duration-200`}
-              >
-                <FaRegHeart size={20}/>
-              </button>
-            )}
-          </div>
-          {product.brand && (
-            <div className="listprice ecltext text-sm text-gray-500">
-              <span>{product.brand}</span>
+
+        {/* Content area */}
+        <div className="px-3 py-3 lg:px-4">
+          <p className="text-left text-[10px] uppercase tracking-wide text-base-content font-semibold line-clamp-2">
+            {product.title}
+          </p>
+
+          <div className=" flex items-center justify-between">
+            <div>
+              <span className="block text-[11px]">₹{product.priceFrom}</span>
             </div>
-          )}
-          {product.collections && product.collections.length > 0 ? (
-            <div className="listprice ecltext text-sm text-gray-500">
-              <span>{product.collections.join(", ")}</span>
-            </div>
-          ) : (
-            <div className="listprice ecltext text-sm text-gray-500">
-              <span className="line-clamp-1">{product.slug}</span>
-            </div>
-          )}
-          <div>
-            <div className="col-12 special-products_pricingicing">
-              <div className="price-block">
-                <span className="offer font-semibold text-sm">
-                  ₹{product.priceFrom}
-                </span>
-              </div>
-            </div>
+
+            {/* small chevron or placeholder for alignment — remove if not needed */}
+            <div className="text-right text-xs text-muted hidden lg:block"> &nbsp;</div>
           </div>
         </div>
       </Link>

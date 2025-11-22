@@ -14,6 +14,28 @@ import { useEffect, useState } from "react";
 import { FaRegHeart } from "react-icons/fa";
 import { IoCloseSharp } from "react-icons/io5";
 
+interface IVariant {
+  _id: string;
+  sku: string;
+  price: number;
+  size: string;
+}
+
+interface IProduct {
+  title: string;
+  coverImage: string;
+  priceFrom: number;
+  description: string;
+}
+
+interface IProductDetail {
+  product: IProduct;
+  variants: IVariant[];
+  parent?: {
+    description: string;
+  }
+}
+
 export default function OrderDetailsPage() {
   const params = useParams();
   const router = useRouter();
@@ -38,8 +60,10 @@ export default function OrderDetailsPage() {
     quantity: 1,
   });
   const [itemToReplace, setItemToReplace] = useState(-1);
-  const [productDetail, setProductDetail] = useState({});
-  const [exchangeData, setExchangeData] = useState({});
+  const [exchangeReason, setExchangeReason] = useState("");
+  const [exchangeComments, setExchangeComments] = useState("");
+  const [productDetail, setProductDetail] = useState<IProductDetail | null>(null);
+  const [exchangeData, setExchangeData] = useState<any>({});
   const [pendingExchangeItems, setPendingExchangeItems] = useState<number[]>([]);
   useEffect(() => {
     const key = `exchange_pending_${orderId}`;
@@ -134,6 +158,8 @@ export default function OrderDetailsPage() {
     orderItemId: itemToReplace,
     selectedReplacement: selectedProduct,
     idempotencyKey: order?.meta?.idempotencyKey,
+    reason: exchangeReason,
+    comments: exchangeComments,
   };
 
   const createExchange = async () => {
@@ -206,7 +232,7 @@ export default function OrderDetailsPage() {
 
   const placeOrderForReplacementItem = async () => {
     if (!order || !productDetail || !productDetail.variants) return;
-    const variant = productDetail.variants.find((v: any) => v.sku === selectedProduct.skuId);
+    const variant = productDetail.variants.find((v: IVariant) => v.sku === selectedProduct.skuId);
     if (!variant) return;
     await orderAPI.create({
       items: [
@@ -299,18 +325,18 @@ export default function OrderDetailsPage() {
             {/* Order Header */}
             <div className="card bg-base-100 shadow">
               <div className="card-body p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row justify-between sm:items-start">
+                <div className="flex flex-row justify-between sm:items-start">
                   <div className="mb-4 sm:mb-0">
-                    <h1 className="text-2xl font-bold">Order #{order._id.slice(-6)}</h1>
+                    <h1 className="text-xl font-bold">Order #{order._id.slice(-6)}</h1>
                     <p className="text-gray-600">
                       Placed on {new Date(order.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="text-left sm:text-right">
-                    <div className={`badge ${getStatusBadge(order.status)} text-lg mb-1`}>
+                    <div className={`badge ${getStatusBadge(order.status)} text-sm mb-1`}>
                       {getStatusText(order.status)}
                     </div>
-                    <p className="text-2xl font-bold mt-2">₹{order.total}</p>
+                    <p className="text-lg font-bold mt-2">₹{order.total}</p>
                   </div>
                 </div>
               </div>
@@ -320,11 +346,11 @@ export default function OrderDetailsPage() {
             <div className="card bg-base-100 shadow">
               <div className="card-body p-4 sm:p-6">
                 <h2 className="card-title mb-4">Order Progress</h2>
-                <ul className="steps steps-vertical lg:steps-horizontal w-full">
+                <ul className="steps steps-horizontal w-full">
                   {steps.map((step, index) => (
                     <li
                       key={step.key}
-                      className={`step ${
+                      className={`step text-sm ${
                         index <= currentIndex ? "step-primary" : ""
                       } ${order.status === "cancelled" ? "step-error" : ""}`}
                     >
@@ -340,95 +366,277 @@ export default function OrderDetailsPage() {
               <div className="card-body p-4 sm:p-6">
                 <h2 className="card-title mb-4">Order Items</h2>
                 <div className="space-y-4">
-                  {order.items.map((item: any, index: number) => (
-                    <div key={index} className="flex flex-col sm:flex-row gap-4 p-4 bg-base-200 rounded-lg">
-                      <img
-                        src={item.product?.coverImage || "/placeholder.png"}
-                        alt={item.title}
-                        className="w-full h-48 sm:w-24 sm:h-24 object-cover rounded"
-                      />
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{item.title}</h3>
-                        <p className="text-gray-600">
-                          Brand: {item.product?.brand || "N/A"}
-                        </p>
-                        <p className="text-gray-600">
-                          Size: {item.size} | Color: {item.color}
-                        </p>
-                        <p className="text-gray-600">Quantity: {item.quantity}</p>
+                {order.items.map((item: any, index: number) => (
+                  <div key={index} className="card bg-base-100 shadow-2xl">
+                    {/* compact card body like cart */}
+                    <div className="px-1 h-[17vh] items-stretch">
+                      <div className="flex flex-row p-2 gap-2 items-center">
+                        {/* Image */}
+                        <div className="w-20 h-30 overflow-hidden rounded">
+                          <img
+                            src={item.product?.coverImage || "/placeholder.png"}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                        {/* Main content */}
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-sm sm:text-lg line-clamp-2">{item.title}</h3>
+                          <p className="text-gray-600 text-xs sm:text-sm">
+                            Brand: {item.product?.brand || "N/A"}
+                          </p>
+                          <p className="text-gray-600 text-xs sm:text-sm">
+                            Size: {item.size} | Color: {item.color}
+                          </p>
+                          <p className="text-gray-600 text-xs sm:text-sm">Quantity: {item.quantity}</p>
+                        </div>
+
+                        {/* Price & badges */}
+                        <div className="text-left sm:text-right ml-2 flex-shrink-0">
+                          <p className="text-lg font-bold">
+                            ₹{(item.price * item.quantity).toFixed(2)}
+                          </p>
+                          {pendingExchangeItems.includes(index) && (
+                            <div className="badge badge-warning text-xs mt-2">Exchange Pending</div>
+                          )}
+                          {!!returnedItemIds && returnedItemIds.includes(item._id) && (
+                            <div className="badge badge-neutral mt-2">Returned</div>
+                          )}
+                        </div>
+                        </div>
                       </div>
-                      <div className="text-left sm:text-right mt-4 sm:mt-0">
-                        <p className="text-lg font-bold">
-                          ₹{(item.price * item.quantity).toFixed(2)}
-                        </p>
-                        {pendingExchangeItems.includes(index) && <div className="badge badge-warning mt-2">Exchange Pending</div>}
-                        {!!returnedItemIds && returnedItemIds.includes(item._id) && <div className="badge badge-neutral mt-2">Returned</div>}
-                      </div>
-                      {/* Open the modal using document.getElementById('ID').showModal() method */}
+                    </div>
+
+                    {/* Action button and modal remain exactly the same (no extra buttons/data) */}
+                    <div className="px-3 pb-3">
                       <button
-                        className="btn"
-                        disabled={pendingExchangeItems.includes(index) || (!!returnedItemIds && returnedItemIds.includes(item._id))}
-                        onClick={()=>{getAllProducts(); setItemToReplace(index); setCurrentPrice(item.price); (document.getElementById('my_modal_5') as HTMLDialogElement)?.showModal();}}>
-                        {pendingExchangeItems.includes(index) ? "Exchange Pending" : (!!returnedItemIds && returnedItemIds.includes(item._id)) ? "Returned" : "Exchange Item"}
+                        className="btn w-full sm:w-auto"
+                        disabled={
+                          pendingExchangeItems.includes(index) ||
+                          (!!returnedItemIds && returnedItemIds.includes(item._id))
+                        }
+                        onClick={() => {
+                          getAllProducts();
+                          setItemToReplace(index);
+                          setCurrentPrice(item.price);
+                          setExchangeSteps("reason");
+                          (document.getElementById("my_modal_5") as HTMLDialogElement)?.showModal();
+                        }}
+                      >
+                        {pendingExchangeItems.includes(index)
+                          ? "Exchange Pending"
+                          : !!returnedItemIds && returnedItemIds.includes(item._1d)
+                          ? "Returned"
+                          : "Exchange Item"}
                       </button>
+
+                      {/* keep the exact same dialog/flow you had */}
                       <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
                         <div className="modal-box">
-                          <div className="font-bold modal-top bg-base-100 flex flex-row sticky top-0 justify-between text-lg"><p>Exchange</p><button onClick={() => {setExchangeSteps('selectOrder'); (document.getElementById('my_modal_5') as HTMLDialogElement)?.close();}}><IoCloseSharp /></button></div>
+                          <div className="font-bold modal-top bg-base-100 flex flex-row sticky top-0 justify-between text-lg">
+                            <p>Exchange</p>
+                            <button
+                              onClick={() => {
+                                setExchangeSteps("reason");
+                                (document.getElementById("my_modal_5") as HTMLDialogElement)?.close();
+                              }}
+                            >
+                              <IoCloseSharp />
+                            </button>
+                          </div>
                           <div className="modal-action">
-                            {exchangeSteps === "selectOrder" && ( <div>
-                              <h1>Select Item to Proceed with Exchange</h1>
-                                {products && products.map((product: any, index: number) => (
-                                  <div>
-                                    <div className="imgBlockNew custom-border listhover h-[30vh] lg:h-[576px] bg-[#FFEEE7] flex items-center justify-center overflow-hidden">
-                                      <Image
-                                        src={product.coverImage || '/placeholder.png'}
-                                        alt={product.title}
-                                        className="custom-border img-auto object-cover h-full w-full"
-                                        width={300}
-                                        height={310}
-                                        loading="lazy"
-                                      />
-                                    </div>
-                                    <div className="mx-1 py-2 lg:px-4">
-                                      <div className="flex justify-between items-start">
-                                        <p className="text-left text-xs lg:text-xl text-[#585c70] font-semibold line-clamp-2">
-                                          {product.title}
-                                        </p>
+                            {exchangeSteps === "reason" && (
+                              <div className="p-4 w-full">
+                                <h3 className="text-md mb-4">Why are you exchanging this item?</h3>
+                                {/* visually hidden select for accessibility / to preserve original form-control if needed */}
+                                <div className="sr-only">
+                                  <label>
+                                    <span>Reason</span>
+                                    <select
+                                      onChange={(e) => setExchangeReason(e.target.value)}
+                                      value={exchangeReason}
+                                    >
+                                      <option value="" disabled>
+                                        Select a reason
+                                      </option>
+                                      <option value="size_issue">Size Issue</option>
+                                      <option value="defective">Defective Product</option>
+                                      <option value="wrong_item">Received Wrong Item</option>
+                                      <option value="other">Other</option>
+                                    </select>
+                                  </label>
+                                </div>
+
+                                {/* Grid of reason cards (clickable) */}
+                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => setExchangeReason("defective")}
+                                    className={`card p-4 text-left rounded-lg shadow ${exchangeReason === "defective" ? "ring-2 ring-primary" : "bg-base-100"}`}
+                                  >
+                                    <div className="flex flex-col items-start gap-3">
+                                      {/* icon */}
+                                      <div className="w-12 h-10 rounded-full bg-[#fff0f0] flex flex-col items-center justify-center">
+                                        {/* simple SVG icon */}
+                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-pink-500">
+                                          <path d="M4 7h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                          <path d="M8 11h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                          <path d="M10 15h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                        </svg>
                                       </div>
-                                      {product.brand && (
-                                        <div className="listprice ecltext text-sm text-gray-500">
-                                          <span>{product.brand}</span>
-                                        </div>
-                                      )}
-                                      {product.collections && product.collections.length > 0 ? (
-                                        <div className="listprice ecltext text-sm text-gray-500">
-                                          <span>{product.collections.join(", ")}</span>
-                                        </div>
-                                      ) : (
-                                        <div className="listprice ecltext text-sm text-gray-500">
-                                          <span className="line-clamp-1">{product.slug}</span>
-                                        </div>
-                                      )}
                                       <div>
-                                        <div className="col-12 special-products_pricingicing">
-                                          <div className="price-block">
-                                            <span className="offer font-semibold text-sm">
-                                              ₹{product.priceFrom}
-                                            </span>
-                                          </div>
-                                        </div>
-                                        <button onClick={()=> {setSelectedProduct({
-                                                                skuId: product.cardVariant.sku,
-                                                                productId: product._id,
-                                                                priceAtSelection: product.cardVariant.price,
-                                                                quantity: 1,
-                                          }); setExchangePrice(product.priceFrom); setExchangeSteps("selected");}}>Select Item</button>
+                                        <div className="font-semibold">Damaged or Defective Product</div>
+                                        <div className="text-sm text-gray-500">Not in good condition</div>
                                       </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setExchangeReason("wrong_item")}
+                                    className={`card p-4 text-left rounded-lg shadow ${exchangeReason === "wrong_item" ? "ring-2 ring-primary" : "bg-base-100"}`}
+                                  >
+                                    <div className="flex flex-col items-start gap-3">
+                                      <div className="w-12 h-10 rounded-full bg-[#f0fdff] flex flex-col items-center justify-center">
+                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-teal-500">
+                                          <path d="M3 6h18M8 6v14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                          <path d="M16 10l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <div className="font-semibold">Wrong Product Delivered</div>
+                                        <div className="text-sm text-gray-500">Not what I ordered</div>
+                                      </div>
+                                    </div>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setExchangeReason("defective" /* maps to 'defective' if you want 'quality' same as defective */)}
+                                    className={`card p-4 text-left rounded-lg shadow ${exchangeReason === "defective" ? "ring-2 ring-primary" : "bg-base-100"}`}
+                                  >
+                                    <div className="flex flex-col items-start gap-3">
+                                      <div className="w-12 h-10 rounded-full bg-[#fff7f0] flex flex-col items-center justify-center">
+                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-rose-500">
+                                          <path d="M12 2l2 5 5 .5-4 3 1.2 5L12 13l-4.2 3.5L9 10 5 7.5 10 7z" stroke="currentColor" strokeWidth="0.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <div className="font-semibold">Quality issues</div>
+                                        <div className="text-sm text-gray-500">Poor quality product</div>
+                                      </div>
+                                    </div>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setExchangeReason("size_issue")}
+                                    className={`card p-4 text-left rounded-lg shadow ${exchangeReason === "size_issue" ? "ring-2 ring-primary" : "bg-base-100"}`}
+                                  >
+                                    <div className="flex flex-col items-start gap-3">
+                                      <div className="w-12 h-10 rounded-full bg-[#f0fff7] flex flex-col items-center justify-center">
+                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-emerald-500">
+                                          <path d="M12 3v18M7 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <div className="font-semibold">Size & Fit Issues</div>
+                                        <div className="text-sm text-gray-500">Doesn't fit me well</div>
+                                      </div>
+                                    </div>
+                                  </button>
+                                </div>
+
+                                {/* Comments textarea (same binding as before) */}
+                                <div className="form-control w-full mb-4">
+                                  <label className="label">
+                                    <span className="label-text">Comments (optional)</span>
+                                  </label>
+                                  <textarea
+                                    className="textarea textarea-bordered h-24"
+                                    placeholder="Let us know more"
+                                    onChange={(e) => setExchangeComments(e.target.value)}
+                                    value={exchangeComments}
+                                  ></textarea>
+                                </div>
+
+                                {/* Continue button (same logic) */}
+                                <button
+                                  className="btn btn-primary w-full"
+                                  onClick={() => setExchangeSteps("selectOrder")}
+                                  disabled={!exchangeReason}
+                                >
+                                  Continue
+                                </button>
                               </div>
                             )}
+
+                            {exchangeSteps === "selectOrder" && (
+                              <div>
+                                <h1>Select Item to Proceed with Exchange</h1>
+                                {products &&
+                                  products.map((product: any, pIndex: number) => (
+                                    <div key={product._id + "-ex-" + pIndex}>
+                                      <div className="imgBlockNew custom-border listhover h-[30vh] lg:h-[576px] bg-[#FFEEE7] flex items-center justify-center overflow-hidden">
+                                        <Image
+                                          src={product.coverImage || "/placeholder.png"}
+                                          alt={product.title}
+                                          className="custom-border img-auto object-cover h-full w-full"
+                                          width={300}
+                                          height={310}
+                                          loading="lazy"
+                                        />
+                                      </div>
+                                      <div className="mx-1 py-2 lg:px-4">
+                                        <div className="flex justify-between items-start">
+                                          <p className="text-left text-xs lg:text-xl text-[#585c70] font-semibold line-clamp-2">
+                                            {product.title}
+                                          </p>
+                                        </div>
+                                        {product.brand && (
+                                          <div className="listprice ecltext text-sm text-gray-500">
+                                            <span>{product.brand}</span>
+                                          </div>
+                                        )}
+                                        {product.collections && product.collections.length > 0 ? (
+                                          <div className="listprice ecltext text-sm text-gray-500">
+                                            <span>{product.collections.join(", ")}</span>
+                                          </div>
+                                        ) : (
+                                          <div className="listprice ecltext text-sm text-gray-500">
+                                            <span className="line-clamp-1">{product.slug}</span>
+                                          </div>
+                                        )}
+                                        <div>
+                                          <div className="col-12 special-products_pricingicing">
+                                            <div className="price-block">
+                                              <span className="offer font-semibold text-sm">
+                                                ₹{product.priceFrom}
+                                              </span>
+                                            </div>
+                                          </div>
+                                          <button
+                                            onClick={() => {
+                                              setSelectedProduct({
+                                                skuId: product.cardVariant.sku,
+                                                productId: product._id,
+                                                priceAtSelection: product.cardVariant.price,
+                                                quantity: 1,
+                                              });
+                                              setExchangePrice(product.priceFrom);
+                                              setExchangeSteps("selected");
+                                            }}
+                                          >
+                                            Select Item
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
+
                             {exchangeSteps === "selected" && (
                               <div>
                                 {productDetail && productDetail.product && (
@@ -451,40 +659,58 @@ export default function OrderDetailsPage() {
                                         <div className="mt-4">
                                           <p className="font-semibold">Available Sizes:</p>
                                           <div className="flex flex-wrap gap-2 mt-2">
-                                            {productDetail.variants && productDetail.variants.map((variant: any) => (
-                                              <button
-                                                key={variant._id}
-                                                className={`btn ${selectedProduct.skuId === variant.sku ? 'btn-primary' : 'btn-outline'}`}
-                                                onClick={() => {
-                                                  setSelectedProduct(prev => ({
-                                                    ...prev,
-                                                    skuId: variant.sku,
-                                                    priceAtSelection: variant.price,
-                                                    quantity: 1, // Reset quantity to 1 when size changes
-                                                  }));
-                                                }}
-                                              >
-                                                {variant.size}
-                                              </button>
-                                            ))}
+                                            {productDetail.variants &&
+                                              productDetail.variants.map((variant: IVariant) => (
+                                                <button
+                                                  key={variant._id}
+                                                  className={`btn ${
+                                                    selectedProduct.skuId === variant.sku ? "btn-primary" : "btn-outline"
+                                                  }`}
+                                                  onClick={() => {
+                                                    setSelectedProduct((prev) => ({
+                                                      ...prev,
+                                                      skuId: variant.sku,
+                                                      priceAtSelection: variant.price,
+                                                      quantity: 1,
+                                                    }));
+                                                  }}
+                                                >
+                                                  {variant.size}
+                                                </button>
+                                              ))}
                                           </div>
                                         </div>
                                         <div className="mt-4">
-                                            <p className="font-semibold">Quantity:</p>
-                                            <div className="flex flex-row">
-                                            <button className={`btn btn-outline ${selectedProduct.quantity > 1 ? "bg-base-100" : "bg-base-300"}`} onClick={() => {
-                                                  if (selectedProduct.quantity > 1) {
-                                                  setSelectedProduct(prev => ({
+                                          <p className="font-semibold">Quantity:</p>
+                                          <div className="flex flex-row">
+                                            <button
+                                              className={`btn btn-outline ${
+                                                selectedProduct.quantity > 1 ? "bg-base-100" : "bg-base-300"
+                                              }`}
+                                              onClick={() => {
+                                                if (selectedProduct.quantity > 1) {
+                                                  setSelectedProduct((prev) => ({
                                                     ...prev,
                                                     quantity: selectedProduct.quantity - 1,
-                                                  }));}}}>-</button>
-                                            <button className="btn" >{selectedProduct.quantity || 1}</button>
-                                            <button className="btn btn-outline bg-base-100" onClick={() => {
-                                                  setSelectedProduct(prev => ({
-                                                    ...prev,
-                                                    quantity: selectedProduct.quantity + 1,
-                                                  }));}}>+</button>
-                                            </div>
+                                                  }));
+                                                }
+                                              }}
+                                            >
+                                              -
+                                            </button>
+                                            <button className="btn">{selectedProduct.quantity || 1}</button>
+                                            <button
+                                              className="btn btn-outline bg-base-100"
+                                              onClick={() =>
+                                                setSelectedProduct((prev) => ({
+                                                  ...prev,
+                                                  quantity: selectedProduct.quantity + 1,
+                                                }))
+                                              }
+                                            >
+                                              +
+                                            </button>
+                                          </div>
                                         </div>
                                         <div className="mt-6">
                                           <button
@@ -507,75 +733,68 @@ export default function OrderDetailsPage() {
                                 )}
                               </div>
                             )}
+
                             {exchangeSteps === "payment" && (
-                             <div className="p-6 bg-white rounded-2xl shadow-lg space-y-4 text-center max-w-md mx-auto">
-                              <h1 className="text-lg font-semibold text-gray-800">
-                                Are you sure you want to exchange this item?
-                              </h1>
-                              <p className="text-sm text-gray-500">
-                                We are currently accepting exchange requests on <span className="font-medium text-gray-700">Cash on Delivery (COD)</span> only.
-                              </p>
-                              <div className="flex flex-col items-center space-y-3 mt-4">
-                                {/* Price Condition */}
-                                <h3 className="text-base font-medium text-gray-800 bg-gray-100 px-4 py-2 rounded-md">
-                                  {currentPrice === exchangePrice
-                                    ? "Amount to Pay: ₹0"
-                                    : currentPrice > exchangePrice 
-                                    ? `₹${(currentPrice - exchangePrice).toFixed(2)} will be added to your wallet`
-                                    : `Amount to Pay: ₹${(exchangePrice - currentPrice).toFixed(2)}`}
-                                </h3>
-                                {/* COD Option */}
-                                <div className="flex items-center space-x-2 mt-2">
-                                  <input
-                                    type="radio"
-                                    name="payment"
-                                    value="COD"
-                                    id="COD"
-                                    defaultChecked
-                                    className="radio checked:bg-primary"
-                                  />
-                                  <label htmlFor="COD" className="text-gray-700 font-medium">
-                                    Cash on Delivery (COD)
-                                  </label>
+                              <div className="p-6 bg-white rounded-2xl shadow-lg space-y-4 text-center max-w-md mx-auto">
+                                <h1 className="text-lg font-semibold text-gray-800">
+                                  Are you sure you want to exchange this item?
+                                </h1>
+                                <p className="text-sm text-gray-500">
+                                  We are currently accepting exchange requests on{" "}
+                                  <span className="font-medium text-gray-700">Cash on Delivery (COD)</span> only.
+                                </p>
+                                <div className="flex flex-col items-center space-y-3 mt-4">
+                                  <h3 className="text-base font-medium text-gray-800 bg-gray-100 px-4 py-2 rounded-md">
+                                    {currentPrice === exchangePrice
+                                      ? "Amount to Pay: ₹0"
+                                      : currentPrice > exchangePrice
+                                      ? `₹${(currentPrice - exchangePrice).toFixed(2)} will be added to your wallet`
+                                      : `Amount to Pay: ₹${(exchangePrice - currentPrice).toFixed(2)}`}
+                                  </h3>
+                                  <div className="flex items-center space-x-2 mt-2">
+                                    <input type="radio" name="payment" value="COD" id="COD" defaultChecked className="radio checked:bg-primary" />
+                                    <label htmlFor="COD" className="text-gray-700 font-medium">
+                                      Cash on Delivery (COD)
+                                    </label>
+                                  </div>
+                                </div>
+                                <div className="flex justify-center gap-4 mt-6">
+                                  <button
+                                    onClick={() => {
+                                      setExchangeSteps("selectOrder");
+                                      (document.getElementById("my_modal_5") as HTMLDialogElement)?.close();
+                                    }}
+                                    className="btn btn-outline btn-sm w-24"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      const ex = await createExchange();
+                                      await confirmPayment(ex._id);
+                                      const updated = Array.from(new Set([...pendingExchangeItems, itemToReplace]));
+                                      setPendingExchangeItems(updated);
+                                      const key = `exchange_pending_${orderId}`;
+                                      if (typeof window !== "undefined") {
+                                        localStorage.setItem(key, JSON.stringify(updated));
+                                      }
+                                      (document.getElementById("my_modal_5") as HTMLDialogElement)?.close();
+                                      setExchangeSteps("selectOrder");
+                                    }}
+                                    className="btn btn-primary btn-sm w-24"
+                                  >
+                                    Yes
+                                  </button>
                                 </div>
                               </div>
-                              {/* Action Buttons */}
-                              <div className="flex justify-center gap-4 mt-6">
-                                <button
-                                  onClick={() => {
-                                    setExchangeSteps("selectOrder");
-                                    (document.getElementById("my_modal_5") as HTMLDialogElement)?.close();
-                                  }}
-                                  className="btn btn-outline btn-sm w-24"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  onClick={async () => {
-                                    const ex = await createExchange();
-                                    await confirmPayment(ex._id);
-                                    const updated = Array.from(new Set([...pendingExchangeItems, itemToReplace]));
-                                    setPendingExchangeItems(updated);
-                                    const key = `exchange_pending_${orderId}`;
-                                    if (typeof window !== 'undefined') {
-                                      localStorage.setItem(key, JSON.stringify(updated));
-                                    }
-                                    (document.getElementById("my_modal_5") as HTMLDialogElement)?.close();
-                                    setExchangeSteps("selectOrder");
-                                  }}
-                                  className="btn btn-primary btn-sm w-24"
-                                >
-                                  Yes
-                                </button>
-                              </div>
-                            </div>
                             )}
                           </div>
                         </div>
                       </dialog>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
+              </div>
               </div>
             </div>
 

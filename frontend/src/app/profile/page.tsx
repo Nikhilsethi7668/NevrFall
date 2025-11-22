@@ -57,8 +57,8 @@ export default function ProfilePage() {
   const { data: addressesData } = useQuery({
     queryKey: ["addresses"],
     queryFn: async () => {
-      const res = await addressAPI.get();
-      return res.data;
+      const res = await addressAPI.getAllUserAddress();
+      return res.data.addresses;
     },
   });
 
@@ -86,7 +86,7 @@ export default function ProfilePage() {
 
   const addAddressMutation = useMutation({
     mutationFn: async (data: any) => {
-      return addressAPI.create(data);
+      return addressAPI.addAddress(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["addresses"] });
@@ -96,7 +96,7 @@ export default function ProfilePage() {
 
   const makeDefaultAddressMutation = useMutation({
     mutationFn: async (id: string) => {
-      return addressAPI.makeDefault(id);
+      return addressAPI.markAddressDefault(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["addresses"] });
@@ -456,16 +456,18 @@ export default function ProfilePage() {
                   )}
 
                   <div className="space-y-4">
-                    {addressesData?.map((address: any) => (
+                    {addressesData && addressesData.length > 0 && addressesData?.map((address: any) => (
                       <div key={address._id} className="card bg-base-200">
                         <div className="card-body">
-                          <p>{address.street}</p>
+                          <h2 className="card-title">{address.name}</h2>
+                          <p>{address.phone}</p>
+                          <p>{address.line1}</p>
+                          {address.line2 && <p>{address.line2}</p>}
                           <p>
-                            {address.city}, {address.state} {address.zip}
+                            {address.city}, {address.state} {address.pincode}
                           </p>
-                          <p>{address.country}</p>
                           <div className="card-actions justify-end">
-                            {!address.isDefault && (
+                            {!address.default && (
                               <button
                                 onClick={() =>
                                   makeDefaultAddressMutation.mutate(address._id)

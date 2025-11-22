@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-900 text-white">
+    <footer className="bg-base-100 text-base-content border-t border-base-300">
       <div className="container mx-auto py-12 px-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="col-span-1">
@@ -62,7 +62,7 @@ const Footer = () => {
             </nav>
           </div>
         </div>
-        <div className="mt-12 border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between">
+        {/* <div className="mt-12 border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between">
           <div className="mb-4 md:mb-0">
             <h6 className="font-semibold mb-2">Join our newsletter</h6>
             <p className="text-gray-400">
@@ -83,7 +83,7 @@ const Footer = () => {
               </div>
             </fieldset>
           </form>
-        </div>
+        </div> */}
         <div className="mt-8 text-center text-gray-500">
           <p>&copy; {new Date().getFullYear()} NevrFall. All rights reserved.</p>
         </div>

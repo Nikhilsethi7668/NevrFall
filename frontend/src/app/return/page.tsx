@@ -163,7 +163,7 @@ function ReturnPageContent() {
                 <div>
                   <p><strong>Order Number:</strong> #{order.orderNumber}</p>
                   <p><strong>Order Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
-                  <p><strong>Total Amount:</strong> ₹{order.totalAmount}</p>
+                  <p><strong>Total Amount:</strong> ₹{order.total}</p>
                 </div>
                 <div>
                   <p><strong>Status:</strong> {order.status}</p>
@@ -209,12 +209,12 @@ function ReturnPageContent() {
             <div className="card-body">
               <h2 className="card-title mb-4">Return Reason</h2>
               <div className="space-y-4">
-                <div className="form-control">
+                <div className="form-control gap-1">
                   <label className="label">
                     <span className="label-text">Reason for return *</span>
                   </label>
                   <select
-                    className="select select-bordered"
+                    className="select select-bordered p-2"
                     value={returnReason}
                     onChange={(e) => setReturnReason(e.target.value)}
                   >
@@ -229,7 +229,7 @@ function ReturnPageContent() {
                   </select>
                 </div>
 
-                <div className="form-control">
+                <div className="form-control gap-1">
                   <label className="label">
                     <span className="label-text">Additional details (optional)</span>
                   </label>
@@ -241,7 +241,7 @@ function ReturnPageContent() {
                   />
                 </div>
 
-                <div className="form-control">
+                <div className="form-control gap-1">
                   <label className="label">
                     <span className="label-text">Upload images (optional)</span>
                   </label>
@@ -252,8 +252,8 @@ function ReturnPageContent() {
                     onChange={handleImageUpload}
                     className="file-input file-input-bordered w-full"
                   />
-                  <label className="label">
-                    <span className="label-text-alt">Upload up to 5 images to support your return request</span>
+                  <label className="text-stone-400">
+                    <span className="mt-2">Upload up to 5 images to support your return request</span>
                   </label>
                 </div>
 

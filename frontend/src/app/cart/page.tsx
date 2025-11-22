@@ -266,12 +266,12 @@ export default function CartPage() {
     <>
       <Navbar />
       <div className="container mx-auto p-4">
-        <h1 className="text-2xl lg:text-3xl font-bold mb-8">Shopping Cart</h1>
+        <h1 className="text-xl lg:text-3xl font-bold mb-8">Shopping Cart</h1>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-4">
             {cart.items.map((item: any) => (
               <div key={item.variant} className="card bg-base-100 shadow-2xl">
-                <div className="px-1 h-[17vh]">
+                <div className="px-1 h-[14vh]">
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex gap-4 flex-1 cursor-pointer">
                       <img src={item.product?.coverImage} alt={item.title} onClick={() => router.push(`/products/${item.product._id}`)} className="w-20 h-30 object-cover rounded" />

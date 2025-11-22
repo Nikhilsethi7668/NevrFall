@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from "next/image";
+import { IoChevronBackOutline, IoChevronForwardOutline } from "react-icons/io5";
 import Img1 from '../../../public/1.png';
 import Img2 from '../../../public/2.png';
 import Img3 from '../../../public/3.png';
@@ -48,13 +49,16 @@ const ImageCarousel = () => {
         </div>
       ))}
 
+      {/* Overlay gradient */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/20" />
+
       {/* Navigation Buttons */}
       <div className="absolute flex justify-between items-center w-full px-4 top-1/2 -translate-y-1/2">
-        <button onClick={prevSlide} className="btn btn-circle btn-sm sm:btn-md opacity-70 hover:opacity-100">
-          ❮
+        <button onClick={prevSlide} className="btn btn-circle btn-outline bg-base-100/70 border-base-300 hover:bg-accent hover:text-white">
+          <IoChevronBackOutline size={18} />
         </button>
-        <button onClick={nextSlide} className="btn btn-circle btn-sm sm:btn-md opacity-70 hover:opacity-100">
-          ❯
+        <button onClick={nextSlide} className="btn btn-circle btn-outline bg-base-100/70 border-base-300 hover:bg-accent hover:text-white">
+          <IoChevronForwardOutline size={18} />
         </button>
       </div>
 
@@ -65,7 +69,7 @@ const ImageCarousel = () => {
             key={i}
             onClick={() => setCurrent(i)}
             className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all ${
-              i === current ? "bg-primary" : "bg-gray-400"
+              i === current ? "bg-accent" : "bg-base-300"
             }`}
           />
         ))}
