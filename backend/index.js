@@ -25,6 +25,7 @@ import adminRoutes from "./Routes/admin/index.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { env } from "process";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -36,10 +37,8 @@ const isProd = process.env.PRODUCTION === "true";
 app.use(
   cors({
     origin: [
-      "http://13.61.7.132:3000",
-      "http://13.61.7.132:5173",
-      "http://localhost:3000",
-      "http://localhost:5173",
+      env.process.CLIENT_URL,
+      env.process.ADMIN_URL
     ],
     credentials: true,
   })

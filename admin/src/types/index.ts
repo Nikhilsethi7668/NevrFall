@@ -82,12 +82,26 @@ export interface ProductVariant {
   stock: number;
 }
 
+export interface ShippingAddress {
+  name: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  pincode: string;
+  phone: string;
+}
+
 export interface Order {
   _id: string;
   user: User | string;
   status: OrderStatus;
   total: number;
+  subtotal: number;
+  discountAmount: number;
   items: OrderItem[];
+  paymentMethod?: string;
+  shippingAddress?: ShippingAddress;
   shipping?: any;
   payment?: any;
   meta?: {
@@ -119,7 +133,9 @@ export type OrderStatus =
 
 export interface OrderItem {
   product: string;
-  variant: string;
+  variant: ProductVariant | string;
+  title: string;
+  priceAfterDiscount: number;
   quantity: number;
   price: number;
 }
@@ -163,12 +179,12 @@ export interface Payment {
   updatedAt: Date;
 }
 
-export type PaymentStatus = 
-  | 'created' 
-  | 'attempted' 
-  | 'success' 
-  | 'failed' 
-  | 'cod_pending' 
+export type PaymentStatus =
+  | 'created'
+  | 'attempted'
+  | 'success'
+  | 'failed'
+  | 'cod_pending'
   | 'refunded';
 
 export interface Review {
@@ -251,15 +267,15 @@ export interface ReturnRequest {
   quantity: number;
   reason?: string;
   status:
-    | 'requested'
-    | 'pickup_scheduled'
-    | 'picked_up'
-    | 'received'
-    | 'inspected'
-    | 'approved'
-    | 'rejected'
-    | 'refunded'
-    | 'closed';
+  | 'requested'
+  | 'pickup_scheduled'
+  | 'picked_up'
+  | 'received'
+  | 'inspected'
+  | 'approved'
+  | 'rejected'
+  | 'refunded'
+  | 'closed';
   refund?: { amount?: number; currency?: string; refundedAt?: Date };
   pickup?: { carrier?: string; scheduledAt?: Date; trackingId?: string };
   createdAt: Date;

@@ -33,7 +33,7 @@ const statusTiles: OrderStatus[] = [
 
 const Orders: React.FC = () => {
   const { orders, page, totalPages, loading, fetchOrders, updateOrderStatus, approveRefund } = useOrderStore();
-  const [order, setOrder] = useState<Order[]>([]);
+  const [order, setOrder] = useState<Order | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
@@ -43,8 +43,8 @@ const Orders: React.FC = () => {
   }, [statusFilter]);
 
   const payload = {
-    orderId: order._id,
-    clientId: order?.user?._id,
+    orderId: order?._id,
+    clientId: typeof order?.user === 'object' ? order?.user?._id : order?.user,
   }
   console.log(payload);
   console.log(order);
@@ -71,9 +71,10 @@ const Orders: React.FC = () => {
   };
 
   const getOrderById = async () => {
+    if (!selectedOrder) return;
     const URL = GET_ORDER_BY_ID + selectedOrder._id;
     const token = localStorage.getItem('adminToken');
-    
+
     try {
       const res = await axios.get(URL, {
         headers: {
@@ -91,9 +92,9 @@ const Orders: React.FC = () => {
   const dispatchOrder = async () => {
     const URL = DISPATCH_ORDER;
     const token = localStorage.getItem('adminToken');
-    
+
     try {
-      const res = axios.post(URL, payload, {
+      const res = await axios.post(URL, payload, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -107,7 +108,7 @@ const Orders: React.FC = () => {
       toast.error('Failed to dispatch order');
     }
   };
-        
+
 
   const columns = [
     {
@@ -176,15 +177,14 @@ const Orders: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" >
       <div className="space-y-4">
         <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setStatusFilter('')}
-            className={`rounded-full px-3 py-1 text-sm border ${
-              statusFilter === '' ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300'
-            }`}
+            className={`rounded-full px-3 py-1 text-sm border ${statusFilter === '' ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300'
+              }`}
           >
             All
           </button>
@@ -192,9 +192,8 @@ const Orders: React.FC = () => {
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`rounded-full px-3 py-1 text-sm border ${
-                statusFilter === s ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300'
-              }`}
+              className={`rounded-full px-3 py-1 text-sm border ${statusFilter === s ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300'
+                }`}
             >
               {s}
             </button>
@@ -291,7 +290,7 @@ const Orders: React.FC = () => {
                   <div key={idx} className="flex items-center justify-between rounded border border-gray-200 p-2 text-sm">
                     <div>
                       <p className="font-medium">{item.title}</p>
-                      <p className="text-gray-600">SKU: {item.variant.sku}</p>
+                      <p className="text-gray-600">SKU: {typeof item.variant === 'object' ? item.variant.sku : 'N/A'}</p>
                       <p className="text-gray-600">Quantity: {item.quantity}</p>
                     </div>
                     <div className="text-right">
@@ -341,10 +340,10 @@ const Orders: React.FC = () => {
           </div>
         )}
         <div className='flex justify-end'>
-          <button onClickCapture={()=> dispatchOrder()} className="rounded bg-blue-600 px-5 py-2 text-lg text-white hover:bg-blue-700" onClick={() => setIsModalOpen(false)}>Dispatch</button>
+          <button onClickCapture={() => dispatchOrder()} className="rounded bg-blue-600 px-5 py-2 text-lg text-white hover:bg-blue-700" onClick={() => setIsModalOpen(false)}>Dispatch</button>
         </div>
       </Modal>
-    </div>
+    </div >
   );
 };
 

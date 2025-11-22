@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Eye, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import Table from '@/components/Table';
 import Modal from '@/components/Modal';
 import ProductForm from './ProductForm';
@@ -60,7 +60,7 @@ const Products: React.FC = () => {
     try {
       const parents = await productApi.getParentProducts();
       setParentProducts(parents);
-    } catch {}
+    } catch { }
   };
 
   const columns = [
@@ -152,9 +152,8 @@ const Products: React.FC = () => {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedCategoryId('')}
-            className={`rounded-full px-3 py-1 text-sm border ${
-              selectedCategoryId === '' ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300'
-            }`}
+            className={`rounded-full px-3 py-1 text-sm border ${selectedCategoryId === '' ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300'
+              }`}
           >
             All
           </button>
@@ -162,9 +161,8 @@ const Products: React.FC = () => {
             <button
               key={cat._id}
               onClick={() => setSelectedCategoryId(cat._id)}
-              className={`rounded-full px-3 py-1 text-sm border ${
-                selectedCategoryId === cat._id ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300'
-              }`}
+              className={`rounded-full px-3 py-1 text-sm border ${selectedCategoryId === cat._id ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300'
+                }`}
             >
               {cat.name}
             </button>
@@ -422,11 +420,11 @@ const Products: React.FC = () => {
                   return;
                 }
                 try {
-                  const resp = await productApi.updateParentProduct(editingParent._id, {
+                  await productApi.updateParentProduct(editingParent._id, {
                     title: parentTitle,
                     slug: parentSlug,
                     description: parentDescription,
-                    categories: parentCategoryId || null,
+                    categories: parentCategoryId || undefined,
                   });
                   toast.success('Parent product updated');
                   setIsParentEditModalOpen(false);
