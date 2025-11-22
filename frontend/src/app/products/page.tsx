@@ -45,7 +45,7 @@ function ProductsPageContent() {
     }
     router.push(`${window.location.pathname}?${query.toString()}`);
     fetchProducts(filters, page);
-  }, [filters, page]);
+  }, [filters]);
 
   // --- Fetch facets for dynamic filters ---
   const { data: facetsData } = useQuery({
