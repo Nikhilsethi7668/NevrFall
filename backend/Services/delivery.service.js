@@ -1,161 +1,261 @@
-// services/courier.service.js
-import axios from "axios";
-import dayjs from "dayjs";
+// Services/delhivery.service.js
+import getDelhiveryClient from "../utils/getDelhiveryClient.js";
 
-/**
- * scheduleCourierPickup(exchange)
- *
- * - input: `exchange` - ExchangeRequest mongoose doc (or a plain object containing
- *   enough address & order info). Expected minimal shape:
- *     {
- *       _id,
- *       user: ObjectId or userId,
- *       selectedReplacement: { quantity, ... },
- *       originalOrderId,
- *       meta: { ... },
- *       // important: we expect exchange.originalOrderId -> Order with deliveryAddress saved
- *     }
- *
- * - behavior:
- *   1. builds a pickup payload using env vars / exchange info
- *   2. calls Delhivery pickup endpoint (staging/production depending on env)
- *   3. returns a normalized pickupWindow object on success:
- *      { scheduled: true, pickupId, scheduledDate, timeWindow, raw }
- *   4. returns null on failure (controller will handle accordingly)
- *
- * Env expected:
- *   DELHIVERY_TOKEN           - bearer/token for Delhivery
- *   DELHIVERY_BASE_URL        - e.g. https://staging-express.delhivery.com or production base
- *   DELHIVERY_PICKUP_PATH     - optional, defaults to '/fm/request/new/' (common staging path)
- *   DEFAULT_PICKUP_WAREHOUSE  - your warehouse code/id if needed by Delhivery
- */
-
-const DELHIVERY_TOKEN = process.env.DELHIVERY_TOKEN || "";
-const BASE_URL =
-  process.env.DELHIVERY_BASE_URL || "https://staging-express.delhivery.com"; // override in production
-const PICKUP_PATH = process.env.DELHIVERY_PICKUP_PATH || "/fm/request/new/";
-
-/**
- * Helper: build a minimal pickup payload.
- * NOTE: This is a sample flexible payload. Replace/extend fields per your Delhivery account docs.
- */
-function buildPickupPayload({ exchange, warehouse }) {
-  // Best practice: derive address from your Order model; here we accept exchange.meta.pickupAddress
-  const pickupAddress = exchange.meta?.pickupAddress ||
-    warehouse?.address || {
-      name: "Warehouse",
-      phone: "0000000000",
-      addressLine1: "Warehouse address line 1",
-      city: "City",
-      state: "State",
-      pincode: "000000",
-    };
-
-  // schedule for next working day by default
-  const scheduledDate = dayjs().add(1, "day").format("YYYY-MM-DD");
-
-  // time window fallback
-  const timeWindow = exchange.meta?.preferredTimeWindow || "10:00-18:00";
-
-  // Example minimal payload shape. Adapt per your account docs.
-  const payload = {
-    // account/partner identifiers (if required by your integration)
-    // client_id: process.env.DELHIVERY_CLIENT_ID,
-
-    pickup_date: scheduledDate,
-    pickup_time: timeWindow,
-    pickup_location: {
-      name: pickupAddress.name,
-      phone: pickupAddress.phone,
-      address_line_1: pickupAddress.addressLine1,
-      address_line_2: pickupAddress.addressLine2 || "",
-      city: pickupAddress.city,
-      state: pickupAddress.state,
-      pincode: pickupAddress.pincode,
-    },
-
-    // shipments array - minimal info to inform the pickup agent
-    shipments: [
-      {
-        reference_id: `EX-${exchange._id}`, // your internal ref
-        // You can include reverse/return flags or order ids here if you use Reverse DTO
-        qty: exchange.selectedReplacement?.quantity || 1,
-        // any other fields Delhivery needs (weight, dimensions, articles, etc.)
-      },
-    ],
-
-    // meta to help downstream reconciliation
-    comments: `Exchange pickup for exchangeId:${exchange._id}`,
-  };
-
-  return payload;
+function wrapError(e) {
+  const err = new Error(e?.message || "Delhivery API error");
+  err.raw = e?.response?.data || e;
+  err.status = e?.response?.status || 500;
+  throw err;
 }
 
-/**
- * scheduleCourierPickup
- * Returns { scheduled: true, pickupId, scheduledDate, timeWindow, raw } on success
- * or null on failure.
- */
-export async function scheduleCourierPickup(exchange, opts = {}) {
-  // quick guard—no token or base URL configured => skip external call
-  if (!DELHIVERY_TOKEN || !BASE_URL) {
-    console.warn(
-      "Delhivery not configured (DELHIVERY_TOKEN or DELHIVERY_BASE_URL missing). Skipping pickup scheduling."
-    );
-    return null;
-  }
-
-  // allow override of warehouse/pickupAddress via opts
-  const warehouse = opts.warehouse || {
-    code: process.env.DEFAULT_PICKUP_WAREHOUSE,
-    address: opts.pickupAddress || null,
-  };
-
-  const payload = buildPickupPayload({ exchange, warehouse });
-
-  const url = `${BASE_URL.replace(/\/$/, "")}${PICKUP_PATH}`;
-
+/* -------------------- Pincode / Serviceability -------------------- */
+export async function checkPincode(filter_code, configName = "default") {
   try {
-    const resp = await axios.post(url, payload, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        // Delhivery commonly expects 'Authorization: Token <token>' or similar.
-        // Use the header style your account expects. Many integrations use:
-        //  Authorization: `Token ${DELHIVERY_TOKEN}`
-        Authorization: `Token ${DELHIVERY_TOKEN}`,
-      },
-      timeout: 20_000,
+    const { client } = await getDelhiveryClient(configName);
+    const r = await client.get(
+      `/c/api/pin-codes/json/?filter_codes=${encodeURIComponent(filter_code)}`
+    );
+    console.log(r);
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
+
+export async function checkHeavyPincode(
+  { pincode, product_type = "Heavy" },
+  configName = "default"
+) {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const url = `/api/dc/fetch/serviceability/pincode?product_type=${encodeURIComponent(
+      product_type
+    )}&pincode=${encodeURIComponent(pincode)}`;
+    const r = await client.get(url);
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
+
+/* -------------------- TAT / Cost -------------------- */
+export async function expectedTAT(
+  { origin_pin, destination_pin, mot, pdt, expected_pickup_date },
+  configName = "default"
+) {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const qs = new URLSearchParams({ origin_pin, destination_pin, mot });
+    if (pdt) qs.set("pdt", pdt);
+    if (expected_pickup_date)
+      qs.set("expected_pickup_date", expected_pickup_date);
+    const r = await client.get(`/api/dc/expected_tat?${qs.toString()}`);
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
+
+export async function calculateShippingCost(
+  { md, cgm, o_pin, d_pin, ss, pt },
+  configName = "default"
+) {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const qs = new URLSearchParams({
+      md,
+      cgm,
+      o_pin,
+      d_pin,
+      ss,
+      pt,
+    }).toString();
+    const r = await client.get(`/api/kinko/v1/invoice/charges/.json?${qs}`);
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
+
+/* -------------------- Waybills -------------------- */
+export async function fetchWaybillsBulk(count = 1, configName = "default") {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const r = await client.get(
+      `/waybill/api/bulk/json/?count=${encodeURIComponent(count)}`
+    );
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
+
+export async function fetchWaybillSingle(configName = "default") {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const r = await client.get(`/waybill/api/fetch/json/`);
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
+
+/* -------------------- Shipment creation / edit / cancel -------------------- */
+export async function createShipment(payload, configName = "default") {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const form = `format=json&data=${JSON.stringify(payload)}`;
+    const r = await client.post(`/api/cmu/create.json`, form, {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
     });
+    console.log(r);
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
 
-    // NOTE: Delhivery response shape depends on account & environment. Normalize it.
-    const data = resp?.data || {};
+export async function editShipment(payload, configName = "default") {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const r = await client.post(`/api/p/edit`, payload);
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
 
-    // Example: if the platform returns a pickup id / reference, adapt below.
-    const pickupId = data.id || data.pickup_id || data.request_id || null;
-    const scheduledDate = payload.pickup_date;
-    const timeWindow = payload.pickup_time;
+export async function cancelShipment(waybill, configName = "default") {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const r = await client.post(`/api/p/edit`, {
+      waybill,
+      cancellation: "true",
+    });
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
 
-    return {
-      scheduled: true,
-      pickupId,
-      scheduledDate,
-      timeWindow,
-      raw: data,
+export async function updateEwaybill({ dcn, ewbn }, configName = "default") {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const r = await client.put(
+      `/api/rest/ewaybill/${encodeURIComponent(dcn)}/`,
+      { data: [{ dcn, ewbn }] }
+    );
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
+
+/* -------------------- Tracking / Label / Pickup / Docs / NDR -------------------- */
+export async function trackShipment(
+  { waybill, ref_ids = "" },
+  configName = "default"
+) {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const qs = `?waybill=${encodeURIComponent(
+      waybill
+    )}&ref_ids=${encodeURIComponent(ref_ids)}`;
+    const r = await client.get(`/api/v1/packages/json/${qs}`);
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
+
+export async function generateLabel(
+  { waybill, pdf = true, pdf_size = "A4" },
+  configName = "default"
+) {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const qs = `?wbns=${encodeURIComponent(
+      waybill
+    )}&pdf=${pdf}&pdf_size=${encodeURIComponent(pdf_size)}`;
+    const r = await client.get(`/api/p/packing_slip${qs}`);
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
+
+export async function createPickup(
+  { pickup_time, pickup_date, pickup_location, expected_package_count },
+  configName = "default"
+) {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const body = {
+      pickup_time,
+      pickup_date,
+      pickup_location,
+      expected_package_count,
     };
-  } catch (err) {
-    // Log helpful debug info for troubleshooting integrations
-    console.error("scheduleCourierPickup error:", {
-      message: err.message,
-      url,
-      payload,
-      status: err?.response?.status,
-      responseData: err?.response?.data,
-    });
-    return null;
+    const r = await client.post(`/fm/request/new/`, body);
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
+
+export async function downloadDocument(
+  { doc_type, waybill },
+  configName = "default"
+) {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const qs = `?doc_type=${encodeURIComponent(
+      doc_type
+    )}&waybill=${encodeURIComponent(waybill)}`;
+    const r = await client.get(`/api/rest/fetch/pkg/document/${qs}`);
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
+
+export async function ndrAction(items, configName = "default") {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const r = await client.post(`/api/p/update`, { data: items });
+    return r.data;
+  } catch (e) {
+    wrapError(e);
+  }
+}
+
+export async function getNdrStatus(uplId, configName = "default") {
+  try {
+    const { client } = await getDelhiveryClient(configName);
+    const r = await client.get(
+      `/api/cmu/get_bulk_upl/${encodeURIComponent(uplId)}?verbose=true`
+    );
+    return r.data;
+  } catch (e) {
+    wrapError(e);
   }
 }
 
 export default {
-  scheduleCourierPickup,
+  checkPincode,
+  checkHeavyPincode,
+  expectedTAT,
+  calculateShippingCost,
+  fetchWaybillsBulk,
+  fetchWaybillSingle,
+  createShipment,
+  editShipment,
+  cancelShipment,
+  updateEwaybill,
+  trackShipment,
+  generateLabel,
+  createPickup,
+  downloadDocument,
+  ndrAction,
+  getNdrStatus,
 };

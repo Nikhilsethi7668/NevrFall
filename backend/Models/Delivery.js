@@ -1,84 +1,99 @@
-// models/Delivery.js
 import mongoose from "mongoose";
 
-const DeliveryHistorySchema = new mongoose.Schema(
-  {
-    status: { type: String, required: true },
-    at: { type: Date, default: Date.now },
-    note: { type: String, default: "" },
-    raw: { type: Object, default: {} }, // raw payload from Shiprocket
-  },
-  { _id: false }
-);
+const deliveryHistorySchema = new mongoose.Schema({
+  status: { type: String, required: true },
+  at: { type: Date, default: Date.now },
+  note: { type: String },
+  raw: { type: mongoose.Schema.Types.Mixed },
+});
 
-const DeliverySchema = new mongoose.Schema(
+const deliverySchema = new mongoose.Schema(
   {
     order: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
       required: true,
-      index: true,
     },
-    user: {
+    client: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
-
-    // Shiprocket specific fields
-    shipmentId: { type: String, default: null, index: true },
-    awbCode: { type: String, default: null, index: true },
-    channelOrderId: { type: String, default: null },
-
+    // Multi-piece shipment support
+    pieceNumber: {
+      type: Number,
+      default: 1,
+      required: true,
+    }, // 1, 2, 3... for multi-piece orders
+    totalPieces: {
+      type: Number,
+      default: 1,
+      required: true,
+    }, // Total number of pieces for this order
+    // Track which order items are in this shipment piece
+    items: [
+      {
+        product: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
+          required: true,
+        },
+        variant: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "ProductVariant",
+          required: true,
+        },
+        quantity: { type: Number, required: true, min: 1 },
+        itemIndex: { type: Number }, // Index in order.items array
+      },
+    ],
     status: {
       type: String,
       enum: [
-        "NEW",
-        "PICKUP_SCHEDULED",
-        "MANIFESTED",
-        "PICKUP_QUEUED",
-        "PICKUP_ASSIGNED",
-        "PICKUP_COMPLETED",
-        "IN_TRANSIT",
-        "OUT_FOR_DELIVERY",
-        "DELIVERED",
-        "CANCELLED",
-        "RTO",
-        "LOST",
-        "DAMAGED",
+        "created",
+        "manifest_failed",
+        "manifested",
+        "picked_up",
+        "in_transit",
+        "out-for-delivery",
+        "delivered",
+        "cancelled",
+        "rto",
+        "attempted",
+        "pending",
+        "not_picked",
+        "otp_verified",
+        "otp_failed",
       ],
-      default: "NEW",
-      index: true,
+      default: "created",
     },
-
-    payment_mode: {
-      type: String,
-      enum: ["COD", "Prepaid"],
-      default: "Prepaid",
-    },
-
-    // Shiprocket raw responses
-    shiprocketRaw: { type: Object, default: {} },
-    history: { type: [DeliveryHistorySchema], default: [] },
-
-    // OTP for delivery verification
-    otpHash: { type: String, default: null },
-    otpSentAt: { type: Date, default: null },
-    otpVerified: { type: Boolean, default: false },
-
-    deliveredAt: { type: Date, default: null },
+    pickup_location: { type: String, required: true },
+    payment_mode: { type: String, enum: ["COD", "Prepaid"], required: true },
     attemptCount: { type: Number, default: 0 },
-
-    // RTO/NDR fields
-    ndrStatus: { type: String, default: null },
-    meta: { type: Object, default: {} },
+    history: [deliveryHistorySchema],
+    meta: {
+      createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      failedOtpCount: { type: Number, default: 0 },
+      delhiveryError: { type: mongoose.Schema.Types.Mixed },
+      cancelResp: { type: mongoose.Schema.Types.Mixed },
+    },
+    delhiveryRaw: { type: mongoose.Schema.Types.Mixed },
+    waybill: { type: String, index: true },
+    otpHash: { type: String },
+    otpSentAt: { type: Date },
+    otpVerified: { type: Boolean, default: false },
+    otpMeta: {
+      sentVia: { type: String },
+      sentTo: { type: String },
+    },
+    deliveredAt: { type: Date },
   },
   { timestamps: true }
 );
 
-DeliverySchema.index({ order: 1, user: 1 });
-DeliverySchema.index({ status: 1, awbCode: 1 });
+// Index for finding all pieces of an order
+deliverySchema.index({ order: 1, pieceNumber: 1 });
 
-export default mongoose.models.Delivery ||
-  mongoose.model("Delivery", DeliverySchema);
+const Delivery = mongoose.model("Delivery", deliverySchema);
+
+export default Delivery;

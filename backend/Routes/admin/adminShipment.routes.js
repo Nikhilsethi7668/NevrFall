@@ -8,7 +8,7 @@ import {
   getShipmentByOrder,
   updateTrackingNumber,
   bulkUpdateShipments,
-} from "../../Controllers/admin/adminShipment.controller.js";
+} from "../../Controllers/delivery.controller.js";
 
 const router = Router();
 

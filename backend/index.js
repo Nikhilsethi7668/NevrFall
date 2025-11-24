@@ -3,8 +3,9 @@ dotenv.config();
 
 import express from "express";
 import cors from "cors";
+import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
-import connectDB from "./Config/Db.js";
+import connectDB from "./Config/db.js";
 import authRoutes from "./Routes/auth.routes.js";
 import reviewRoutes from "./Routes/review.routes.js";
 import productRoutes from "./Routes/product.routes.js";
@@ -16,24 +17,36 @@ import deliveryRoutes from "./Routes/delivery.routes.js";
 import exchangeRoutes from "./Routes/exchange.routes.js";
 import returnRoutes from "./Routes/return.routes.js";
 import mediaRoutes from "./Routes/media.routes.js";
+import wishlistRoutes from "./Routes/wishlist.routes.js";
 import { connectRedis } from "./lib/redis.js";
 import publicFilterRoutes from "./Routes/publicFilter.routes.js";
 import adminFilterRoutes from "./Routes/admin/adminFilter.routes.js";
 import adminRoutes from "./Routes/admin/index.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { env } from "process";
 
 const app = express();
 app.set("trust proxy", 1);
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const isProd = process.env.PRODUCTION === "true";
 app.use(
   cors({
-    origin: isProd ? process.env.CLIENT_URL : true,
+    origin: [
+      env.process.CLIENT_URL,
+      env.process.ADMIN_URL
+    ],
     credentials: true,
   })
 );
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 app.get("/health", (req, res) =>
@@ -59,6 +72,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/wishlist", wishlistRoutes);
 
 app.use("/api/admin", adminRoutes);
 
@@ -75,7 +89,14 @@ const PORT = Number(process.env.PORT || 8080);
 (async () => {
   try {
     await connectDB();
-    await connectRedis();
+    try {
+      await connectRedis();
+    } catch (err) {
+      console.warn(
+        "Redis connection failed, continuing without cache:",
+        err.message
+      );
+    }
     const server = app.listen(PORT, () => {
       console.log(`Server started on PORT ${PORT}`);
     });

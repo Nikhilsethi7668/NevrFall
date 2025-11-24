@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { signUpload, deleteObject } from "../controllers/media.controller.js";
+import { deleteObject } from "../Controllers/media.controller.js";
 
 const router = Router();
 
-router.post("/media/sign", signUpload);
+
 
 router.delete("/media/object", deleteObject);
 

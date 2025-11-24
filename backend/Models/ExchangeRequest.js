@@ -48,6 +48,8 @@ const ExchangeRequestSchema = new mongoose.Schema(
       index: true,
     },
     originalOrderItemIndex: { type: Number, required: true }, // index in Order.items array to identify which item
+    reason: { type: String, required: true },
+    comments: { type: String },
     requestedAt: { type: Date, default: Date.now },
     estimatedCredit: { type: Number, required: true }, // original paid price - fees (est)
     fees: {
@@ -59,6 +61,7 @@ const ExchangeRequestSchema = new mongoose.Schema(
       type: String,
       enum: [
         "REQUESTED",
+        "APPROVED",
         "PICKUP_SCHEDULED",
         "PICKED_UP",
         "IN_WAREHOUSE",
@@ -83,6 +86,11 @@ const ExchangeRequestSchema = new mongoose.Schema(
     linkedNewOrder: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
+      default: null,
+    },
+    linkedReturnRequest: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ReturnRequest",
       default: null,
     },
     walletTxId: {

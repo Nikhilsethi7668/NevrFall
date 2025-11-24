@@ -12,6 +12,7 @@ import { getActiveGatewayAdapter } from "../Services/gatewayFactory.js";
 import { cacheGet, cacheSet, cacheDelPattern } from "../lib/cache.js";
 import { redis } from "../lib/redis.js";
 import logger from "../utils/logger.js";
+import { isAdmin } from "../Middlewares/auth.js";
 
 // ========== UTILITY FUNCTIONS ==========
 
@@ -29,37 +30,26 @@ function generateSessionId() {
  * @param {String} orderId
  * @param {Number} timeoutMs - lock expiry in milliseconds
  */
-async function acquirePaymentLock(orderId, timeoutMs = 15000) {
+async function acquirePaymentLock(
+  orderId,
+  timeoutMs = 15000,
+  retries = 3,
+  delayMs = 150
+) {
   const lockKey = `payment_lock:${orderId}`;
   const lockValue = Date.now().toString();
 
-  const acquired = await redis.set(lockKey, lockValue, "PX", timeoutMs, "NX");
-
-  if (!acquired) {
-    const existingLockTime = await redis.get(lockKey);
-
-    // If lock is stale (> timeoutMs + buffer), force release
-    if (
-      existingLockTime &&
-      Date.now() - parseInt(existingLockTime) > timeoutMs + 5000
-    ) {
-      await redis.del(lockKey);
-      const retryAcquired = await redis.set(
-        lockKey,
-        Date.now().toString(),
-        "PX",
-        timeoutMs,
-        "NX"
-      );
-      if (retryAcquired) return lockKey;
+  for (let i = 0; i < retries; i++) {
+    const acquired = await redis.set(lockKey, lockValue, "PX", timeoutMs, "NX");
+    if (acquired) {
+      return lockKey;
     }
-
-    throw new Error(
-      "Payment session is currently being processed. Please try again in a few seconds."
-    );
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
 
-  return lockKey;
+  throw new Error(
+    "Payment session is currently being processed. Please try again in a few seconds."
+  );
 }
 
 /**
@@ -90,7 +80,7 @@ async function checkActivePaymentSession(orderId, currentSessionId = null) {
     status: "active",
     createdAt: { $gte: new Date(Date.now() - ACTIVE_WINDOW_MS) },
   });
-
+  console.log("activeSession is", activeSession);
   if (activeSession) {
     // If same session (retry), allow it
     if (currentSessionId && activeSession.sessionId === currentSessionId)
@@ -100,7 +90,7 @@ async function checkActivePaymentSession(orderId, currentSessionId = null) {
     const sessionAge = Date.now() - activeSession.createdAt.getTime();
     if (sessionAge > 3 * 60 * 1000) {
       await PaymentSession.updateOne(
-        { _id: activeSession._id },
+        { _id: activeSession.id },
         { status: "expired" }
       );
       logger.info("Expired stale payment session", {
@@ -119,7 +109,7 @@ async function checkActivePaymentSession(orderId, currentSessionId = null) {
 }
 
 async function validateUserOwnership(
-  resource,
+  resource, //order or cart
   userId,
   resourceType = "resource"
 ) {
@@ -179,6 +169,7 @@ export async function calculateOrderTotals(items, couponCode, session, userId) {
           },
         })
         .session(session);
+      console.log("variant is", variant);
 
       if (variant) await cacheSet(cacheKey, variant, 300);
     }
@@ -200,9 +191,9 @@ export async function calculateOrderTotals(items, couponCode, session, userId) {
       quantity: item.quantity,
       lineTotal: lineTotal,
       priceAfterDiscount: lineTotal, // will adjust if coupon applies
-      category: variant.product.parent?.category?._id || null, // store category for coupon
+      category: variant.product.parent?.categories?._id || null, // store category for coupon
     });
-
+    console.log("validatedItems is", validatedItems);
     subtotal += lineTotal;
   }
 
@@ -418,8 +409,8 @@ export const createOrder = async (req, res) => {
         shippingAddress,
       } = req.body;
 
-      const userId = req.user._id;
-
+      const userId = req.user.id;
+      console.log("userId is", userId);
       if (!shippingAddress) {
         throw new Error("Shipping address required");
       }
@@ -427,6 +418,7 @@ export const createOrder = async (req, res) => {
       let items = [];
       if (useCart) {
         const cart = await Cart.findOne({ user: userId }).session(session);
+        console.log("cart is", cart);
         if (!cart?.items?.length) throw new Error("Cart is empty");
         items = cart.items.map((item) => ({
           variantId: item.variant,
@@ -441,9 +433,11 @@ export const createOrder = async (req, res) => {
 
       const {
         items: validatedItems,
+        subtotal,
+        discountAmount,
         total,
         coupon,
-      } = await calculateOrderTotals(items, couponCode, session);
+      } = await calculateOrderTotals(items, couponCode, session, userId);
 
       // Reserve stock
       for (const item of validatedItems) {
@@ -460,6 +454,8 @@ export const createOrder = async (req, res) => {
           {
             user: userId,
             items: validatedItems,
+            subtotal,
+            discountAmount,
             total,
             coupon,
             shippingAddress,
@@ -494,16 +490,19 @@ export const createOrder = async (req, res) => {
 export const createPaymentSession = async (req, res) => {
   const session = await mongoose.startSession();
   let paymentLock = null;
+  const orderId = req.params.id;
 
   try {
-    await session.withTransaction(async () => {
-      const { orderId } = req.params;
+    // --- 1. Acquire Redis lock for this order BEFORE the transaction ---
+    paymentLock = await acquirePaymentLock(orderId, 15000); // 15s lock
+
+    const result = await session.withTransaction(async () => {
       const {
         useWallet = false,
         paymentMethod = "cod",
         retrySessionId = null,
       } = req.body;
-      const userId = req.user._id;
+      const userId = req.user.id;
       const sessionId = retrySessionId || generateSessionId();
 
       const validMethods = ["cod", "razorpay", "payu"];
@@ -511,11 +510,10 @@ export const createPaymentSession = async (req, res) => {
         throw new Error("Unsupported payment method");
       }
 
-      // --- 1. Ensure no conflicting active payment session ---
-      await checkActivePaymentSession(orderId, retrySessionId);
-
-      // --- 2. Acquire Redis lock for this order ---
-      paymentLock = await acquirePaymentLock(orderId, 15000); // 15s lock for slow gateways
+      // --- 2. Ensure no conflicting active payment session ---
+      if (paymentMethod !== "cod") {
+        await checkActivePaymentSession(orderId, retrySessionId);
+      }
 
       // --- 3. Load order + user ---
       const [order, user] = await Promise.all([
@@ -527,12 +525,12 @@ export const createPaymentSession = async (req, res) => {
 
       // --- 4. Early return if already confirmed ---
       if (order.status === "confirmed") {
-        return res.json({
+        return {
           success: true,
           sessionId,
           orderStatus: "confirmed",
           message: "Order already confirmed",
-        });
+        };
       }
 
       if (order.status !== "pending") {
@@ -611,7 +609,7 @@ export const createPaymentSession = async (req, res) => {
         order.payments.push({
           method: "cod",
           amount: gatewayAmount,
-          status: "pending",
+          status: "cod_pending",
         });
 
         order.status = "confirmed";
@@ -620,6 +618,12 @@ export const createPaymentSession = async (req, res) => {
 
         paymentSession.status = "completed";
         paymentSession.completedAt = new Date();
+        // const cart = await Cart.findOne({ user: userId }).session(session);
+        // if (cart) {
+        //   cart.items = [];
+        //   cart.totalValue = 0;
+        //   await cart.save({ session });
+        // }
         await paymentSession.save({ session });
       } else {
         // --- Online payment flow ---
@@ -648,29 +652,40 @@ export const createPaymentSession = async (req, res) => {
       await cacheDelPattern(`orders:${userId}:*`);
       await cacheDelPattern(`order:${orderId}`);
 
-      // --- 9. Return session info ---
-      res.json({
+      // --- 9. Return session info from transaction ---
+      return {
         success: true,
         sessionId: paymentSession.sessionId,
+        orderId: orderId,
         gateway: gatewayPayload,
         walletAmount,
         gatewayAmount,
         paymentMethod,
         orderStatus: paymentMethod === "cod" ? "confirmed" : "pending",
         isRetry: !!retrySessionId,
-      });
-    });
+      };
+    }); // End of withTransaction
+
+    // --- 10. Release the lock BEFORE sending the response ---
+    if (paymentLock) {
+      await releasePaymentLock(paymentLock);
+      paymentLock = null; // To prevent double-release in finally block
+    }
+
+    // --- 11. Send response AFTER transaction and lock release ---
+    res.json(result);
   } catch (error) {
     logger.error("Payment session creation failed", {
       error: error.message,
-      orderId: req.params.orderId,
+      orderId: orderId,
     });
     res.status(400).json({ message: error.message });
   } finally {
-    session.endSession();
+    // --- 12. Safeguard: release lock if something failed before the success path ---
     if (paymentLock) {
       await releasePaymentLock(paymentLock);
     }
+    session.endSession();
   }
 };
 
@@ -912,7 +927,7 @@ export const getOrder = async (req, res) => {
       await cacheSet(cacheKey, order, 600);
     }
 
-    validateUserOwnership(order, req.user._id, "order");
+    validateUserOwnership(order, req.user.id, "order");
     res.json(order);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -922,7 +937,8 @@ export const getOrder = async (req, res) => {
 export const listOrders = async (req, res) => {
   try {
     const { page = 1, limit = 20, status } = req.query;
-    const userId = req.user._id;
+    const userId = req.user.id;
+    console.log("userId is", userId);
     const cacheKey = `orders:${userId}:${page}:${limit}:${status || "all"}`;
 
     let orders = await cacheGet(cacheKey);
@@ -956,7 +972,8 @@ export const cancelOrder = async (req, res) => {
       const order = await Order.findById(id).session(session);
       if (!order) throw new Error("Order not found");
 
-      validateUserOwnership(order, req.user._id, "order");
+      if (req.user.role === "user")
+        validateUserOwnership(order, req.user.id, "order");
 
       if (!["pending", "confirmed"].includes(order.status)) {
         throw new Error("Order cannot be cancelled");

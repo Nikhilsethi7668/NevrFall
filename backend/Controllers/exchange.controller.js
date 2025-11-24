@@ -1,34 +1,27 @@
 // controllers/exchange.controller.js
 import mongoose from "mongoose";
 import ExchangeRequest from "../Models/ExchangeRequest.js";
-import InventoryReservation from "../Models/InventoryReservation.js";
 import Order from "../Models/Order.js";
-import Payment from "../Models/Payments.js";
-import WalletTransaction from "../Models/WalletTransaction.js";
+import InventoryReservation from "../Models/InventoryReservation.js";
 import ProductVariant from "../Models/ProductVariant.js";
-import { scheduleCourierPickup } from "../Services/delivery.service.js"; // stub
-import { createOrderFromSelection } from "../Services/orderService.js"; // service below
-import {
-  holdWalletAmount,
-  finalizeHeldWalletTx,
-  releaseHeldWalletTx,
-} from "../Services/walletService.js";
-import User from "../Models/User.js";
+import ReturnRequest from "../Models/ReturnRequest.js";
+import { createOrderFromSelection } from "../Services/orderService.js";
 
-const reversePickupFee = 50; // flat fee for reverse pickup, adapt as needed
+const reversePickupFee = 100; // Example fee, fetch from config
 
-function computeEstimatedCredit(originalPrice, fees = {}) {
-  const totalFees = (fees.reversePickup || 0) + (fees.restocking || 0);
-  return Math.max(0, originalPrice - totalFees);
-}
+const computeEstimatedCredit = (originalPrice, fees) => {
+  return originalPrice - fees.reversePickup - fees.restocking;
+};
 
-/**
- * Create Exchange
- * Body may include:
- *  - selectedReplacement: { skuId, productId, priceAtSelection, quantity, selectionType, couponCode? }
- *  - holdWallet: boolean
- *  - holdAmount: number
- */
+/*
+FLOW:
+1. User initiates exchange from FE, selecting a replacement.
+2. API validates: order ownership, 7-day window, item not already returned.
+3. Computes estimated credit (original price - fees).
+4. Creates an ExchangeRequest doc with status 'REQUESTED'.
+5. Reserves replacement inventory with a short TTL.
+6. Returns the ExchangeRequest object.
+*/
 export const createExchange = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -38,10 +31,10 @@ export const createExchange = async (req, res) => {
       orderItemId,
       selectedReplacement,
       idempotencyKey,
-      holdAmount = 0,
+      reason,
+      comments,
     } = req.body;
-    const userId = req.user._id;
-    const holdWallet = true;
+    const userId = req.user.id;
 
     // Idempotency check
     if (idempotencyKey) {
@@ -55,67 +48,87 @@ export const createExchange = async (req, res) => {
       }
     }
 
-    // validate order and item
+    // Validate order and item
     const order = await Order.findById(orderId).session(session);
+    console.log("order:", order);
+    console.log("Order ID", orderId);
+    console.log(req.body, "req.body");
     if (!order) throw new Error("Order not found");
     if (!order.user.equals(userId)) throw new Error("Not your order");
-    const orderItem = order.items.id(orderItemId);
+
+    const orderItem = order.items[orderItemId];
+    console.log(order.items[orderItemId], "order");
     if (!orderItem) throw new Error("Order item not found");
     if (orderItem.returnedQuantity >= orderItem.quantity)
       throw new Error("Item already fully returned/exchanged");
 
-    // check exchange time window (assume 7 days)
-    // Use real delivered timestamp field if available; fallback to order.updatedAt if not
+    // Check 7-day exchange window
     const deliveredAt = order?.deliveryDetails?.deliveredAt || order.updatedAt;
     const now = new Date();
     const diffDays = (now - deliveredAt) / (1000 * 60 * 60 * 24);
     if (diffDays > 7) throw new Error("Exchange window expired");
 
-    // compute fees and estimated credit
+    // Compute fees and estimated credit
     const fees = { reversePickup: reversePickupFee, restocking: 0 };
     const originalPrice = orderItem.priceAfterDiscount * orderItem.quantity;
     const estimatedCredit = computeEstimatedCredit(originalPrice, fees);
     if (estimatedCredit <= 0)
       throw new Error("No credit available for exchange");
 
-    // reserve replacement inventory (short TTL)
+    // Calculate price difference (for admin/payment tracking)
+    const selectedTotal =
+      (selectedReplacement?.priceAtSelection || 0) *
+      (selectedReplacement?.quantity || 1);
+    const diff = Math.max(0, Math.round(selectedTotal - originalPrice));
+
+    let dbSafeSelectedReplacement = null;
+    let variant = null;
     if (selectedReplacement && selectedReplacement.skuId) {
-      const ttlMinutes = 30;
-      await InventoryReservation.create(
-        [
-          {
-            skuId: selectedReplacement.skuId,
-            reservedBy: "exchange",
-            reservedForId: mongoose.Types.ObjectId(), // placeholder - set after create
-            quantity: selectedReplacement.quantity || 1,
-            reservedAt: new Date(),
-            expiresAt: new Date(Date.now() + ttlMinutes * 60 * 1000),
-          },
-        ],
-        { session }
-      );
+      variant = await ProductVariant.findOne({
+        sku: selectedReplacement.skuId,
+      }).session(session);
+      if (!variant) {
+        throw new Error("Selected replacement product variant not found.");
+      }
+      dbSafeSelectedReplacement = {
+        product: variant.product,
+        variant: variant._id,
+        sku: variant.sku,
+        priceAtSelection: selectedReplacement.priceAtSelection,
+        selectionType: selectedReplacement.selectionType || "user_place",
+      };
     }
 
-    // create exchange request
+    // Create exchange request
     const exDocs = await ExchangeRequest.create(
       [
         {
           user: userId,
+          originalOrder: order,
           originalOrderId: order._id,
-          originalOrderItemId: orderItemId,
+          originalOrderItemId: order.items[orderItemId]._id,
+          originalOrderItemIndex: orderItemId,
+          reason,
+          comments,
           originalItemPrice: originalPrice,
-          selectedReplacement,
+          selectedReplacement: dbSafeSelectedReplacement,
           estimatedCredit,
           fees,
           idempotencyKey,
           status: "REQUESTED",
-          meta: {},
+          meta: {
+            adminActionRequired: true,
+            requestedAt: new Date(),
+            priceDifference: diff,
+            paymentStatus: diff > 0 ? "PENDING" : "N/A",
+            paymentMode: null, // can later be "COD" or "ONLINE"
+          },
           history: [
             {
               status: "REQUESTED",
               by: userId,
               at: new Date(),
-              meta: { note: "User initiated exchange" },
+              meta: { note: "User initiated exchange request" },
             },
           ],
         },
@@ -124,61 +137,38 @@ export const createExchange = async (req, res) => {
     );
     const ex = exDocs[0];
 
-    // fix reservation reservedForId to this ex id (if created)
-    if (selectedReplacement && selectedReplacement.skuId) {
-      await InventoryReservation.updateMany(
-        {
-          reservedForId: null,
-          skuId: selectedReplacement.skuId,
-          reservedBy: "exchange",
-        },
-        { $set: { reservedForId: ex._id } }
-      ).session(session);
+    // Reserve replacement inventory (short TTL)
+    if (variant) {
+      const ttlMinutes = 30;
+      await InventoryReservation.create(
+        [
+          {
+            skuId: variant._id, // Use the ObjectId of the variant
+            reservedBy: "exchange",
+            reservedForId: ex._id, // Link to the exchange request
+            quantity: selectedReplacement.quantity || 1,
+            reservedAt: new Date(),
+            expiresAt: new Date(Date.now() + ttlMinutes * 60 * 1000),
+          },
+        ],
+        { session }
+      );
     }
+    const remainingQty = Math.max(
+      0,
+      orderItem.quantity - (orderItem.returnedQuantity || 0)
+    );
+    const exchangeQty = Math.min(
+      (selectedReplacement?.quantity) || 1,
+      remainingQty
+    );
+    order.items[orderItemId].returnedQuantity =
+      (order.items[orderItemId].returnedQuantity || 0) + exchangeQty;
+    await order.save({ session });
 
-    // schedule pickup (async) - returns pickup window
-    const pickupWindow = await scheduleCourierPickup(ex); // implement to talk to courier or queue job
-    if (pickupWindow) {
-      ex.pickupWindow = pickupWindow;
-      ex.status = "PICKUP_SCHEDULED";
-      ex.history.push({
-        status: "PICKUP_SCHEDULED",
-        by: null,
-        at: new Date(),
-        meta: pickupWindow,
-      });
-      await ex.save({ session });
-    }
-
-    // If user requested to hold wallet now for diff (recommended UX)
-    // compute diff now to know how much could be held:
-    const selectedTotal =
-      (selectedReplacement?.priceAtSelection || 0) *
-      (selectedReplacement?.quantity || 1);
-    const diff = Math.max(0, Math.round(selectedTotal - originalPrice));
-    if (holdWallet && diff > 0) {
-      const toHoldRequested = Math.min(holdAmount || diff, diff);
-      const heldTx = await holdWalletAmount({
-        userId,
-        amount: toHoldRequested,
-        refId: ex._id,
-        session,
-      });
-      if (heldTx) {
-        ex.meta = ex.meta || {};
-        ex.meta.heldWalletTxId = heldTx._id;
-        ex.history.push({
-          status: "WALLET_HELD",
-          by: userId,
-          at: new Date(),
-          meta: { heldAmount: heldTx.amount },
-        });
-        await ex.save({ session });
-      }
-    }
-
+    // Commit transaction
     await session.commitTransaction();
-    return res.status(201).json(ex);
+    return res.status(201).json({ ex, order });
   } catch (err) {
     await session.abortTransaction();
     console.error("createExchange err:", err);
@@ -462,6 +452,122 @@ export const confirmPaymentAndPlaceOrder = async (req, res) => {
   } catch (err) {
     await session.abortTransaction();
     console.error("confirmPaymentAndPlaceOrder err:", err);
+    return res.status(400).json({ error: err.message });
+  } finally {
+    session.endSession();
+  }
+};
+
+export const listExchanges = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page || "1", 10);
+    const limit = parseInt(req.query.limit || "20", 10);
+    const status = req.query.status || null;
+    const filter = status ? { status } : {};
+    const [items, total] = await Promise.all([
+      ExchangeRequest.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate("user")
+        .populate("originalOrder")
+        .populate({ path: "selectedReplacement.product" })
+        .populate({ path: "selectedReplacement.variant" }),
+      ExchangeRequest.countDocuments(filter),
+    ]);
+    return res.json({ items, total, page, limit });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+};
+
+export const approveExchange = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { exchangeId } = req.params;
+    const adminUser = req.user.id;
+
+    const ex = await ExchangeRequest.findById(exchangeId)
+      .populate("originalOrder")
+      .session(session);
+
+    if (!ex) throw new Error("Exchange not found");
+    if (!ex.selectedReplacement || !ex.selectedReplacement.variant)
+      throw new Error("Selected replacement missing");
+
+    // 1. Create a return for the original item
+    const order = ex.originalOrder;
+    const item = order.items[ex.originalOrderItemIndex];
+
+    const returnRequest = new ReturnRequest({
+      user: ex.user,
+      order: ex.originalOrder,
+      orderItemIndex: ex.originalOrderItemIndex,
+      variant: item.variant,
+      quantity: ex.selectedReplacement.quantity || 1,
+      reason: "Exchange",
+      description: `Exchange for new order`,
+      status: "approved",
+      approvedBy: adminUser,
+      history: [
+        {
+          status: "requested",
+          by: ex.user,
+          at: ex.createdAt,
+          meta: { note: "Auto-created for exchange." },
+        },
+        {
+          status: "approved",
+          by: adminUser,
+          at: new Date(),
+          meta: { note: "Auto-approved for exchange." },
+        },
+      ],
+    });
+
+    await returnRequest.save({ session });
+
+    // 2. Create a new order for the replacement item
+    ex.status = "APPROVED";
+    ex.history.push({ status: "APPROVED", by: adminUser, at: new Date() });
+
+    const orderPayload = {
+      userId: ex.user,
+      items: [
+        {
+          variantId: ex.selectedReplacement.variant,
+          quantity: ex.selectedReplacement.quantity || 1,
+          price: ex.selectedReplacement.priceAtSelection,
+        },
+      ],
+      paymentMethod: "none", // Assuming exchange covers the cost
+      meta: { exchangeId: ex._id },
+      shippingAddress: order.shippingAddress, // Use original shipping address
+    };
+
+    const newOrder = await createOrderFromSelection(orderPayload, session);
+
+    ex.linkedNewOrder = newOrder._id;
+    ex.linkedReturnRequest = returnRequest._id; // Link the return request
+
+    // 3. Clean up inventory reservation
+    await InventoryReservation.deleteMany({
+      reservedForId: ex._id,
+      reservedBy: "exchange",
+    }).session(session);
+
+    await ex.save({ session });
+    await session.commitTransaction();
+
+    // Update the new order with the return request ID
+    newOrder.meta.returnRequestId = returnRequest._id;
+    await newOrder.save({ session: session });
+    
+    return res.json({ ok: true, exchange: ex, newOrder });
+  } catch (err) {
+    await session.abortTransaction();
+    console.error("approveExchange err:", err);
     return res.status(400).json({ error: err.message });
   } finally {
     session.endSession();

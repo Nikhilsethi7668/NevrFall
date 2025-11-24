@@ -474,3 +474,24 @@ export const getOrderAnalytics = async (req, res) => {
     res.status(500).json({ message: "Failed to get order analytics" });
   }
 };
+
+export const getOrderById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id)
+      .populate("user", "name email")
+      .populate("items.product", "name")
+      .populate("items.variant", "sku attributes")
+      .populate("deliveryDetails");
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    res.json(order);
+  } catch (error) {
+    logger.error(`Failed to get order by id: ${req.params.id}`, error);
+    res.status(500).json({ message: "Failed to retrieve order" });
+  }
+};
+

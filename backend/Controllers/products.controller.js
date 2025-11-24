@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Product from "../Models/Product.js";
 import ParentProduct from "../Models/ParentProduct.js";
 import Category from "../Models/Category.js";
+import Collection from "../Models/Collection.js";
 import ProductVariant from "../Models/ProductVariant.js";
 import Cart from "../Models/Cart.js";
 import WishlistItem from "../Models/Wishlist.js";
@@ -64,25 +65,75 @@ const listSelect = {
   purchases: 1,
 };
 
-const buildFilter = (q) => {
+const buildFilter = async (q) => {
   const filter = {};
 
-  // categories? (denormalized on Product via parent is not here; skip unless you store categories on Product)
-  // If Product also has categories, plug them here; otherwise facet on parent route.
+  // Handle category filtering by primaryCategoryId (support both singular and plural)
+  const categoryParam = q.category || q.categories;
+  const categories = toArr(categoryParam);
+  if (categories.length) {
+    // Convert category names/slugs to ObjectIds
+    const categoryIds = [];
+    const categoryNames = [];
+
+    for (const cat of categories) {
+      if (mongoose.Types.ObjectId.isValid(cat)) {
+        categoryIds.push(new mongoose.Types.ObjectId(cat));
+      } else {
+        categoryNames.push(cat);
+      }
+    }
+
+    // If we have category names/slugs, resolve them to ObjectIds
+    if (categoryNames.length) {
+      const resolvedCategories = await Category.find({
+        $or: [
+          { name: { $in: categoryNames } },
+          { slug: { $in: categoryNames } },
+        ],
+      })
+        .select("_id")
+        .lean();
+
+      const resolvedIds = resolvedCategories.map((cat) => cat._id);
+      categoryIds.push(...resolvedIds);
+    }
+
+    if (categoryIds.length) {
+      filter.primaryCategoryId = { $in: categoryIds };
+    }
+  }
 
   const colors = toArr(q.colors);
   if (colors.length) filter.color = { $in: colors.map((c) => c.toLowerCase()) };
 
-  const sizes = toArr(q.sizes);
+  // Handle sizes (support both singular and plural)
+  const sizeParam = q.size || q.sizes;
+  const sizes = toArr(sizeParam);
   if (sizes.length)
     filter.availableSizes = { $in: sizes.map((s) => s.toUpperCase()) };
 
-  const tags = toArr(q.tags);
-  if (tags.length) filter.tags = { $in: tags.map((t) => t.toLowerCase()) }; // only if Product has tags
+  // Handle tags and sleeves (support both singular and plural)
+  const tagParam = q.tag || q.tags || q.sleeve || q.sleeves;
+  const tags = toArr(tagParam);
+  if (tags.length) filter.tags = { $in: tags.map((t) => t.toLowerCase()) };
 
-  // price range applies to priceFrom
+  // Handle collections (support both singular and plural)
+  const collectionParam = q.collection || q.collections;
+  const collections = toArr(collectionParam);
+  if (collections.length) {
+    filter.collections = { $in: collections };
+  }
+
+  // price range applies to priceFrom (handle both price and priceMin/priceMax)
   const priceMin = toNum(q.priceMin, null);
-  const priceMax = toNum(q.priceMax, null);
+  let priceMax = toNum(q.priceMax, null);
+  
+  // If single 'price' param is provided, use it as max
+  if (q.price && priceMax === null) {
+    priceMax = toNum(q.price, null);
+  }
+  
   if (priceMin !== null || priceMax !== null) {
     filter.priceFrom = {};
     if (priceMin !== null) filter.priceFrom.$gte = priceMin;
@@ -367,7 +418,7 @@ export const getProductsByFilter = async (req, res) => {
   const limit = Math.min(60, Math.max(1, toNum(req.query.limit, 24)));
   const cursor = decodeCursor(req.query.cursor);
   const sortCfg = buildSort(req.query.sort);
-  const filter = buildFilter(req.query);
+  const filter = await buildFilter(req.query);
 
   const key = cacheKeyFromReq(req, "prd:filter:cursor");
   const cached = await redisGet(key);
@@ -619,6 +670,32 @@ export const GetAllCategories = async (req, res) => {
   }
 };
 
+export const GetAllCollections = async (req, res) => {
+  try {
+    const collections = await Collection.find({});
+
+    if (!collections || collections.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No collections found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "All collections returned successfully",
+      data: collections,
+    });
+  } catch (error) {
+    console.error("Error fetching collections:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching collections",
+      error: error.message,
+    });
+  }
+};
+
 //Working
 
 export const getProductsBySearch = async (req, res) => {
@@ -674,7 +751,7 @@ export const getProductsBySearch = async (req, res) => {
 
 export const getFacets = async (req, res) => {
   console.log("getFacets called");
-  const filter = buildFilter(req.query);
+  const filter = await buildFilter(req.query);
   const key = cacheKeyFromReq(req, "prd:facets");
   const cached = await redisGet(key);
   if (cached) return res.json(cached);
@@ -692,6 +769,27 @@ export const getFacets = async (req, res) => {
           { $unwind: "$availableSizes" },
           { $group: { _id: "$availableSizes", count: { $sum: 1 } } },
           { $sort: { _id: 1 } },
+        ],
+        categories: [
+          { $match: { primaryCategoryId: { $ne: null } } },
+          {
+            $lookup: {
+              from: "categories",
+              localField: "primaryCategoryId",
+              foreignField: "_id",
+              as: "category",
+            },
+          },
+          { $unwind: "$category" },
+          {
+            $group: {
+              _id: "$primaryCategoryId",
+              name: { $first: "$category.name" },
+              slug: { $first: "$category.slug" },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { count: -1 } },
         ],
         tags: [
           { $unwind: "$tags" },
@@ -715,6 +813,13 @@ export const getFacets = async (req, res) => {
   const payload = {
     colors: facet?.colors?.map((x) => ({ color: x._id, count: x.count })) ?? [],
     sizes: facet?.sizes?.map((x) => ({ size: x._id, count: x.count })) ?? [],
+    categories:
+      facet?.categories?.map((x) => ({
+        categoryId: x._id,
+        name: x.name,
+        slug: x.slug,
+        count: x.count,
+      })) ?? [],
     tags: facet?.tags?.map((x) => ({ tag: x._id, count: x.count })) ?? [],
     publishRange: facet?.publishRange?.[0] ?? null,
   };

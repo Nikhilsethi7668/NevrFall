@@ -13,8 +13,13 @@ import {
   getVariantByKey,
   trackClick,
   GetAllCategories,
+  GetAllCollections,
 } from "../Controllers/products.controller.js";
 import { auth } from "../Middlewares/auth.js";
+import {
+  getRecommendationsByProductId,
+  getRecommendationsForUserCart,
+} from "../Controllers/recommendation.controller.js";
 
 const router = express.Router();
 
@@ -52,6 +57,9 @@ router.get("/recommended", auth, getRecommendations);
 //Get all categories
 router.get("/getAllCategories", GetAllCategories);
 
+//Get all collections
+router.get("/getAllCollections", GetAllCollections);
+
 /* -------------------------------------------------------------
    PRODUCT DETAILS
 ------------------------------------------------------------- */
@@ -64,6 +72,12 @@ router.get("/variant/lookup", getVariantByKey);
 
 // Track a click explicitly (optional)
 router.post("/:id/track-click", trackClick);
+
+//Get recommendations by product id
+router.get("/recommendations/:productId", getRecommendationsByProductId);
+
+//Get recommendations for user cart
+router.get("/cart/recommendations", auth, getRecommendationsForUserCart);
 
 /* -------------------------------------------------------------
    PAYMENT GATEWAY CONFIG (admin only)

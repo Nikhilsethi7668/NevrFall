@@ -4,6 +4,7 @@ import ParentProduct from "../../Models/ParentProduct.js";
 import ProductVariant from "../../Models/ProductVariant.js";
 import { cacheDelPattern } from "../../lib/cache.js";
 import Category from "../../Models/Category.js";
+import Collection from "../../Models/Collection.js";
 
 console.log("Using cacheDelPattern");
 
@@ -170,22 +171,54 @@ export const getAllProductsAdmin = async (req, res) => {
  * This is a complex operation and should be transactional.
  */
 export const createProduct = async (req, res) => {
+  console.log('req.body', req.body);
+  console.log('req.files', req.files);
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
     const {
-      parent, // parentId (optional, if adding color to existing)
+      parent,
       title,
       slug,
       description,
       tags,
-      categories,
       color,
       colorLabel,
-      variants, // [{ size, sku, price, compareAtPrice, stock }]
-      images,
-      coverImage,
+      variants,
+      images, // Now expecting [{url, alt}]
+      collections,
+      primaryCategoryId,
+      isTrending,
     } = req.body;
+
+    const coverImage = req.files.coverImage ? req.files.coverImage[0].location : '';
+    const imageFiles = req.files.imageFiles ? req.files.imageFiles.map(file => ({ url: file.location, alt: '' })) : [];
+
+    // Validation
+    if (!title || !slug || !color || !colorLabel || !coverImage) {
+      throw new Error("Title, slug, color, colorLabel, and coverImage are required");
+    }
+
+    if (!variants || !Array.isArray(variants) || variants.length === 0) {
+      throw new Error("At least one variant is required");
+    }
+
+    // Validate and process images - ensure they have url and alt
+    const imageArray = Array.isArray(images)
+      ? images
+          .filter(img => img && img.url && typeof img.url === 'string' && img.url.trim().length > 0)
+          .map(img => ({
+            url: img.url.trim(),
+            alt: img.alt || '',
+          }))
+      : [];
+
+    const finalImages = [...imageArray, ...imageFiles];
+
+    // Validate collections
+    const collectionsArray = Array.isArray(collections)
+      ? collections.filter(c => c && typeof c === 'string' && c.trim().length > 0)
+      : [];
 
     let parentProduct;
     if (parent) {
@@ -194,68 +227,91 @@ export const createProduct = async (req, res) => {
         throw new Error("Specified parent product not found.");
       }
     } else {
-      if (!slug) throw new Error("Slug is required for a new parent product.");
+      const tagArray = Array.isArray(tags)
+        ? tags.filter(tag => tag && typeof tag === 'string' && tag.trim().length > 0)
+        : [];
+
       parentProduct = new ParentProduct({
         title,
-        slug,
-        description,
-        tags,
-        categories,
+        slug: normalizeSlug(slug),
+        description: description || '',
+        tags: tagArray,
+        categories: primaryCategoryId || null,
       });
       await parentProduct.save({ session });
     }
 
-    const availableSizes = variants.map((v) => v.size.toUpperCase());
-    const priceFrom = Math.min(...variants.map((v) => v.price));
-    const compareAtFrom = Math.min(
-      ...variants.filter((v) => v.compareAtPrice).map((v) => v.compareAtPrice)
+    // Validate and process variants
+    const validVariants = variants.filter(v =>
+      v.size && v.sku && v.price !== undefined && v.price !== null
     );
+
+    if (validVariants.length === 0) {
+      throw new Error("No valid variants provided");
+    }
+
+    const availableSizes = validVariants.map((v) => String(v.size).toUpperCase());
+    const priceFrom = Math.min(...validVariants.map((v) => Number(v.price)));
+    const compareAtPrices = validVariants
+      .filter((v) => v.compareAtPrice && v.compareAtPrice > 0)
+      .map((v) => Number(v.compareAtPrice));
+    const compareAtFrom = compareAtPrices.length > 0
+      ? Math.min(...compareAtPrices)
+      : null;
+
+    const productSlug = normalizeSlug(`${slug}-${color}`);
 
     const newProduct = new Product({
       parent: parentProduct._id,
       title: `${title} - ${colorLabel}`,
-      slug: `${slug}-${color}`,
-      color,
+      slug: productSlug,
+      color: color.toLowerCase(),
       colorLabel,
-      images,
+      images: finalImages,
       coverImage,
       priceFrom,
-      compareAtFrom: compareAtFrom === Infinity ? null : compareAtFrom,
+      compareAtFrom,
       availableSizes,
-      inStock: variants.some((v) => v.stock > 0),
+      inStock: validVariants.some((v) => v.stock > 0),
+      collections: collectionsArray,
+      primaryCategoryId: primaryCategoryId || null,
+      isTrending: isTrending || false,
       publishAt: new Date(),
+      currency: 'INR',
+      clicks: 0,
+      purchases: 0,
     });
     await newProduct.save({ session });
 
-    const variantDocs = variants.map((v) => ({
+    const variantDocs = validVariants.map((v) => ({
       product: newProduct._id,
-      size: v.size.toUpperCase(),
+      size: String(v.size).toUpperCase(),
       sku: v.sku,
-      price: v.price,
-      compareAtPrice: v.compareAtPrice,
-      stock: v.stock,
+      price: Number(v.price),
+      compareAtPrice: v.compareAtPrice ? Number(v.compareAtPrice) : 0,
+      stock: Number(v.stock) || 0,
     }));
 
     await ProductVariant.insertMany(variantDocs, { session });
 
     await session.commitTransaction();
-    res
-      .status(201)
-      .json({ message: "Product created successfully", product: newProduct });
+
+    res.status(201).json({
+      message: "Product created successfully",
+      product: newProduct
+    });
   } catch (error) {
     await session.abortTransaction();
-    res
-      .status(400)
-      .json({ message: "Failed to create product", error: error.message });
+    console.error('Create product error:', error);
+    res.status(400).json({
+      message: "Failed to create product",
+      error: error.message
+    });
   } finally {
     session.endSession();
   }
 };
 
-/**
- * PUT /api/admin/products/:id
- * Update a product's details.
- */
 export const updateProduct = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.isValidObjectId(id)) {
@@ -263,10 +319,41 @@ export const updateProduct = async (req, res) => {
   }
 
   try {
-    const updatedProduct = await Product.findByIdAndUpdate(id, req.body, {
+    const updateData = { ...req.body };
+
+    if (req.files.coverImage) {
+      updateData.coverImage = req.files.coverImage[0].location;
+    }
+
+    if (req.files.imageFiles) {
+      const newImages = req.files.imageFiles.map(file => ({ url: file.location, alt: '' }));
+      updateData.images = [...(updateData.images || []), ...newImages];
+    }
+
+    // Validate and sanitize images if provided
+    if (updateData.images !== undefined) {
+      updateData.images = Array.isArray(updateData.images)
+        ? updateData.images
+            .filter(img => img && img.url && typeof img.url === 'string' && img.url.trim().length > 0)
+            .map(img => ({
+              url: img.url.trim(),
+              alt: img.alt || '',
+            }))
+        : [];
+    }
+
+    // Validate collections
+    if (updateData.collections !== undefined) {
+      updateData.collections = Array.isArray(updateData.collections)
+        ? updateData.collections.filter(c => c && typeof c === 'string' && c.trim().length > 0)
+        : [];
+    }
+
+    const updatedProduct = await Product.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     });
+
     if (!updatedProduct) {
       return res.status(404).json({ message: "Product not found" });
     }
@@ -278,9 +365,11 @@ export const updateProduct = async (req, res) => {
       product: updatedProduct,
     });
   } catch (error) {
-    res
-      .status(400)
-      .json({ message: "Failed to update product", error: error.message });
+    console.error('Update product error:', error);
+    res.status(400).json({
+      message: "Failed to update product",
+      error: error.message
+    });
   }
 };
 
@@ -431,5 +520,260 @@ export const bulkUpdateStock = async (req, res) => {
       .json({ message: "Bulk stock update failed", error: error.message });
   } finally {
     session.endSession();
+  }
+};
+
+export const getAllParentProducts = async (req, res) => {
+  try {
+    const parentProducts = await ParentProduct.find({}).lean();
+    res.json({
+      items: parentProducts,
+      total: parentProducts.length,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching parent products", error });
+  }
+};
+
+export const updateParentProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const payload = req.body?.data || req.body || {};
+    const { title, slug: rawSlug, description = "", categories = null } = payload;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid parent product id" });
+    }
+
+    let update = {};
+    if (title) update.title = title.trim();
+    if (rawSlug || title) update.slug = normalizeSlug(rawSlug || title);
+    if (description !== undefined) update.description = description;
+
+    if (categories) {
+      if (!mongoose.isValidObjectId(categories)) {
+        return res.status(400).json({ message: "Invalid category id" });
+      }
+      const exists = await Category.findById(categories).lean();
+      if (!exists) return res.status(400).json({ message: "Referenced category not found" });
+      update.categories = categories;
+    } else if (categories === null) {
+      update.categories = null;
+    }
+
+    if (update.slug) {
+      const conflict = await ParentProduct.findOne({ slug: update.slug, _id: { $ne: id } }).lean();
+      if (conflict) {
+        return res.status(409).json({ message: "Slug already in use" });
+      }
+    }
+
+    const updated = await ParentProduct.findByIdAndUpdate(id, update, { new: true }).lean();
+    if (!updated) return res.status(404).json({ message: "Parent product not found" });
+    res.json({ message: "Parent product updated", parent: updated });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update parent product", error: err.message });
+  }
+};
+
+export const deleteParentProduct = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid parent product id" });
+    }
+
+    await session.withTransaction(async () => {
+      const parent = await ParentProduct.findById(id).session(session);
+      if (!parent) throw new Error("Parent product not found");
+
+      const products = await Product.find({ parent: id }).select("_id").session(session);
+      const productIds = products.map((p) => p._id);
+
+      if (productIds.length) {
+        await ProductVariant.deleteMany({ product: { $in: productIds } }).session(session);
+        await Product.deleteMany({ _id: { $in: productIds } }).session(session);
+      }
+
+      await ParentProduct.findByIdAndDelete(id).session(session);
+    });
+
+    res.json({ message: "Parent product deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete parent product", error: err.message });
+  } finally {
+    session.endSession();
+  }
+};
+
+export const createCategoryAdmin = async (req, res) => {
+  try {
+    const payload = req.body?.data || req.body || {};
+    const { name, slug: rawSlug, parent = null, image = null, sortOrder = 0, isActive = true } = payload;
+    if (!name) return res.status(400).json({ message: "name is required" });
+    const slug = normalizeSlug(rawSlug || name);
+
+    const existingSlug = await Category.findOne({ slug }).lean();
+    if (existingSlug) {
+      return res.status(409).json({ message: "Category slug already exists", category: existingSlug });
+    }
+
+    let parentId = null;
+    if (parent) {
+      if (!mongoose.isValidObjectId(parent)) return res.status(400).json({ message: "Invalid parent category id" });
+      const parentCat = await Category.findById(parent).lean();
+      if (!parentCat) return res.status(400).json({ message: "Parent category not found" });
+      parentId = parent;
+    }
+
+    const cat = await Category.create({
+      name: name.trim(),
+      slug,
+      parent: parentId,
+      image: image || null,
+      sortOrder: Number(sortOrder) || 0,
+      isActive: Boolean(isActive),
+    });
+    res.status(201).json({ message: "Category created", category: cat });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to create category", error: err.message });
+  }
+};
+
+export const updateCategoryAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: "Invalid category id" });
+
+    const payload = req.body?.data || req.body || {};
+    const { name, slug: rawSlug, parent = undefined, image, sortOrder, isActive } = payload;
+
+    const cat = await Category.findById(id);
+    if (!cat) return res.status(404).json({ message: "Category not found" });
+
+    if (name !== undefined) cat.name = String(name).trim();
+    if (rawSlug !== undefined || name !== undefined) {
+      const newSlug = normalizeSlug(rawSlug || name || cat.name);
+      const conflict = await Category.findOne({ slug: newSlug, _id: { $ne: id } }).lean();
+      if (conflict) return res.status(409).json({ message: "Category slug already exists" });
+      cat.slug = newSlug;
+    }
+
+    if (parent !== undefined) {
+      if (parent === null || parent === "") {
+        cat.parent = null;
+      } else {
+        if (!mongoose.isValidObjectId(parent)) return res.status(400).json({ message: "Invalid parent category id" });
+        if (String(parent) === String(id)) return res.status(400).json({ message: "Category cannot be its own parent" });
+        const parentCat = await Category.findById(parent).lean();
+        if (!parentCat) return res.status(400).json({ message: "Parent category not found" });
+        cat.parent = parent;
+      }
+    }
+
+    if (image !== undefined) cat.image = image || null;
+    if (sortOrder !== undefined) cat.sortOrder = Number(sortOrder) || 0;
+    if (isActive !== undefined) cat.isActive = Boolean(isActive);
+
+    await cat.save();
+    res.json({ message: "Category updated", category: cat });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update category", error: err.message });
+  }
+};
+
+export const deleteCategoryAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: "Invalid category id" });
+
+    const childCount = await Category.countDocuments({ parent: id });
+    if (childCount > 0) {
+      return res.status(409).json({ message: "Cannot delete category with child categories" });
+    }
+
+    await ParentProduct.updateMany({ categories: id }, { $set: { categories: null } });
+    await Product.updateMany({ primaryCategoryId: id }, { $set: { primaryCategoryId: null } });
+
+    const deleted = await Category.findByIdAndDelete(id).lean();
+    if (!deleted) return res.status(404).json({ message: "Category not found" });
+
+    res.json({ message: "Category deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete category", error: err.message });
+  }
+};
+
+export const createCollectionAdmin = async (req, res) => {
+  try {
+    const payload = req.body?.data || req.body || {};
+    const { name, slug: rawSlug, description = "", image = null, isActive = "yes", priority = "moderate", meta = "" } = payload;
+    if (!name) return res.status(400).json({ message: "name is required" });
+    const slug = (rawSlug || name).trim().toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+
+    const existing = await Collection.findOne({ slug }).lean();
+    if (existing) {
+      return res.status(409).json({ message: "Collection slug already exists", collection: existing });
+    }
+
+    const col = await Collection.create({
+      name: name.trim(),
+      slug,
+      description,
+      image: image || "",
+      meta,
+      isActive,
+      priority,
+    });
+    res.status(201).json({ message: "Collection created", collection: col });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to create collection", error: err.message });
+  }
+};
+
+export const updateCollectionAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: "Invalid collection id" });
+
+    const payload = req.body?.data || req.body || {};
+    const { name, slug: rawSlug, description, image, isActive, priority, meta } = payload;
+
+    const col = await Collection.findById(id);
+    if (!col) return res.status(404).json({ message: "Collection not found" });
+
+    if (name !== undefined) col.name = String(name).trim();
+    if (rawSlug !== undefined || name !== undefined) {
+      const newSlug = (rawSlug || name || col.name).trim().toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+      const conflict = await Collection.findOne({ slug: newSlug, _id: { $ne: id } }).lean();
+      if (conflict) return res.status(409).json({ message: "Collection slug already exists" });
+      col.slug = newSlug;
+    }
+
+    if (description !== undefined) col.description = description || "";
+    if (image !== undefined) col.image = image || "";
+    if (isActive !== undefined) col.isActive = isActive;
+    if (priority !== undefined) col.priority = priority;
+    if (meta !== undefined) col.meta = meta || "";
+
+    await col.save();
+    res.json({ message: "Collection updated", collection: col });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update collection", error: err.message });
+  }
+};
+
+export const deleteCollectionAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: "Invalid collection id" });
+
+    const deleted = await Collection.findByIdAndDelete(id).lean();
+    if (!deleted) return res.status(404).json({ message: "Collection not found" });
+
+    res.json({ message: "Collection deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete collection", error: err.message });
   }
 };
