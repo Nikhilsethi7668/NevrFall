@@ -48,7 +48,6 @@ export default function ProductCard({
   });
 
   const handleAddToWishlist = (e: React.MouseEvent) => {
-    // prevent Link navigation when clicking heart
     e.preventDefault();
     e.stopPropagation();
     addToWishlistMutation.mutate();
@@ -56,57 +55,63 @@ export default function ProductCard({
 
   return (
     <div
-      className={`group bg-base-100 overflow-hidden transition-shadow hover:shadow-md ${className}`}
+      className={`group ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Link
-        href={`/products/${product.slug || product._id}`}
-        className="block"
-        aria-label={product.title}
-      >
-        {/* Image container - perfectly square */}
-        <div className="relative w-full h-0 pt-[140%] bg-base-200 overflow-hidden">
+      {/* Image container */}
+      <div>
+        {/* Image container with exact aspect ratio from reference */}
+        <div className="relative w-full bg-base-200 overflow-hidden" style={{ aspectRatio: '0.6756373937677054' }}>
           {/* Wishlist button overlay on top-right of image */}
           {showWishlist && (
             <button
               onClick={handleAddToWishlist}
               aria-label="Add to wishlist"
-              className={`absolute top-2 right-3 z-10 rounded-full p-2 shadow-sm focus:outline-none transform transition-transform duration-200 ${
-                isHovered ? "scale-110" : "scale-100"
-              }`}
+              className="absolute top-2 right-2 z-10 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-base-100 shadow-sm focus:outline-none"
             >
-              <FaRegHeart size={10} />
+              <FaRegHeart size={14} className="text-base-content" />
             </button>
           )}
-
-          <Image
-            src={product.coverImage || "/placeholder.png"}
-            alt={product.title}
-            fill
-            sizes="(max-width: 768px) 50vw, 33vw"
-            className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
-            priority={false}
-            loading="lazy"
-          />
+          <Link
+            href={`/products/${product.slug || product._id}`}
+            aria-label={product.title}
+          >
+            <Image
+              src={product.coverImage || "/placeholder.png"}
+              alt={product.title}
+              width={800}
+              height={1200}
+              sizes="(max-width: 768px) 50vw, 25vw"
+              className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+              priority={false}
+              loading="lazy"
+            />
+          </Link>
         </div>
+      </div>
 
-        {/* Content area */}
-        <div className="px-3 py-3 lg:px-4">
-          <p className="text-left text-[10px] uppercase tracking-wide text-base-content font-semibold line-clamp-2">
+      {/* Info container - matching reference structure */}
+      <div className="mt-2">
+        <Link
+          href={`/products/${product.slug || product._id}`}
+          className="block text-base-content no-underline hover:text-base-content"
+          aria-label={product.title}
+        >
+          <div className="text-[11px] leading-[1.3] uppercase tracking-wide mb-1">
             {product.title}
-          </p>
-
-          <div className=" flex items-center justify-between">
-            <div>
-              <span className="block text-[11px]">₹{product.priceFrom}</span>
-            </div>
-
-            {/* small chevron or placeholder for alignment — remove if not needed */}
-            <div className="text-right text-xs text-muted hidden lg:block"> &nbsp;</div>
           </div>
-        </div>
-      </Link>
+        </Link>
+
+        <Link
+          href={`/products/${product.slug || product._id}`}
+          className="block text-base-content no-underline hover:text-base-content"
+        >
+          <div className="text-[11px] leading-[1.3]">
+            ₹ {product.priceFrom.toLocaleString()}
+          </div>
+        </Link>
+      </div>
     </div>
   );
 }

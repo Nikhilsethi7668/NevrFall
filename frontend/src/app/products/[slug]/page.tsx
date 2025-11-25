@@ -51,7 +51,7 @@ export default function ProductDetailPage() {
   const [reviewData, setReviewData] = useState({ rating: 5, body: "" });
 
   // Fetch product details
-  const { data: product, isLoading } = useQuery<{product: Product, variants: Variant[], parent: {description: string}}>({
+  const { data: product, isLoading } = useQuery<{ product: Product, variants: Variant[], parent: { description: string } }>({
     queryKey: ["product", slug],
     queryFn: async () => {
       const res = await productAPI.getDetails(slug);
@@ -60,7 +60,7 @@ export default function ProductDetailPage() {
   });
 
   // Fetch reviews
-  const { data: reviewsData } = useQuery<{items: Review[]}>({
+  const { data: reviewsData } = useQuery<{ items: Review[] }>({
     queryKey: ["reviews", product?.product?._id],
     queryFn: async () => {
       if (!product?.product?._id) return null;
@@ -101,11 +101,11 @@ export default function ProductDetailPage() {
     mutationFn: async () => {
       const userId = localStorage.getItem("userId");
       if (!userId) throw new Error("Please login first");
-      
+
       const selectedVariant = product?.variants.find(
         (v: Variant) => v.size === selectedSize
       );
-      
+
       if (!selectedVariant) throw new Error("Please select a size");
 
       return cartAPI.add({
@@ -207,9 +207,8 @@ export default function ProductDetailPage() {
                 <button
                   key={idx}
                   onClick={() => setSelectedImage(idx)}
-                  className={`flex-shrink-0 ${
-                    selectedImage === idx ? "ring-2 ring-primary" : ""
-                  }`}
+                  className={`flex-shrink-0 ${selectedImage === idx ? "ring-2 ring-primary" : ""
+                    }`}
                 >
                   <Image
                     src={img.url}
@@ -226,7 +225,7 @@ export default function ProductDetailPage() {
           {/* Product Info */}
           <div>
             <h1 className="lg:text-2xl font-semibold mb-2">{product.product.title}</h1>
-            
+
             {/* Price */}
             <div className="flex items-center gap-4 mb-4">
               <span className="text-lg lg:text-2xl lg:font-bold text-primary">
@@ -245,11 +244,10 @@ export default function ProductDetailPage() {
                     key={variant._id}
                     onClick={() => setSelectedSize(variant.size)}
                     disabled={variant.stock === 0}
-                    className={`btn ${
-                      selectedSize === variant.size
+                    className={`btn ${selectedSize === variant.size
                         ? "btn-primary"
                         : "btn-outline"
-                    } ${variant.stock === 0 ? "btn-disabled" : ""}`}
+                      } ${variant.stock === 0 ? "btn-disabled" : ""}`}
                   >
                     {variant.size}
                     {variant.stock === 0 && " (Out)"}
@@ -269,17 +267,17 @@ export default function ProductDetailPage() {
                     className="input input-bordered w-full"
                     value={pinCode}
                     onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, "");
-                        value = value.replace(/^0+/, "");
-                        if (Number(value) < 1000000) {
-                          setPinCode(value);
-                        }
+                      let value = e.target.value.replace(/\D/g, "");
+                      value = value.replace(/^0+/, "");
+                      if (Number(value) < 1000000) {
+                        setPinCode(value);
                       }
+                    }
                     }
                   />
                   <button
                     onClick={() => {
-                      if (pinCode.length === 6){
+                      if (pinCode.length === 6) {
                         handleCheckServiceability();
                       }
                     }}
@@ -358,17 +356,17 @@ export default function ProductDetailPage() {
           <input type="checkbox" className="peer" />
           <div className="collapse-title flex flex-row justify-between items-center cursor-pointer font-semibold peer-checked:[&>p:last-child]:rotate-180"><p>PRODUCT DETAILS</p><p className="transition-transform duration-300"><FaChevronDown /></p></div>
           <div className="collapse-content">
-          {product.parent?.description && (
-            <div className="prose">
-              <p className="text-sm lg:text-lg">{product.parent.description}</p>
-            </div>
-          )}
+            {product.parent?.description && (
+              <div className="prose">
+                <p className="text-sm lg:text-lg">{product.parent.description}</p>
+              </div>
+            )}
           </div>
         </div>
 
-                  
-          {/* Product Recomendations */}
-          <ProductRecomendations productId={product.product._id} />
+
+        {/* Product Recomendations */}
+        <ProductRecomendations productId={product.product._id} />
 
         {/* Reviews Section */}
         <div className="mt-12">
@@ -430,7 +428,7 @@ export default function ProductDetailPage() {
               </div>
             </div>
           )}
-          
+
           {/* Reviews List */}
           <div className="space-y-4">
             {reviewsData?.items?.map((review: Review) => (
