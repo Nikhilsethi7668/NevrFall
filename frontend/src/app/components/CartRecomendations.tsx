@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { wishlistAPI } from "@/services/api";
 import { FaRegHeart } from "react-icons/fa";
+import { toast } from "react-toastify";
 // import { useOrderStore } from "../store/useOrderStore";
 
 export default function YouMightAlsoLike({ cartRecomendation }: any) {
@@ -17,7 +18,7 @@ export default function YouMightAlsoLike({ cartRecomendation }: any) {
     mutationFn: (productId: string) => wishlistAPI.add({ productId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
-      alert("Added to wishlist!");
+      toast.success("Added to wishlist!");
     },
     onError: (error: Error) => {
       alert(error.message || "Failed to add to wishlist");
@@ -76,11 +77,10 @@ export default function YouMightAlsoLike({ cartRecomendation }: any) {
                     {/* Wishlist Button */}
                     <button
                       onClick={(e) => handleAddToWishlist(e, product._id)}
-                      className={`p-1 cursor-pointer transition-transform duration-200 ${
-                        hoveredProductId === product._id
-                          ? "transform scale-125"
-                          : ""
-                      }`}
+                      className={`p-1 cursor-pointer transition-transform duration-200 ${hoveredProductId === product._id
+                        ? "transform scale-125"
+                        : ""
+                        }`}
                     >
                       <FaRegHeart size={20} />
                     </button>

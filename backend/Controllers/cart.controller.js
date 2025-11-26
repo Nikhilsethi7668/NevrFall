@@ -24,6 +24,12 @@ export const getCart = async (req, res) => {
 
   if (!cart) return res.json({ items: [], totalValue: 0 });
 
+  cart.items.forEach((item) => {
+    if (!item.image && item.product && item.product.coverImage) {
+      item.image = item.product.coverImage;
+    }
+  });
+
   await cacheSet(cacheKey, cart, CART_TTL);
   res.json(cart);
 };
@@ -52,6 +58,7 @@ export const addToCart = async (req, res) => {
     if (variant.stock < cart.items[itemIndex].quantity + quantity)
       return res.status(400).json({ message: "Insufficient stock" });
     cart.items[itemIndex].quantity += quantity;
+    cart.items[itemIndex].image = variant.product.coverImage;
   } else {
     cart.items.push({
       product: variant.product._id,
@@ -59,6 +66,7 @@ export const addToCart = async (req, res) => {
       title: variant.product.title,
       color: variant.product.color,
       size: variant.size,
+      image: variant.product.coverImage,
       price: variant.price,
       quantity,
     });
@@ -66,6 +74,9 @@ export const addToCart = async (req, res) => {
 
   cart.totalValue = calculateCartTotal(cart.items);
   await cart.save();
+
+  // Populate for response/cache
+  await cart.populate("items.product items.variant");
 
   await cacheDelPattern(`cart:${userId}`);
   await cacheSet(`cart:${userId}`, cart, CART_TTL);
@@ -95,6 +106,16 @@ export const removeFromCart = async (req, res) => {
   cart.totalValue = calculateCartTotal(cart.items);
   await cart.save();
 
+  // Populate for response/cache
+  await cart.populate("items.product items.variant");
+
+  // Ensure images are present
+  cart.items.forEach((item) => {
+    if (!item.image && item.product && item.product.coverImage) {
+      item.image = item.product.coverImage;
+    }
+  });
+
   await cacheDelPattern(`cart:${userId}`);
   await cacheSet(`cart:${userId}`, cart, CART_TTL);
 
@@ -111,6 +132,16 @@ export const deleteFromCart = async (req, res) => {
 
   cart.totalValue = calculateCartTotal(cart.items);
   await cart.save();
+
+  // Populate for response/cache
+  await cart.populate("items.product items.variant");
+
+  // Ensure images are present
+  cart.items.forEach((item) => {
+    if (!item.image && item.product && item.product.coverImage) {
+      item.image = item.product.coverImage;
+    }
+  });
 
   await cacheDelPattern(`cart:${userId}`);
   await cacheSet(`cart:${userId}`, cart, CART_TTL);

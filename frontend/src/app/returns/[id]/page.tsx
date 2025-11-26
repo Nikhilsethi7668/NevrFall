@@ -6,6 +6,7 @@ import { returnAPI } from "@/services/api";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import Link from "next/link";
+import { toast } from "react-toastify";
 
 export default function ReturnDetailsPage() {
   const params = useParams();
@@ -30,7 +31,7 @@ export default function ReturnDetailsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["return", returnId] });
       queryClient.invalidateQueries({ queryKey: ["returns"] });
-      alert("Return request cancelled successfully");
+      toast.success("Return request cancelled successfully");
     },
     onError: (error: any) => {
       alert(error.response?.data?.message || "Failed to cancel return request");
@@ -154,9 +155,8 @@ export default function ReturnDetailsPage() {
                   {steps.map((step, index) => (
                     <li
                       key={step.key}
-                      className={`step ${
-                        index <= currentIndex ? "step-primary" : ""
-                      } ${returnItem.status === "rejected" ? "step-error" : ""}`}
+                      className={`step ${index <= currentIndex ? "step-primary" : ""
+                        } ${returnItem.status === "rejected" ? "step-error" : ""}`}
                     >
                       {step.label}
                     </li>

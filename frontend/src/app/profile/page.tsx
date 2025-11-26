@@ -16,6 +16,7 @@ import { FaStar } from "react-icons/fa6";
 import { FaAngleLeft } from "react-icons/fa6";
 import { FaChevronRight } from "react-icons/fa";
 import AddressForm from "../components/AddressForm";
+import { toast } from "react-toastify";
 
 
 export default function ProfilePage() {
@@ -80,7 +81,7 @@ export default function ProfilePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user"] });
       setIsEditing(false);
-      alert("Profile updated successfully");
+      toast.success("Profile updated successfully");
     },
   });
 
@@ -120,7 +121,7 @@ export default function ProfilePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
-      alert("Added to cart!");
+      toast.success("Added to cart!");
     },
     onError: (error: any) => {
       alert(error.response?.data?.message || "Failed to add to cart");
@@ -130,11 +131,14 @@ export default function ProfilePage() {
   const handleAddToCartAndRemoveFromWishlist = async (item: any) => {
     try {
       const productDetails = await productAPI.getDetails(item.product._id);
-      const variants = productDetails.data.product.variants;
+      const variants = productDetails.data.variants;
 
-      if (variants && variants.length === 1) {
-        const variantId = variants[0]._id;
-        addToCartMutation.mutate(variantId, {
+      if (variants && variants.length > 0) {
+        // Try to find an in-stock variant, otherwise pick the first one
+        const inStockVariant = variants.find((v: any) => v.stock > 0);
+        const targetVariant = inStockVariant || variants[0];
+
+        addToCartMutation.mutate(targetVariant._id, {
           onSuccess: () => {
             removeFromWishlistMutation.mutate(item.product._id);
           }
@@ -235,9 +239,8 @@ export default function ProfilePage() {
                   <li>
                     <button
                       onClick={() => setActiveTab("overview")}
-                      className={`btn btn-ghost justify-start ${
-                        activeTab === "overview" ? "btn-active" : ""
-                      }`}
+                      className={`btn btn-ghost justify-start ${activeTab === "overview" ? "btn-active" : ""
+                        }`}
                     >
                       Overview
                     </button>
@@ -245,9 +248,8 @@ export default function ProfilePage() {
                   <li>
                     <button
                       onClick={() => setActiveTab("profile")}
-                      className={`btn btn-ghost justify-start ${
-                        activeTab === "profile" ? "btn-active" : ""
-                      }`}
+                      className={`btn btn-ghost justify-start ${activeTab === "profile" ? "btn-active" : ""
+                        }`}
                     >
                       Profile
                     </button>
@@ -255,9 +257,8 @@ export default function ProfilePage() {
                   <li>
                     <button
                       onClick={() => setActiveTab("address")}
-                      className={`btn btn-ghost justify-start ${
-                        activeTab === "address" ? "btn-active" : ""
-                      }`}
+                      className={`btn btn-ghost justify-start ${activeTab === "address" ? "btn-active" : ""
+                        }`}
                     >
                       Address
                     </button>
@@ -265,9 +266,8 @@ export default function ProfilePage() {
                   <li>
                     <button
                       onClick={() => setActiveTab("wishlist")}
-                      className={`btn btn-ghost justify-start ${
-                        activeTab === "wishlist" ? "btn-active" : ""
-                      }`}
+                      className={`btn btn-ghost justify-start ${activeTab === "wishlist" ? "btn-active" : ""
+                        }`}
                     >
                       Wishlist
                     </button>
@@ -275,9 +275,8 @@ export default function ProfilePage() {
                   <li>
                     <button
                       onClick={() => setActiveTab("orders")}
-                      className={`btn btn-ghost justify-start ${
-                        activeTab === "orders" ? "btn-active" : ""
-                      }`}
+                      className={`btn btn-ghost justify-start ${activeTab === "orders" ? "btn-active" : ""
+                        }`}
                     >
                       Orders
                     </button>
@@ -285,9 +284,8 @@ export default function ProfilePage() {
                   <li>
                     <button
                       onClick={() => setActiveTab("refunds")}
-                      className={`btn btn-ghost justify-start ${
-                        activeTab === "refunds" ? "btn-active" : ""
-                      }`}
+                      className={`btn btn-ghost justify-start ${activeTab === "refunds" ? "btn-active" : ""
+                        }`}
                     >
                       Refunds
                     </button>
@@ -295,9 +293,8 @@ export default function ProfilePage() {
                   <li>
                     <button
                       onClick={() => setActiveTab("reviews")}
-                      className={`btn btn-ghost justify-start ${
-                        activeTab === "reviews" ? "btn-active" : ""
-                      }`}
+                      className={`btn btn-ghost justify-start ${activeTab === "reviews" ? "btn-active" : ""
+                        }`}
                     >
                       Ratings & Reviews
                     </button>
@@ -305,9 +302,8 @@ export default function ProfilePage() {
                   <li>
                     <button
                       onClick={() => setActiveTab("wallet")}
-                      className={`btn btn-ghost justify-start ${
-                        activeTab === "wallet" ? "btn-active" : ""
-                      }`}
+                      className={`btn btn-ghost justify-start ${activeTab === "wallet" ? "btn-active" : ""
+                        }`}
                     >
                       Wallet
                     </button>
@@ -319,34 +315,34 @@ export default function ProfilePage() {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            { activeTab !== "" && <span><FaAngleLeft onClick={() => setActiveTab('')} size={20} className="lg:hidden mr-2 mb-2"/></span>}
+            {activeTab !== "" && <span><FaAngleLeft onClick={() => setActiveTab('')} size={20} className="lg:hidden mr-2 mb-2" /></span>}
             {activeTab === "overview" && (
               <div className="card bg-base-100 shadow">
                 <div className="card-body">
                   <h2 className="card-title mb-6">Overview</h2>
                   <div className="grid grid-cols-2 gap-4">
                     <div onClick={() => setActiveTab('profile')} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
-                      <IoPerson size={30}/>
+                      <IoPerson size={30} />
                       <p>Manage Your Profile</p>
                     </div>
                     <div onClick={() => setActiveTab('wishlist')} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
-                      <BsBagHeartFill size={30}/>
+                      <BsBagHeartFill size={30} />
                       <p>Check Your Wishlist</p>
                     </div>
                     <div onClick={() => setActiveTab('orders')} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
-                      <FaBox size={30}/>
+                      <FaBox size={30} />
                       <p>Track and manage your orders</p>
                     </div>
                     <div onClick={() => setActiveTab('refunds')} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
-                      <LuBadgeIndianRupee size={30}/>
+                      <LuBadgeIndianRupee size={30} />
                       <p>Track your refunds</p>
                     </div>
                     <div onClick={() => setActiveTab('reviews')} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
-                      <FaStar size={30}/>
+                      <FaStar size={30} />
                       <p>Manage Your reviews</p>
                     </div>
                     <div onClick={() => setActiveTab('wallet')} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
-                      <FaStar size={30}/>
+                      <FaStar size={30} />
                       <p>Amount in your wallet</p>
                     </div>
                   </div>
@@ -488,45 +484,45 @@ export default function ProfilePage() {
 
             {activeTab === "wishlist" && (
               <div className="card bg-base-100 shadow">
-                  <h2 className="card-title mb-6">My Wishlist</h2>
-                  {!wishlistData || wishlistData.items?.length === 0 ? (
-                    <div className="text-center py-8">
-                      <h3 className="text-lg font-semibold mb-2">Your wishlist is empty</h3>
-                      <p className="text-gray-600 mb-4">
-                        Add some products to your wishlist to see them here
-                      </p>
-                      <button
-                        onClick={() => router.push("/products")}
-                        className="btn btn-primary"
-                      >
-                        Browse Products
-                      </button>
-                    </div>
-                  ) : (
-                <div className="lg:col-span-2 space-y-4">
-                  {wishlistData.items.map((item: any) => (
-                    <div key={item._id} className="card bg-base-100 shadow-2xl">
-                      <div className="card-body h-[16vh]">
-                        <div className="flex flex-col sm:flex-row gap-4">
-                          <div className="flex gap-4 flex-1 cursor-pointer">
-                            <img src={item.product?.coverImage} alt={item.product?.title} onClick={() => router.push(`/products/${item.product._id}`)} className="w-24 h-24 object-cover rounded" />
-                            <div className="flex flex-col justify-between align-middle">
-                              <h3 className="font-bold text-sm align-middle sm:text-lg" onClick={() => router.push(`/products/${item.product._id}`)}>{item.product?.title}</h3>
-                              <p className="text-xs align-middle font-semibold mt-2">₹{item.product?.priceFrom}</p>
-                              <p className="text-xs align-middle font-semibold mt-2">{item.product?.category ? "item.product?.category" : "No Category"}</p>
+                <h2 className="card-title mb-6">My Wishlist</h2>
+                {!wishlistData || wishlistData.items?.length === 0 ? (
+                  <div className="text-center py-8">
+                    <h3 className="text-lg font-semibold mb-2">Your wishlist is empty</h3>
+                    <p className="text-gray-600 mb-4">
+                      Add some products to your wishlist to see them here
+                    </p>
+                    <button
+                      onClick={() => router.push("/products")}
+                      className="btn btn-primary"
+                    >
+                      Browse Products
+                    </button>
+                  </div>
+                ) : (
+                  <div className="lg:col-span-2 space-y-4">
+                    {wishlistData.items.map((item: any) => (
+                      <div key={item._id} className="card bg-base-100 shadow-2xl">
+                        <div className="card-body h-[16vh]">
+                          <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="flex gap-4 flex-1 cursor-pointer">
+                              <img src={item.product?.coverImage} alt={item.product?.title} onClick={() => router.push(`/products/${item.product._id}`)} className="w-24 h-24 object-cover rounded" />
+                              <div className="flex flex-col justify-between align-middle">
+                                <h3 className="font-bold text-sm align-middle sm:text-lg" onClick={() => router.push(`/products/${item.product._id}`)}>{item.product?.title}</h3>
+                                <p className="text-xs align-middle font-semibold mt-2">₹{item.product?.priceFrom}</p>
+                                <p className="text-xs align-middle font-semibold mt-2">{item.product?.category ? "item.product?.category" : "No Category"}</p>
+                              </div>
                             </div>
                           </div>
                         </div>
+                        <div className="grid grid-cols-2 justify-around">
+                          <button onClick={() => removeFromWishlistMutation.mutate(item.product._id)} className="btn btn-border text-center">Remove</button>
+                          <button onClick={() => handleAddToCartAndRemoveFromWishlist(item)} className="btn btn-border text-center">MOVE TO CART</button>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 justify-around">
-                        <button onClick={() => removeFromWishlistMutation.mutate(item.product._id)} className="btn btn-border text-center">Remove</button>
-                        <button onClick={() => handleAddToCartAndRemoveFromWishlist(item)} className="btn btn-border text-center">ADD TO CART</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
                 )}
-            </div>)}
+              </div>)}
 
             {activeTab === "orders" && (
               <div className="card bg-base-100 shadow">
@@ -599,7 +595,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-      
+
       {/* Sidebar */}
       {activeTab === "" && <div className="md:hidden lg:hidden">
         <ul>

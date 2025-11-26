@@ -8,6 +8,7 @@ import { cartAPI, orderAPI, deliveryAPI, paymentAPI } from "@/services/api";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useOrderStore } from "../store/useOrderStore";
+import { toast } from "react-toastify";
 
 declare global {
   interface Window {
@@ -17,7 +18,7 @@ declare global {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const {coupon, address} = useOrderStore();
+  const { coupon, address } = useOrderStore();
   const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay" | "wallet">("razorpay");
   const [useWallet, setUseWallet] = useState(false);
@@ -48,7 +49,7 @@ export default function CheckoutPage() {
         items,
         useCart: true,
         shippingAddress: address,
-        couponCode : coupon,
+        couponCode: coupon,
       });
       return res.data;
     },
@@ -96,12 +97,12 @@ export default function CheckoutPage() {
             gatewayOrderId: response.razorpay_order_id,
             gatewaySignature: response.razorpay_signature,
           });
-          
+
           if (res.data.success) {
             router.push(`/orders/${res.data.orderId}`);
           }
         } catch (error) {
-          alert("Payment verification failed");
+          toast.success("Payment verification failed");
         }
       },
       prefill: {
@@ -128,9 +129,9 @@ export default function CheckoutPage() {
     };
   }, []);
 
-  
+
   const handlePlaceOrder = () => {
-      createOrderMutation.mutate();
+    createOrderMutation.mutate();
   };
 
   if (!userId || !cart || cart.items.length === 0) {
@@ -206,80 +207,80 @@ export default function CheckoutPage() {
           </div>
           {/* Main Content */}
           <div className="lg:col-span-2">
-              <div className="card bg-base-100 shadow">
-                <div className="card-body">
-                  <h2 className="card-title mb-4">Payment Method</h2>
+            <div className="card bg-base-100 shadow">
+              <div className="card-body">
+                <h2 className="card-title mb-4">Payment Method</h2>
 
-                  <div className="space-y-4">
-                    <div className="form-control">
-                      <label className="label cursor-pointer justify-start gap-4">
-                        <input
-                          type="radio"
-                          name="payment"
-                          className="radio"
-                          checked={paymentMethod === "razorpay"}
-                          onChange={() => setPaymentMethod("razorpay")}
-                        />
-                        <span className="label-text">Online Payment (Razorpay)</span>
-                      </label>
-                    </div>
-
-                    <div className="form-control">
-                      <label className="label cursor-pointer justify-start gap-4">
-                        <input
-                          type="radio"
-                          name="payment"
-                          className="radio"
-                          checked={paymentMethod === "wallet"}
-                          onChange={() => setPaymentMethod("wallet")}
-                        />
-                        <span className="label-text">Wallet</span>
-                      </label>
-                    </div>
-
-                    <div className="form-control">
-                      <label className="label cursor-pointer justify-start gap-4">
-                        <input
-                          type="radio"
-                          name="payment"
-                          className="radio"
-                          checked={paymentMethod === "cod"}
-                          onChange={() => setPaymentMethod("cod")}
-                        />
-                        <span className="label-text">Cash on Delivery</span>
-                      </label>
-                    </div>
-
-                    <div className="divider"></div>
-
-                    <div className="form-control">
-                      <label className="label cursor-pointer justify-start gap-4">
-                        <input
-                          type="checkbox"
-                          className="checkbox"
-                          checked={useWallet}
-                          onChange={(e) => setUseWallet(e.target.checked)}
-                        />
-                        <span className="label-text">Use wallet balance (if available)</span>
-                      </label>
-                    </div>
+                <div className="space-y-4">
+                  <div className="form-control">
+                    <label className="label cursor-pointer justify-start gap-4">
+                      <input
+                        type="radio"
+                        name="payment"
+                        className="radio"
+                        checked={paymentMethod === "razorpay"}
+                        onChange={() => setPaymentMethod("razorpay")}
+                      />
+                      <span className="label-text">Online Payment (Razorpay)</span>
+                    </label>
                   </div>
 
-                  <div className="flex lg:hidden md:hidden gap-4 mt-6">
-                    <button
-                      onClick={handlePlaceOrder}
-                      disabled={createOrderMutation.isPending}
-                      className="btn btn-primary flex-1"
-                    >
-                      {createOrderMutation.isPending ? (
-                        <span className="loading loading-spinner"></span>
-                      ) : (
-                        "Place Order"
-                      )}
-                    </button>
+                  <div className="form-control">
+                    <label className="label cursor-pointer justify-start gap-4">
+                      <input
+                        type="radio"
+                        name="payment"
+                        className="radio"
+                        checked={paymentMethod === "wallet"}
+                        onChange={() => setPaymentMethod("wallet")}
+                      />
+                      <span className="label-text">Wallet</span>
+                    </label>
+                  </div>
+
+                  <div className="form-control">
+                    <label className="label cursor-pointer justify-start gap-4">
+                      <input
+                        type="radio"
+                        name="payment"
+                        className="radio"
+                        checked={paymentMethod === "cod"}
+                        onChange={() => setPaymentMethod("cod")}
+                      />
+                      <span className="label-text">Cash on Delivery</span>
+                    </label>
+                  </div>
+
+                  <div className="divider"></div>
+
+                  <div className="form-control">
+                    <label className="label cursor-pointer justify-start gap-4">
+                      <input
+                        type="checkbox"
+                        className="checkbox"
+                        checked={useWallet}
+                        onChange={(e) => setUseWallet(e.target.checked)}
+                      />
+                      <span className="label-text">Use wallet balance (if available)</span>
+                    </label>
                   </div>
                 </div>
+
+                <div className="flex lg:hidden md:hidden gap-4 mt-6">
+                  <button
+                    onClick={handlePlaceOrder}
+                    disabled={createOrderMutation.isPending}
+                    className="btn btn-primary flex-1"
+                  >
+                    {createOrderMutation.isPending ? (
+                      <span className="loading loading-spinner"></span>
+                    ) : (
+                      "Place Order"
+                    )}
+                  </button>
+                </div>
               </div>
+            </div>
           </div>
         </div>
       </div>

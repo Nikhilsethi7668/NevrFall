@@ -7,6 +7,7 @@ import { returnAPI } from "@/services/api";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Link from "next/link";
+import { toast } from "react-toastify";
 
 export default function ReturnsPage() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function ReturnsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["returns"] });
-      alert("Return request cancelled successfully");
+      toast.success("Return request cancelled successfully");
     },
     onError: (error: any) => {
       alert(error.response?.data?.message || "Failed to cancel return request");
@@ -115,8 +116,8 @@ export default function ReturnsPage() {
   }
 
   const returns = returnsData?.items || [];
-  const filteredReturns = statusFilter === "all" 
-    ? returns 
+  const filteredReturns = statusFilter === "all"
+    ? returns
     : returns.filter((returnItem: any) => returnItem.status === statusFilter);
 
   return (

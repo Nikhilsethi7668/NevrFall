@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { wishlistAPI } from "@/services/api";
 import { FaRegHeart } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 interface Variant {
   _id: string;
@@ -40,7 +41,7 @@ export default function ProductCard({
     mutationFn: () => wishlistAPI.add({ productId: product._id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
-      alert("Added to wishlist!");
+      toast.success("Added to wishlist!");
     },
     onError: (error: Error) => {
       alert(error.message || "Failed to add to wishlist");
@@ -72,9 +73,8 @@ export default function ProductCard({
             <button
               onClick={handleAddToWishlist}
               aria-label="Add to wishlist"
-              className={`absolute top-2 right-3 z-10 rounded-full p-2 shadow-sm focus:outline-none transform transition-transform duration-200 ${
-                isHovered ? "scale-110" : "scale-100"
-              }`}
+              className={`absolute top-2 right-3 z-10 rounded-full p-2 shadow-sm focus:outline-none transform transition-transform duration-200 ${isHovered ? "scale-110" : "scale-100"
+                }`}
             >
               <FaRegHeart size={10} />
             </button>

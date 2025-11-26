@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { productAPI } from '@/services/api';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -36,6 +36,7 @@ function ProductsPageContent() {
   }, []);
 
   // --- Update URL and fetch data when filters/page changes ---
+  const pathname = usePathname();
   useEffect(() => {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
@@ -43,7 +44,13 @@ function ProductsPageContent() {
         query.set(key, String(value));
       }
     }
-    router.push(`${window.location.pathname}?${query.toString()}`);
+
+    const queryString = query.toString();
+    const currentString = searchParams.toString();
+
+    if (queryString !== currentString) {
+      router.push(`${pathname}?${queryString}`);
+    }
     fetchProducts(filters, page);
   }, [filters]);
 

@@ -28,9 +28,9 @@ export const useProductStore = create<ProductState>((set, get) => ({
         limit: 12,
         page,
       };
-      
+
       const res = await productAPI.getByFilter(params);
-      
+
       set({
         products: res.data.items || [],
         total: res.data.total,
@@ -47,6 +47,14 @@ export const useProductStore = create<ProductState>((set, get) => ({
   setFilters: (newFilters) => {
     const { filters } = get();
     const updatedFilters = { ...filters, ...newFilters };
-    set({ filters: updatedFilters, page: 1 }); // Reset to page 1 on filter change
+
+    // Shallow comparison to avoid unnecessary updates
+    const hasChanged =
+      Object.keys(updatedFilters).length !== Object.keys(filters).length ||
+      Object.keys(updatedFilters).some((key) => updatedFilters[key] !== filters[key]);
+
+    if (hasChanged) {
+      set({ filters: updatedFilters, page: 1 }); // Reset to page 1 on filter change
+    }
   },
 }));

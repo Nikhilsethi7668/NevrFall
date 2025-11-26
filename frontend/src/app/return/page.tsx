@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { orderAPI, returnAPI } from "@/services/api";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { toast } from "react-toastify";
 
 function ReturnPageContent() {
   const router = useRouter();
@@ -42,7 +43,7 @@ function ReturnPageContent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["returns"] });
-      alert("Return request submitted successfully");
+      toast.success("Return request submitted successfully");
       router.push("/returns");
     },
     onError: (error: any) => {
@@ -65,11 +66,11 @@ function ReturnPageContent() {
 
   const handleSubmitReturn = () => {
     if (selectedItems.length === 0) {
-      alert("Please select at least one item to return");
+      toast.success("Please select at least one item to return");
       return;
     }
     if (!returnReason) {
-      alert("Please select a return reason");
+      toast.success("Please select a return reason");
       return;
     }
 
@@ -178,13 +179,13 @@ function ReturnPageContent() {
             <div className="card-body">
               <h2 className="card-title mb-4">Select Items to Return</h2>
               <div className="space-y-4">
-                {order.items.map((item: any , index: number) => (
+                {order.items.map((item: any, index: number) => (
                   <div key={item._id} className="flex items-center gap-4 p-4 bg-base-200 rounded-lg">
                     <input
                       type="checkbox"
                       className="checkbox checkbox-primary"
                       checked={selectedItems.includes(item._id)}
-                      onChange={() => {handleItemToggle(item._id); setIndex(index);}}
+                      onChange={() => { handleItemToggle(item._id); setIndex(index); }}
                     />
                     <img
                       src={item.product?.coverImage || "/placeholder.png"}

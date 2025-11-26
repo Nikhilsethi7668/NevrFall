@@ -7,6 +7,7 @@ import { orderAPI } from "@/services/api";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Link from "next/link";
+import { toast } from "react-toastify";
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function OrdersPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      alert("Order cancelled successfully");
+      toast.success("Order cancelled successfully");
     },
     onError: (error: any) => {
       alert(error.response?.data?.message || "Failed to cancel order");
@@ -238,7 +239,7 @@ export default function OrdersPage() {
                     >
                       View Details
                     </Link>
-                    {(order.status === "pending" || order.status === "confirmed" ) && (
+                    {(order.status === "pending" || order.status === "confirmed") && (
                       <button
                         onClick={() => {
                           if (confirm("Are you sure you want to cancel this order?")) {

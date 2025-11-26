@@ -2,10 +2,7 @@ import { ThemeProvider } from './components/ThemeRegistry';
 import "./globals.css";
 import Providers from './components/Providers';
 import { ToastContainer } from 'react-toastify';
-import { Poppins } from 'next/font/google';
-
-const poppins = Poppins({ subsets: ['latin'], weight: ['400','600','700'] });
-
+import Preloader from './components/Preloader';
 
 export default function RootLayout({
   children,
@@ -14,9 +11,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning={true}>
-      <body className={poppins.className}>
+      <body>
         <ThemeProvider attribute="data-theme" defaultTheme="gryape">
           <Providers>
+            <Preloader />
             <ToastContainer />
             {children}
           </Providers>

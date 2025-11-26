@@ -41,15 +41,15 @@ export default function CartPage() {
   }, []);
 
   const handleCheckServiceability = async () => {
-    const URL = DELIVERY_CHECK_PINCODE+ `?pin=` + address.pincode;
+    const URL = DELIVERY_CHECK_PINCODE + `?pin=` + address.pincode;
     try {
-      const res = await axios.get(URL,{
+      const res = await axios.get(URL, {
         headers: {
           'Content-Type': 'application/json',
         },
       });
       const result = res.data.data.delivery_codes;
-      if (result.length > 0){
+      if (result.length > 0) {
         setNotDeliverable(false);
         setMessage("")
       } else {
@@ -150,7 +150,7 @@ export default function CartPage() {
       if (action === "add") {
         return cartAPI.add({ userId, variantId, quantity: 1 });
       } else {
-        const item = cart.items.find((i: any) => i.variant === variantId);
+        const item = cart.items.find((i: any) => (i.variant._id || i.variant) === variantId);
         if (item) {
           return cartAPI.remove({ userId, variantId, size: item.size });
         }
@@ -177,22 +177,22 @@ export default function CartPage() {
     mutationFn: (productId: string) => wishlistAPI.add({ productId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
-      alert("Added to wishlist!");
+      toast.success("Added to wishlist!");
     },
     onError: (error: any) => {
       alert(error.response?.data?.message || "Failed to move to wishlist");
     },
   });
-  
+
   const handleMoveToWishlist = (item: any) => {
     if (!item.product?._id) {
-      alert("Cannot move to wishlist: Product ID is missing.");
+      toast.success("Cannot move to wishlist: Product ID is missing.");
       return;
     }
     addToWishlistMutation.mutate(item.product._id, {
-        onSuccess: () => {
-            removeItemMutation.mutate(item.variant);
-        }
+      onSuccess: () => {
+        removeItemMutation.mutate(item.variant._id || item.variant);
+      }
     });
   };
 
@@ -270,7 +270,7 @@ export default function CartPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-4">
             {cart.items.map((item: any) => (
-              <div key={item.variant} className="card bg-base-100 shadow-2xl">
+              <div key={item.variant._id || item.variant} className="card bg-base-100 shadow-2xl">
                 <div className="px-1 h-[14vh]">
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex gap-4 flex-1 cursor-pointer">
@@ -282,9 +282,9 @@ export default function CartPage() {
                           <p className="text-xs font-semibold mt-2">₹{item.price}</p>
                           <div className="flex justify-between items-center w-full gap-2 sm:w-auto sm:flex-col sm:items-end sm:justify-between">
                             <div className="flex items-center md:gap-2 lg:gap-2">
-                              <button onClick={() => updateQuantityMutation.mutate({ variantId: item.variant, action: "remove" })} disabled={item.quantity <= 1} className="btn btn-xs btn-outline">-</button>
+                              <button onClick={() => updateQuantityMutation.mutate({ variantId: item.variant._id || item.variant, action: "remove" })} disabled={item.quantity <= 1} className="btn btn-xs btn-outline">-</button>
                               <span className="w-8 text-center">{item.quantity}</span>
-                              <button onClick={() => updateQuantityMutation.mutate({ variantId: item.variant, action: "add" })} className="btn btn-xs btn-outline">+</button>
+                              <button onClick={() => updateQuantityMutation.mutate({ variantId: item.variant._id || item.variant, action: "add" })} className="btn btn-xs btn-outline">+</button>
                             </div>
                             <div>
                               <select name="size" id="size" className="select select-sm lg:select-md rounded-md lg:w-[16vw] p-2 select-bordered">
@@ -301,11 +301,11 @@ export default function CartPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 justify-around">
-                  <button onClick={() => removeItemMutation.mutate(item.variant)} className="btn btn-border text-center">Remove</button>
+                  <button onClick={() => removeItemMutation.mutate(item.variant._id || item.variant)} className="btn btn-border text-center">Remove</button>
                   <button
                     onClick={() => handleMoveToWishlist(item)}
                     className="btn btn-border text-center" >
-                      Move to Wishlist
+                    Move to Wishlist
                   </button>
                 </div>
               </div>
@@ -322,44 +322,44 @@ export default function CartPage() {
                   <input type="checkbox" className="peer" />
                   <div className="collapse-title flex flex-row justify-between peer-checked:[&>p:last-child]:rotate-180"><p>Shipping Address</p><p className="transition-transform duration-300"><FaCaretDown /></p></div>
                   <div className="collapse-content">
-                  {isLoadingAddresses ? (
-                    <p>Loading addresses...</p>
-                  ) : (
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {addresses && addresses.map((addr: any, index: number) => (
-                        <>
-                        <div key={addr.index} className={`border p-2 rounded-md cursor-pointer ${address === addr ?  !notDeliverable ? 'border-primary' : 'border-error' : 'border-dashed border-neutral'}`} onClick={() => handleSelectAddress(addr)}>
-                          {message && address == addr && (<p className="text-error">{message}</p>)}
-                          <p className="font-semibold">{addr.name}</p>
-                          <p>{addr.line1}</p>
-                          <p>{addr.city}, {addr.state} {addr.pincode}</p>
-                        </div>
-                        </>
-                      ))}
-                    </div>
-                  )}
-                  <button className="btn btn-primary btn-dash w-full mt-2" onClick={() => (document.getElementById('my_modal_5') as HTMLDialogElement)?.showModal()}>+ Add New Address</button>
-                  <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
-                    <div className="modal-box">
-                      <h3 className="font-bold text-lg">Add New Address</h3>
+                    {isLoadingAddresses ? (
+                      <p>Loading addresses...</p>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {addresses && addresses.map((addr: any, index: number) => (
+                          <>
+                            <div key={addr.index} className={`border p-2 rounded-md cursor-pointer ${address === addr ? !notDeliverable ? 'border-primary' : 'border-error' : 'border-dashed border-neutral'}`} onClick={() => handleSelectAddress(addr)}>
+                              {message && address == addr && (<p className="text-error">{message}</p>)}
+                              <p className="font-semibold">{addr.name}</p>
+                              <p>{addr.line1}</p>
+                              <p>{addr.city}, {addr.state} {addr.pincode}</p>
+                            </div>
+                          </>
+                        ))}
+                      </div>
+                    )}
+                    <button className="btn btn-primary btn-dash w-full mt-2" onClick={() => (document.getElementById('my_modal_5') as HTMLDialogElement)?.showModal()}>+ Add New Address</button>
+                    <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
+                      <div className="modal-box">
+                        <h3 className="font-bold text-lg">Add New Address</h3>
                         <div className="modal-action">
                           <form onSubmit={handleAddAddressSubmit} className="space-y-2">
-                              <input type="text" placeholder="Full Name" className="input input-bordered w-full" value={newAddress.name} onChange={e => setNewAddress({ ...newAddress, name: e.target.value })} required />
-                              <input type="text" placeholder="Phone" className="input input-bordered w-full" value={newAddress.phone} onChange={e => setNewAddress({ ...newAddress, phone: e.target.value })} required />
-                              <input type="text" placeholder="Address Line 1" className="input input-bordered w-full" value={newAddress.line1} onChange={e => setNewAddress({ ...newAddress, line1: e.target.value })} required />
-                              <input type="text" placeholder="Address Line 2" className="input input-bordered w-full" value={newAddress.line2} onChange={e => setNewAddress({ ...newAddress, line2: e.target.value })} />
-                              <input type="text" placeholder="Pincode" className="input input-bordered w-full" value={newAddress.pincode} onChange={e => setNewAddress({ ...newAddress, pincode: e.target.value })} required />
-                              <input type="text" placeholder="City" className="input input-bordered w-full" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} required />
-                              <input type="text" placeholder="State" className="input input-bordered w-full" value={newAddress.state} onChange={e => setNewAddress({ ...newAddress, state: e.target.value })} required />
-                              <div className="flex gap-2">
-                                <button type="button" className="btn" onClick={() => (document.getElementById('my_modal_5') as HTMLDialogElement)?.close()}>Close</button>
-                                <button type="submit" className="btn btn-primary" disabled={addAddressMutation.isPending}>Save</button>
-                              </div>
-                            </form>
+                            <input type="text" placeholder="Full Name" className="input input-bordered w-full" value={newAddress.name} onChange={e => setNewAddress({ ...newAddress, name: e.target.value })} required />
+                            <input type="text" placeholder="Phone" className="input input-bordered w-full" value={newAddress.phone} onChange={e => setNewAddress({ ...newAddress, phone: e.target.value })} required />
+                            <input type="text" placeholder="Address Line 1" className="input input-bordered w-full" value={newAddress.line1} onChange={e => setNewAddress({ ...newAddress, line1: e.target.value })} required />
+                            <input type="text" placeholder="Address Line 2" className="input input-bordered w-full" value={newAddress.line2} onChange={e => setNewAddress({ ...newAddress, line2: e.target.value })} />
+                            <input type="text" placeholder="Pincode" className="input input-bordered w-full" value={newAddress.pincode} onChange={e => setNewAddress({ ...newAddress, pincode: e.target.value })} required />
+                            <input type="text" placeholder="City" className="input input-bordered w-full" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} required />
+                            <input type="text" placeholder="State" className="input input-bordered w-full" value={newAddress.state} onChange={e => setNewAddress({ ...newAddress, state: e.target.value })} required />
+                            <div className="flex gap-2">
+                              <button type="button" className="btn" onClick={() => (document.getElementById('my_modal_5') as HTMLDialogElement)?.close()}>Close</button>
+                              <button type="submit" className="btn btn-primary" disabled={addAddressMutation.isPending}>Save</button>
+                            </div>
+                          </form>
                         </div>
-                    </div>
-                  </dialog>
-                </div>
+                      </div>
+                    </dialog>
+                  </div>
                 </div>
 
                 {showAddAddressForm && (
