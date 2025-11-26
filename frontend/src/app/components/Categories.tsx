@@ -22,7 +22,7 @@ export default function Categories() {
 
   return (
     <>
-      <h1 className='text-center font-bold text-3xl md:text-4xl tracking-tight my-6 uppercase'>Categories</h1>
+      <h1 className='text-center font-bold text-[12px] md:text-4xl tracking-tight my-6 uppercase'>Categories</h1>
       <div className="grid my-4 mx-2 grid-cols-2 md:grid-cols-4 gap-6">
         {categories.map((category) => (
           <div
@@ -35,7 +35,7 @@ export default function Categories() {
               alt={category.name}
               className="h-[22vh] w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
             />
-            <h3 className='py-1 px-2 text-left text-sm'>
+            <h3 className='py-1 px-2 text-left text-[10px]'>
               {category.name}
             </h3>
           </div>

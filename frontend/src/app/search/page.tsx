@@ -122,8 +122,8 @@ const SearchPage = () => {
                       />
                     </figure>
                     <div className="card-body">
-                      <h2 className="card-title text-sm">{product.title}</h2>
-                      <p className="text-sm">₹{product.cardVariant.price}</p>
+                      <h2 className="card-title text-[10px]">{product.title}</h2>
+                      <p className="text-[10px]">₹{product.cardVariant.price}</p>
                     </div>
                   </div>
                 ))}

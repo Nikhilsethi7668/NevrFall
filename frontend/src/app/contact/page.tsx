@@ -45,14 +45,14 @@ export default function ContactPage() {
             <div className="space-y-6">
               <div className="card bg-base-100 shadow">
                 <div className="card-body">
-                  <h2 className="card-title text-2xl mb-4">Get in Touch</h2>
-                  <p className="text-lg mb-6">
+                  <h2 className="card-title text-[12px] mb-4">Get in Touch</h2>
+                  <p className="text-[12px] mb-6">
                     We'd love to hear from you! Send us a message and we'll respond as soon as possible.
                   </p>
 
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
-                      <div className="text-2xl">📧</div>
+                      <div className="text-[12px]">📧</div>
                       <div>
                         <h3 className="font-semibold">Email</h3>
                         <p className="text-gray-600">support@neverfall.com</p>
@@ -60,7 +60,7 @@ export default function ContactPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <div className="text-2xl">📞</div>
+                      <div className="text-[12px]">📞</div>
                       <div>
                         <h3 className="font-semibold">Phone</h3>
                         <p className="text-gray-600">+91 98765 43210</p>
@@ -68,7 +68,7 @@ export default function ContactPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <div className="text-2xl">📍</div>
+                      <div className="text-[12px]">📍</div>
                       <div>
                         <h3 className="font-semibold">Address</h3>
                         <p className="text-gray-600">
@@ -80,7 +80,7 @@ export default function ContactPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <div className="text-2xl">🕒</div>
+                      <div className="text-[12px]">🕒</div>
                       <div>
                         <h3 className="font-semibold">Business Hours</h3>
                         <p className="text-gray-600">
@@ -97,12 +97,12 @@ export default function ContactPage() {
               {/* FAQ Section */}
               <div className="card bg-base-100 shadow">
                 <div className="card-body">
-                  <h2 className="card-title text-2xl mb-4">Frequently Asked Questions</h2>
+                  <h2 className="card-title text-[12px] mb-4">Frequently Asked Questions</h2>
 
                   <div className="space-y-4">
                     <div className="collapse collapse-arrow bg-base-200">
                       <input type="radio" name="faq" />
-                      <div className="collapse-title text-lg font-medium">
+                      <div className="collapse-title text-[12px] font-medium">
                         How long does shipping take?
                       </div>
                       <div className="collapse-content">
@@ -112,7 +112,7 @@ export default function ContactPage() {
 
                     <div className="collapse collapse-arrow bg-base-200">
                       <input type="radio" name="faq" />
-                      <div className="collapse-title text-lg font-medium">
+                      <div className="collapse-title text-[12px] font-medium">
                         What is your return policy?
                       </div>
                       <div className="collapse-content">
@@ -122,7 +122,7 @@ export default function ContactPage() {
 
                     <div className="collapse collapse-arrow bg-base-200">
                       <input type="radio" name="faq" />
-                      <div className="collapse-title text-lg font-medium">
+                      <div className="collapse-title text-[12px] font-medium">
                         Do you offer international shipping?
                       </div>
                       <div className="collapse-content">
@@ -132,7 +132,7 @@ export default function ContactPage() {
 
                     <div className="collapse collapse-arrow bg-base-200">
                       <input type="radio" name="faq" />
-                      <div className="collapse-title text-lg font-medium">
+                      <div className="collapse-title text-[12px] font-medium">
                         How can I track my order?
                       </div>
                       <div className="collapse-content">
@@ -147,7 +147,7 @@ export default function ContactPage() {
             {/* Contact Form */}
             <div className="card bg-base-100 shadow">
               <div className="card-body">
-                <h2 className="card-title text-2xl mb-4">Send us a Message</h2>
+                <h2 className="card-title text-[12px] mb-4">Send us a Message</h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="form-control">
@@ -239,7 +239,7 @@ export default function ContactPage() {
           {/* Social Media Links */}
           <div className="card bg-base-100 shadow mt-8">
             <div className="card-body text-center">
-              <h2 className="card-title text-2xl justify-center mb-4">Follow Us</h2>
+              <h2 className="card-title text-[12px] justify-center mb-4">Follow Us</h2>
               <p className="text-gray-600 mb-6">Stay updated with our latest products and offers</p>
 
               <div className="flex justify-center gap-4">

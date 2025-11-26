@@ -15,8 +15,8 @@ export default function AboutPage() {
           <div className="hero bg-base-200 rounded-lg mb-12">
             <div className="hero-content text-center">
               <div className="max-w-md">
-                <h2 className="text-3xl font-bold mb-4">Your Ultimate Fashion Destination</h2>
-                <p className="text-lg">
+                <h2 className="text-[12px] font-bold mb-4">Your Ultimate Fashion Destination</h2>
+                <p className="text-[12px]">
                   Discover the latest trends in footwear and fashion with NeverFall. 
                   We bring you premium quality products at unbeatable prices.
                 </p>
@@ -27,8 +27,8 @@ export default function AboutPage() {
           {/* Mission Section */}
           <div className="card bg-base-100 shadow mb-8">
             <div className="card-body">
-              <h2 className="card-title text-2xl mb-4">Our Mission</h2>
-              <p className="text-lg leading-relaxed">
+              <h2 className="card-title text-[12px] mb-4">Our Mission</h2>
+              <p className="text-[12px] leading-relaxed">
                 At NeverFall, we believe that everyone deserves access to high-quality, 
                 stylish footwear that doesn't break the bank. Our mission is to provide 
                 a seamless shopping experience with a wide range of products, excellent 
@@ -65,15 +65,15 @@ export default function AboutPage() {
           {/* Story Section */}
           <div className="card bg-base-100 shadow mb-8">
             <div className="card-body">
-              <h2 className="card-title text-2xl mb-4">Our Story</h2>
+              <h2 className="card-title text-[12px] mb-4">Our Story</h2>
               <div className="prose max-w-none">
-                <p className="text-lg leading-relaxed mb-4">
+                <p className="text-[12px] leading-relaxed mb-4">
                   Founded with a passion for fashion and a commitment to quality, NeverFall 
                   started as a small team of fashion enthusiasts who wanted to make premium 
                   footwear accessible to everyone. What began as a simple idea has grown 
                   into a trusted platform serving thousands of customers worldwide.
                 </p>
-                <p className="text-lg leading-relaxed">
+                <p className="text-[12px] leading-relaxed">
                   Today, we continue to expand our collection while maintaining our core 
                   values of quality, affordability, and exceptional customer service. 
                   Every product in our catalog is carefully selected to meet our high 
@@ -87,28 +87,28 @@ export default function AboutPage() {
           {/* Features Section */}
           <div className="card bg-base-100 shadow mb-8">
             <div className="card-body">
-              <h2 className="card-title text-2xl mb-6">Why Choose NeverFall?</h2>
+              <h2 className="card-title text-[12px] mb-6">Why Choose NeverFall?</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <div className="badge badge-primary badge-lg">✓</div>
                     <div>
                       <h3 className="font-semibold">Free Shipping</h3>
-                      <p className="text-sm text-gray-600">On orders over ₹999</p>
+                      <p className="text-[10px] text-gray-600">On orders over ₹999</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="badge badge-primary badge-lg">✓</div>
                     <div>
                       <h3 className="font-semibold">Easy Returns</h3>
-                      <p className="text-sm text-gray-600">30-day return policy</p>
+                      <p className="text-[10px] text-gray-600">30-day return policy</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="badge badge-primary badge-lg">✓</div>
                     <div>
                       <h3 className="font-semibold">Secure Payment</h3>
-                      <p className="text-sm text-gray-600">100% secure transactions</p>
+                      <p className="text-[10px] text-gray-600">100% secure transactions</p>
                     </div>
                   </div>
                 </div>
@@ -117,21 +117,21 @@ export default function AboutPage() {
                     <div className="badge badge-primary badge-lg">✓</div>
                     <div>
                       <h3 className="font-semibold">24/7 Support</h3>
-                      <p className="text-sm text-gray-600">Always here to help</p>
+                      <p className="text-[10px] text-gray-600">Always here to help</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="badge badge-primary badge-lg">✓</div>
                     <div>
                       <h3 className="font-semibold">Latest Trends</h3>
-                      <p className="text-sm text-gray-600">Stay ahead of fashion</p>
+                      <p className="text-[10px] text-gray-600">Stay ahead of fashion</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="badge badge-primary badge-lg">✓</div>
                     <div>
                       <h3 className="font-semibold">Quality Guarantee</h3>
-                      <p className="text-sm text-gray-600">Premium materials only</p>
+                      <p className="text-[10px] text-gray-600">Premium materials only</p>
                     </div>
                   </div>
                 </div>
@@ -142,34 +142,34 @@ export default function AboutPage() {
           {/* Team Section */}
           <div className="card bg-base-100 shadow">
             <div className="card-body">
-              <h2 className="card-title text-2xl mb-6">Meet Our Team</h2>
+              <h2 className="card-title text-[12px] mb-6">Meet Our Team</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <div className="avatar placeholder mb-4">
                     <div className="bg-neutral text-neutral-content rounded-full w-24">
-                      <span className="text-3xl">👨‍💼</span>
+                      <span className="text-[12px]">👨‍💼</span>
                     </div>
                   </div>
                   <h3 className="font-semibold">John Doe</h3>
-                  <p className="text-sm text-gray-600">Founder & CEO</p>
+                  <p className="text-[10px] text-gray-600">Founder & CEO</p>
                 </div>
                 <div className="text-center">
                   <div className="avatar placeholder mb-4">
                     <div className="bg-neutral text-neutral-content rounded-full w-24">
-                      <span className="text-3xl">👩‍💼</span>
+                      <span className="text-[12px]">👩‍💼</span>
                     </div>
                   </div>
                   <h3 className="font-semibold">Jane Smith</h3>
-                  <p className="text-sm text-gray-600">Head of Design</p>
+                  <p className="text-[10px] text-gray-600">Head of Design</p>
                 </div>
                 <div className="text-center">
                   <div className="avatar placeholder mb-4">
                     <div className="bg-neutral text-neutral-content rounded-full w-24">
-                      <span className="text-3xl">👨‍💻</span>
+                      <span className="text-[12px]">👨‍💻</span>
                     </div>
                   </div>
                   <h3 className="font-semibold">Mike Johnson</h3>
-                  <p className="text-sm text-gray-600">Tech Lead</p>
+                  <p className="text-[10px] text-gray-600">Tech Lead</p>
                 </div>
               </div>
             </div>

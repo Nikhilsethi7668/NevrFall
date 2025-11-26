@@ -84,7 +84,7 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
               <button
                 key={option.slug || option.size || option.color}
                 onClick={() => handleLocalFilterChange(key, option.slug || option.size || option.color)}
-                className={`border px-3 py-1 text-sm ${
+                className={`border px-3 py-1 text-[10px] ${
                   currentSelection === (option.slug || option.size || option.color) ? 'bg-black text-white' : 'hover:bg-gray-100'
                 }`}
               >
@@ -99,7 +99,7 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
   
   const renderDesktopSidebar = () => (
     <aside className='w-full lg:w-72 hidden sm:block bg-white border-r sticky top-20 h-fit px-4 py-5'>
-      <h2 className='text-lg font-bold mb-4'>FILTERS</h2>
+      <h2 className='text-[12px] font-bold mb-4'>FILTERS</h2>
 
       {facetsData && Object.entries(facetsData).map(([key, facet]: [string, any]) => 
         renderFilterSection(key, facet)
@@ -123,7 +123,7 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
               className='range range-sm'
               onChange={(e) => handleLocalFilterChange('price', parseInt(e.target.value, 10))}
             />
-            <div className='flex justify-between text-sm mt-1'>
+            <div className='flex justify-between text-[10px] mt-1'>
               <span>₹0</span>
               <span>₹{pendingFilters.price || 5000}</span>
             </div>
@@ -152,7 +152,7 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/30" />
         <Dialog.Content className="fixed bottom-0 inset-x-0 w-full max-w-sm mx-auto bg-white rounded-t-2xl shadow-lg p-6 flex flex-col max-h-[80vh]">
-          <Dialog.Title className="text-xl font-semibold text-center text-secondary mb-4">
+          <Dialog.Title className="text-[12px] font-semibold text-center text-secondary mb-4">
             Filters
           </Dialog.Title>
           <div className="overflow-y-auto grow">
@@ -178,7 +178,7 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
                     className='range range-sm'
                     onChange={(e) => handleLocalFilterChange('price', parseInt(e.target.value, 10))}
                   />
-                  <div className='flex justify-between text-sm mt-1'>
+                  <div className='flex justify-between text-[10px] mt-1'>
                     <span>₹0</span>
                     <span>₹{pendingFilters.price || 5000}</span>
                   </div>

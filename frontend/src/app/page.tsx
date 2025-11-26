@@ -53,7 +53,7 @@ export default function Home() {
   const { data: newArrivals, isLoading: newArrivalsLoading } = useQuery({
     queryKey: ["new-arrivals"],
     queryFn: async () => {
-      const res = await productAPI.getNewArrivals({ limit: 4 });
+      const res = await productAPI.getNewArrivals({ limit: 8 });
       return res.data;
     },
   });
@@ -62,7 +62,7 @@ export default function Home() {
   const { data: trendingProducts, isLoading: trendingLoading } = useQuery({
     queryKey: ["trending-products"],
     queryFn: async () => {
-      const res = await productAPI.getTrending({ limit: 4 });
+      const res = await productAPI.getTrending({ limit: 8 });
       return res.data;
     },
   });
@@ -71,7 +71,7 @@ export default function Home() {
   const { data: recommendedProducts, isLoading: recommendedLoading } = useQuery({
     queryKey: ["recommended-products"],
     queryFn: async () => {
-      const res = await productAPI.getRecommended({ limit: 4 });
+      const res = await productAPI.getRecommended({ limit: 8 });
       return res.data;
     },
     enabled: isLoggedIn,
@@ -81,7 +81,7 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      <div className="hero min-h-[60vh] relative">
+      <div className="hero min-h-[78vh] relative">
         <video
           className="absolute inset-0 w-full h-full object-cover"
           src="/hero.mp4"
@@ -89,22 +89,19 @@ export default function Home() {
           loop
           muted
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/20" />
       </div>
 
        {/* Recommended Products */}
       {isLoggedIn && recommendedProducts && recommendedProducts.items.length > 0 && (
-        <div className="bg-base-300 py-12">
-          <div className="p-2 lg:p-6">
-            <h2 className="text-3xl font-bold text-center mb-8">Recommended For You</h2>
+        <div className="bg-base-300">
+          <div className="p-0.5 lg:p-6">
+            <h2 className="text-xs text-[#707070] font-bold uppercase my-6">Recommended For You</h2>
             {recommendedLoading ? (
               <LoadingSpinner size="lg" text="Loading recommendations..." />
             ) : (
-            <div className="flex items-stretch overflow-x-auto py-4 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-px lg:gap-2">
                 {recommendedProducts?.items?.map((product: any) => (
-                  <div key={product._id} className="shrink-0 w-[55vw] md:w-[45vw] lg:w-[45vw]">
                     <ProductCard key={product._id} product={product} />
-                  </div>
                 ))}
               </div>
             )}
@@ -127,67 +124,73 @@ export default function Home() {
       </div> */}
 
       {/* New Arrivals */}
-      <div className="bg-base-200 py-12">
-        <div className="p-2 lg:p-6">
+      <div className="">
+        <div className="p-0.5 lg:p-6">
           <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl md:text-5xl font-bold tracking-tight">New Arrivals</h2>
+            <h2 className="text-xs text-[#707070] font-bold uppercase tracking-tight my-6">New Arrivals</h2>
           </div>
           {newArrivalsLoading ? (
             <LoadingSpinner size="lg" text="Loading new arrivals..." />
           ) : (
-            <div className="flex items-stretch overflow-x-auto py-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-px lg:gap-2">
               {newArrivals?.items?.map((product: any) => (
-                <div key={product._id} className="shrink-0 w-[55vw] md:w-[45vw] lg:w-[45vw]">
                   <ProductCard product={product} />
-                </div>
               ))}
             </div>
           )}
           <div className="flex w-full justify-center items-center mt-2">
             <button
               onClick={() => router.push("/products?sort=newest")}
-              className="btn btn-primary uppercase mx-auto"
+              className="bg-black uppercase text-white text-[10px] py-2 px-5"
             >
-              View All
+              EXPLORE ALL
             </button>
           </div>
         </div>
       </div>
 
+      <div className="hero min-h-[78vh] relative">
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          src="/hero.mp4"
+          autoPlay
+          loop
+          muted
+        />
+      </div>
+
         {/* Trending Products */}
-        <div className="p-2 lg:p-6">
+        <div className="p-0.5 lg:p-6">
           <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl md:text-5xl font-bold tracking-tight">Trending Now</h2>
+            <h2 className="text-xs text-[#707070] my-6 font-bold uppercase tracking-tight">Trending Now</h2>
           </div>
           {trendingLoading ? (
             <LoadingSpinner size="lg" text="Loading trending products..." />
           ) : (
-            <div className="flex items-stretch overflow-x-auto py-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-px lg:gap-2">
               {trendingProducts?.items?.map((product: any) => (
-                <div key={product._id} className="shrink-0 w-[55vw] md:w-[45vw] lg:w-[45vw]">
                   <ProductCard key={product._id} product={product} />
-                </div>
               ))}
             </div>
           )}
           <div className="flex w-full justify-center items-center mt-2">
             <button
                 onClick={() => router.push("/products?sort=trending")}
-                className="btn btn-primary uppercase mt-1"
+                className="bg-black uppercase text-white text-[10px] py-2 px-5"
               >
-                View All
+                EXPLORE ALL
               </button>
           </div>
         </div>
 
 
-      <div className="container mx-auto p-6">
+      {/* <div className="container mx-auto p-6">
         <Categories />
-      </div>
+      </div> */}
       
-      <div className="container mx-auto p-1">
+      <div className="mx-auto p-0.5">
         <div className="lg:col-span-3">
-          <h1 className="text-center font-semibold text-2xl my-2">Products</h1>
+          <h1 className="font-semibold uppercase text-xs text-[#707070] my-6">Products</h1>
           {loading ? (
             <LoadingSpinner size="lg" text="Loading products..." />
           ) : products.length === 0 ? (
@@ -196,7 +199,7 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-1 lg:gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-px lg:gap-2">
                 {products.map((product: any) => (
                   <ProductCard key={product._id} product={product} />
                 ))}

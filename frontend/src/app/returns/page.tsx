@@ -125,7 +125,7 @@ export default function ReturnsPage() {
       <Navbar />
       <div className="container mx-auto p-4">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">My Returns</h1>
+          <h1 className="text-[12px] font-bold">My Returns</h1>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -143,7 +143,7 @@ export default function ReturnsPage() {
 
         {filteredReturns.length === 0 ? (
           <div className="text-center py-16">
-            <h2 className="text-2xl font-bold mb-4">No returns found</h2>
+            <h2 className="text-[12px] font-bold mb-4">No returns found</h2>
             <p className="text-gray-600 mb-8">
               {statusFilter === "all"
                 ? "You haven't requested any returns yet"
@@ -160,13 +160,13 @@ export default function ReturnsPage() {
                 <div className="card-body">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="text-lg font-semibold">
+                      <h3 className="text-[12px] font-semibold">
                         Return Request #{returnItem.returnNumber || returnItem._id.slice(-8)}
                       </h3>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-[10px] text-gray-600">
                         Requested on {new Date(returnItem.createdAt).toLocaleDateString()}
                       </p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-[10px] text-gray-600">
                         Order: #{returnItem.order?.orderNumber || "N/A"}
                       </p>
                     </div>
@@ -174,7 +174,7 @@ export default function ReturnsPage() {
                       <div className={`badge ${getStatusBadge(returnItem.status)}`}>
                         {getStatusText(returnItem.status)}
                       </div>
-                      <p className="text-lg font-bold mt-1">₹{returnItem.refundAmount || "0"}</p>
+                      <p className="text-[12px] font-bold mt-1">₹{returnItem.refundAmount || "0"}</p>
                     </div>
                   </div>
 
@@ -190,7 +190,7 @@ export default function ReturnsPage() {
                         />
                         <div className="flex-1">
                           <h4 className="font-semibold">{item.title}</h4>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-[10px] text-gray-600">
                             Size: {item.size} | Color: {item.color} | Qty: {item.quantity}
                           </p>
                           <p className="font-semibold">₹{item.price}</p>
@@ -202,7 +202,7 @@ export default function ReturnsPage() {
                   {/* Return Details */}
                   <div className="mb-4">
                     <h4 className="font-semibold mb-2">Return Details:</h4>
-                    <div className="text-sm text-gray-600 space-y-1">
+                    <div className="text-[10px] text-gray-600 space-y-1">
                       <p><strong>Reason:</strong> {returnItem.reason}</p>
                       {returnItem.description && (
                         <p><strong>Description:</strong> {returnItem.description}</p>

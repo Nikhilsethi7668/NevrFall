@@ -78,23 +78,15 @@ function ProductsPageContent() {
   return (
     <>
       <Navbar />
-      <div className="container mx-auto p-1">
+      <div className="container mx-auto p-0.5">
         {/* --- Header with search and sort --- */}
         <div className="bg-base-100 border-b py-3 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h1 className="text-3xl font-bold">Products</h1>
-
           <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-            <SearchBar
-              placeholder="Search products..."
-              className="w-full md:w-80"
-              onSearch={(query) => handleFilterChange({ ...filters, search: query })}
-            />
-
             <div className="flex flex-row items-center gap-2">
               <select
                 value={filters.sort || 'newest'}
                 onChange={(e) => handleFilterChange({ ...filters, sort: e.target.value })}
-                className="select select-bordered select-sm md:select-md border-gray-300"
+                className="w-auto select-sm"
               >
                 <option value="newest">Newest</option>
                 <option value="featured">Featured</option>
@@ -136,7 +128,7 @@ function ProductsPageContent() {
               </div>
             ) : products.length === 0 ? (
               <div className="text-center py-16">
-                <h2 className="text-2xl font-semibold mb-3">No products found</h2>
+                <h2 className="text-[12px] font-semibold mb-3">No products found</h2>
                 <p className="text-gray-500 mb-6">
                   Try adjusting your filters or search terms.
                 </p>
@@ -146,7 +138,7 @@ function ProductsPageContent() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-1">
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 pb-4 gap-px">
                   {products.map((product: any) => (
                     <ProductCard key={product._id} product={product} />
                   ))}

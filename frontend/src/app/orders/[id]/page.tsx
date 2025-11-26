@@ -308,7 +308,7 @@ export default function OrderDetailsPage() {
       <Navbar />
       <div className="container mx-auto p-4">
         {/* Breadcrumbs */}
-        <div className="breadcrumbs text-sm mb-6">
+        <div className="breadcrumbs text-[10px] mb-6">
           <ul>
             <li>
               <Link href="/">Home</Link>
@@ -328,16 +328,16 @@ export default function OrderDetailsPage() {
               <div className="card-body p-4 sm:p-6">
                 <div className="flex flex-row justify-between sm:items-start">
                   <div className="mb-4 sm:mb-0">
-                    <h1 className="text-xl font-bold">Order #{order._id.slice(-6)}</h1>
+                    <h1 className="text-[12px] font-bold">Order #{order._id.slice(-6)}</h1>
                     <p className="text-gray-600">
                       Placed on {new Date(order.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="text-left sm:text-right">
-                    <div className={`badge ${getStatusBadge(order.status)} text-sm mb-1`}>
+                    <div className={`badge ${getStatusBadge(order.status)} text-[10px] mb-1`}>
                       {getStatusText(order.status)}
                     </div>
-                    <p className="text-lg font-bold mt-2">₹{order.total}</p>
+                    <p className="text-[12px] font-bold mt-2">₹{order.total}</p>
                   </div>
                 </div>
               </div>
@@ -351,7 +351,7 @@ export default function OrderDetailsPage() {
                   {steps.map((step, index) => (
                     <li
                       key={step.key}
-                      className={`step text-sm ${index <= currentIndex ? "step-primary" : ""
+                      className={`step text-[10px] ${index <= currentIndex ? "step-primary" : ""
                         } ${order.status === "cancelled" ? "step-error" : ""}`}
                     >
                       {step.label}
@@ -382,19 +382,19 @@ export default function OrderDetailsPage() {
                           <div>
                             {/* Main content */}
                             <div className="flex-1">
-                              <h3 className="font-semibold text-sm sm:text-lg line-clamp-2">{item.title}</h3>
-                              <p className="text-gray-600 text-xs sm:text-sm">
+                              <h3 className="font-semibold text-[10px] sm:text-[12px] line-clamp-2">{item.title}</h3>
+                              <p className="text-gray-600 text-xs sm:text-[10px]">
                                 Brand: {item.product?.brand || "N/A"}
                               </p>
-                              <p className="text-gray-600 text-xs sm:text-sm">
+                              <p className="text-gray-600 text-xs sm:text-[10px]">
                                 Size: {item.size} | Color: {item.color}
                               </p>
-                              <p className="text-gray-600 text-xs sm:text-sm">Quantity: {item.quantity}</p>
+                              <p className="text-gray-600 text-xs sm:text-[10px]">Quantity: {item.quantity}</p>
                             </div>
 
                             {/* Price & badges */}
                             <div className="text-left sm:text-right ml-2 flex-shrink-0">
-                              <p className="text-lg font-bold">
+                              <p className="text-[12px] font-bold">
                                 ₹{(item.price * item.quantity).toFixed(2)}
                               </p>
                               {pendingExchangeItems.includes(index) && (
@@ -434,7 +434,7 @@ export default function OrderDetailsPage() {
                         {/* keep the exact same dialog/flow you had */}
                         <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
                           <div className="modal-box">
-                            <div className="font-bold modal-top bg-base-100 flex flex-row sticky top-0 justify-between text-lg">
+                            <div className="font-bold modal-top bg-base-100 flex flex-row sticky top-0 justify-between text-[12px]">
                               <p>Exchange</p>
                               <button
                                 onClick={() => {
@@ -448,7 +448,7 @@ export default function OrderDetailsPage() {
                             <div className="modal-action">
                               {exchangeSteps === "reason" && (
                                 <div className="p-4 w-full">
-                                  <h3 className="text-md mb-4">Why are you exchanging this item?</h3>
+                                  <h3 className="text-[12px] mb-4">Why are you exchanging this item?</h3>
                                   {/* visually hidden select for accessibility / to preserve original form-control if needed */}
                                   <div className="sr-only">
                                     <label>
@@ -487,7 +487,7 @@ export default function OrderDetailsPage() {
                                         </div>
                                         <div>
                                           <div className="font-semibold">Damaged or Defective Product</div>
-                                          <div className="text-sm text-gray-500">Not in good condition</div>
+                                          <div className="text-[10px] text-gray-500">Not in good condition</div>
                                         </div>
                                       </div>
                                     </button>
@@ -506,7 +506,7 @@ export default function OrderDetailsPage() {
                                         </div>
                                         <div>
                                           <div className="font-semibold">Wrong Product Delivered</div>
-                                          <div className="text-sm text-gray-500">Not what I ordered</div>
+                                          <div className="text-[10px] text-gray-500">Not what I ordered</div>
                                         </div>
                                       </div>
                                     </button>
@@ -524,7 +524,7 @@ export default function OrderDetailsPage() {
                                         </div>
                                         <div>
                                           <div className="font-semibold">Quality issues</div>
-                                          <div className="text-sm text-gray-500">Poor quality product</div>
+                                          <div className="text-[10px] text-gray-500">Poor quality product</div>
                                         </div>
                                       </div>
                                     </button>
@@ -542,7 +542,7 @@ export default function OrderDetailsPage() {
                                         </div>
                                         <div>
                                           <div className="font-semibold">Size & Fit Issues</div>
-                                          <div className="text-sm text-gray-500">Doesn't fit me well</div>
+                                          <div className="text-[10px] text-gray-500">Doesn't fit me well</div>
                                         </div>
                                       </div>
                                     </button>
@@ -590,28 +590,28 @@ export default function OrderDetailsPage() {
                                         </div>
                                         <div className="mx-1 py-2 lg:px-4">
                                           <div className="flex justify-between items-start">
-                                            <p className="text-left text-xs lg:text-xl text-[#585c70] font-semibold line-clamp-2">
+                                            <p className="text-left text-xs lg:text-[12px] text-[#585c70] font-semibold line-clamp-2">
                                               {product.title}
                                             </p>
                                           </div>
                                           {product.brand && (
-                                            <div className="listprice ecltext text-sm text-gray-500">
+                                            <div className="listprice ecltext text-[10px] text-gray-500">
                                               <span>{product.brand}</span>
                                             </div>
                                           )}
                                           {product.collections && product.collections.length > 0 ? (
-                                            <div className="listprice ecltext text-sm text-gray-500">
+                                            <div className="listprice ecltext text-[10px] text-gray-500">
                                               <span>{product.collections.join(", ")}</span>
                                             </div>
                                           ) : (
-                                            <div className="listprice ecltext text-sm text-gray-500">
+                                            <div className="listprice ecltext text-[10px] text-gray-500">
                                               <span className="line-clamp-1">{product.slug}</span>
                                             </div>
                                           )}
                                           <div>
                                             <div className="col-12 special-products_pricingicing">
                                               <div className="price-block">
-                                                <span className="offer font-semibold text-sm">
+                                                <span className="offer font-semibold text-[10px]">
                                                   ₹{product.priceFrom}
                                                 </span>
                                               </div>
@@ -641,7 +641,7 @@ export default function OrderDetailsPage() {
                                 <div>
                                   {productDetail && productDetail.product && (
                                     <div className="p-4">
-                                      <h3 className="text-xl font-bold mb-2">{productDetail.product.title}</h3>
+                                      <h3 className="text-[12px] font-bold mb-2">{productDetail.product.title}</h3>
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                           <Image
@@ -653,7 +653,7 @@ export default function OrderDetailsPage() {
                                           />
                                         </div>
                                         <div>
-                                          <p className="text-lg font-semibold">
+                                          <p className="text-[12px] font-semibold">
                                             Price: ₹{productDetail.product.priceFrom}
                                           </p>
                                           <div className="mt-4">
@@ -734,10 +734,10 @@ export default function OrderDetailsPage() {
 
                               {exchangeSteps === "payment" && (
                                 <div className="p-6 bg-white rounded-2xl shadow-lg space-y-4 text-center max-w-md mx-auto">
-                                  <h1 className="text-lg font-semibold text-gray-800">
+                                  <h1 className="text-[12px] font-semibold text-gray-800">
                                     Are you sure you want to exchange this item?
                                   </h1>
-                                  <p className="text-sm text-gray-500">
+                                  <p className="text-[10px] text-gray-500">
                                     We are currently accepting exchange requests on{" "}
                                     <span className="font-medium text-gray-700">Cash on Delivery (COD)</span> only.
                                   </p>
@@ -802,7 +802,7 @@ export default function OrderDetailsPage() {
                 <div className="card-body p-4 sm:p-6">
                   <h2 className="card-title mb-4">Shipping Address</h2>
                   <div className="text-gray-700">
-                    <p className="font-semibold text-lg">{order.shippingAddress.name}</p>
+                    <p className="font-semibold text-[12px]">{order.shippingAddress.name}</p>
                     <p>{order.shippingAddress.line1}</p>
                     {order.shippingAddress.line2 && <p>{order.shippingAddress.line2}</p>}
                     <p>
@@ -835,15 +835,15 @@ export default function OrderDetailsPage() {
                     </div>
                   )}
                   <div className="divider"></div>
-                  <div className="flex justify-between text-xl font-bold">
+                  <div className="flex justify-between text-[12px] font-bold">
                     <span>Total</span>
                     <span>₹{order.total}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-[10px] text-gray-600">
                     <span>Payment Method</span>
                     <span>{order.paymentMethod || "N/A"}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="flex justify-between text-[10px] text-gray-600">
                     <span>Payment Status</span>
                     <span className="capitalize">{order.payments[0].status == 'cod_pending' ? 'Pending' : order.payments[0].status || "N/A"}</span>
                   </div>

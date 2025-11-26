@@ -14,7 +14,7 @@ export default function ProfileCard() {
             </div>
             <span className="absolute bottom-0 right-0 block h-3.5 w-3.5 rounded-full border-2 border-white bg-green-500"></span>
           </div>
-          <span className="text-sm font-medium text-base-content">
+          <span className="text-[10px] font-medium text-base-content">
             {userName}
           </span>
         </div>

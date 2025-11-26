@@ -224,7 +224,7 @@ export default function ProfilePage() {
       <Navbar />
       <div className="container mx-auto p-4">
         <div className="hidden sm:block flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">My Profile</h1>
+          <h1 className="text-[12px] font-bold">My Profile</h1>
           <button onClick={handleLogout} className="btn btn-error">
             Logout
           </button>
@@ -487,7 +487,7 @@ export default function ProfilePage() {
                 <h2 className="card-title mb-6">My Wishlist</h2>
                 {!wishlistData || wishlistData.items?.length === 0 ? (
                   <div className="text-center py-8">
-                    <h3 className="text-lg font-semibold mb-2">Your wishlist is empty</h3>
+                    <h3 className="text-[12px] font-semibold mb-2">Your wishlist is empty</h3>
                     <p className="text-gray-600 mb-4">
                       Add some products to your wishlist to see them here
                     </p>
@@ -507,7 +507,7 @@ export default function ProfilePage() {
                             <div className="flex gap-4 flex-1 cursor-pointer">
                               <img src={item.product?.coverImage} alt={item.product?.title} onClick={() => router.push(`/products/${item.product._id}`)} className="w-24 h-24 object-cover rounded" />
                               <div className="flex flex-col justify-between align-middle">
-                                <h3 className="font-bold text-sm align-middle sm:text-lg" onClick={() => router.push(`/products/${item.product._id}`)}>{item.product?.title}</h3>
+                                <h3 className="font-bold text-[10px] align-middle sm:text-[12px]" onClick={() => router.push(`/products/${item.product._id}`)}>{item.product?.title}</h3>
                                 <p className="text-xs align-middle font-semibold mt-2">₹{item.product?.priceFrom}</p>
                                 <p className="text-xs align-middle font-semibold mt-2">{item.product?.category ? "item.product?.category" : "No Category"}</p>
                               </div>
@@ -567,7 +567,7 @@ export default function ProfilePage() {
                   </p>
                   {/* Placeholder for reviews list */}
                   <div className="text-center py-8">
-                    <h3 className="text-lg font-semibold mb-2">No reviews yet</h3>
+                    <h3 className="text-[12px] font-semibold mb-2">No reviews yet</h3>
                     <p className="text-gray-600 mb-4">
                       You haven't written any reviews yet.
                     </p>

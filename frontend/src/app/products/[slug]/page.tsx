@@ -46,6 +46,8 @@ export default function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [pinCode, setPinCode] = useState<string>("");
   const [selectedImage, setSelectedImage] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
   const [quantity] = useState(1);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewData, setReviewData] = useState({ rating: 5, body: "" });
@@ -177,12 +179,36 @@ export default function ProductDetailPage() {
   const images = product.product.images || [];
   const selectedVariant = product.variants.find((v: Variant) => v.size === selectedSize);
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const minSwipeDistance = 50;
+
+    if (distance > minSwipeDistance) {
+      // Swiped Left -> Previous
+      setSelectedImage((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+    } else if (distance < -minSwipeDistance) {
+      // Swiped Right -> Next
+      setSelectedImage((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+    }
+    setTouchEnd(0);
+    setTouchStart(0);
+  };
+
   return (
     <>
       <Navbar />
-      <div className="container mx-auto p-4">
+      <div className="container mx-auto p-1">
         {/* Breadcrumbs */}
-        <div className="breadcrumbs text-sm mb-4">
+        <div className="breadcrumbs text-[10px] text-gray-500 mb-4">
           <ul>
             <li><a onClick={() => router.push("/")}>Home</a></li>
             <li><a onClick={() => router.push("/products")}>Products</a></li>
@@ -193,29 +219,48 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Image Gallery */}
           <div>
-            <div className="mb-4">
-              <Image
-                src={images[selectedImage]?.url}
-                alt={product.product.title}
-                width={500}
-                height={500}
-                className="w-full h-[300px] sm:h-[400px] lg:h-[500px] object-cover rounded-lg"
-              />
+            <div
+              className="relative aspect-[2/3] w-full mb-2 overflow-hidden"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <div
+                className="flex h-full transition-transform duration-500 ease-out"
+                style={{ transform: `translateX(-${selectedImage * 100}%)` }}
+              >
+                {images.map((img: { url: string }, idx: number) => (
+                  <div key={idx} className="relative w-full h-full flex-shrink-0">
+                    <Image
+                      src={img.url}
+                      alt={`${product.product.title} - ${idx + 1}`}
+                      fill
+                      className="object-cover object-center"
+                      sizes="
+                        (min-width: 1440px) 500px,
+                        (min-width: 1024px) 450px,
+                        (min-width: 768px) 400px,
+                        300px
+                      "
+                      priority={idx === 0}
+                      loading={idx === 0 ? "eager" : "lazy"}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-2 overflow-x-auto">
+            <div className="flex gap-1 overflow-x-auto">
               {images.map((img: { url: string }, idx: number) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedImage(idx)}
-                  className={`flex-shrink-0 ${selectedImage === idx ? "ring-2 ring-primary" : ""
-                    }`}
-                >
+                  className="flex-shrink-0">
                   <Image
                     src={img.url}
                     alt={`${product.product.title} ${idx + 1}`}
                     width={80}
                     height={80}
-                    className="w-20 h-20 object-cover rounded"
+                    className="w-20 h-20 object-cover"
                   />
                 </button>
               ))}
@@ -224,42 +269,52 @@ export default function ProductDetailPage() {
 
           {/* Product Info */}
           <div>
-            <h1 className="lg:text-2xl font-semibold mb-2">{product.product.title}</h1>
+            <h1 className="text-[12px] text-[#707070] font-bold mb-2 uppercase tracking-wide">{product.product.title}</h1>
 
             {/* Price */}
-            <div className="flex items-center gap-4 mb-4">
-              <span className="text-lg lg:text-2xl lg:font-bold text-primary">
-                ₹{selectedVariant?.price || product.product.priceFrom}
+            <div className="mb-2">
+              <span className="text-[12px] text-[#545454] font-normal">
+                ₹ {selectedVariant?.price?.toLocaleString() || product.product.priceFrom?.toLocaleString()}
               </span>
             </div>
 
+            <p className="text-[10px] text-gray-500 mb-6">
+              Tax included. <span className="underline cursor-pointer">Shipping</span> calculated at checkout.
+            </p>
+
             {/* Size Selection */}
-            <div className="form-control mb-4">
-              <label className="label">
-                <span className="label-text mb-2 font-semibold">Select Size</span>
-              </label>
-              <div className="flex gap-2 flex-wrap">
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-3">
+                <span className="font-bold tracking-wide text-[10px]">SIZE</span>
+                <button className="text-[10px] underline flex items-center gap-1 text-gray-600 hover:text-black">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+                  SIZE GUIDE
+                </button>
+              </div>
+              <div className="grid grid-cols-6 gap-2">
                 {product.variants.map((variant: Variant) => (
                   <button
                     key={variant._id}
                     onClick={() => setSelectedSize(variant.size)}
                     disabled={variant.stock === 0}
-                    className={`btn ${selectedSize === variant.size
-                        ? "btn-primary"
-                        : "btn-outline"
-                      } ${variant.stock === 0 ? "btn-disabled" : ""}`}
+                    className={`h-8 p-4 flex items-center justify-center border text-xs transition-all duration-200
+                      ${selectedSize === variant.size
+                        ? "bg-black text-white border-black"
+                        : "bg-transparent text-black border-gray-200 hover:border-black"
+                      } 
+                      ${variant.stock === 0 ? "opacity-50 cursor-not-allowed decoration-slice line-through" : ""}
+                    `}
                   >
                     {variant.size}
-                    {variant.stock === 0 && " (Out)"}
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Check Serviceability */}
-            <div className="bg-base-300 border-base-300 collapse border">
+            <div className="bg-white border border-gray-200 collapse rounded-none mb-4">
               <input type="checkbox" className="peer" />
-              <div className="collapse-title">Check Serviceability</div>
+              <div className="collapse-title text-[12px]">Check Serviceability</div>
               <div className="collapse-content">
                 <div className="flex items-center gap-2">
                   <input
@@ -329,21 +384,21 @@ export default function ProductDetailPage() {
             </div> */}
 
             {/* Action Buttons */}
-            <div className="flex hidden sm:block gap-4 mb-6">
+            <div className="flex flex-col hidden sm:block gap-3 mb-8">
               <button
                 onClick={() => addToCartMutation.mutate()}
                 disabled={!selectedSize || addToCartMutation.isPending}
-                className="btn btn-primary flex-1"
+                className="w-full h-12 border border-black bg-white text-black hover:bg-gray-50 uppercase tracking-widest text-[10px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {addToCartMutation.isPending ? (
-                  <span className="loading loading-spinner"></span>
+                  <span className="loading loading-spinner loading-sm"></span>
                 ) : (
-                  "ADD TO CART"
+                  `ADD TO CART • ₹ ${selectedVariant?.price?.toLocaleString() || product.product.priceFrom?.toLocaleString()}`
                 )}
               </button>
               <button
                 onClick={() => addToWishlistMutation.mutate()}
-                className="btn btn-outline"
+                className="w-full h-12 mt-2 bg-black text-white hover:bg-gray-900 uppercase tracking-widest text-[10px] font-medium transition-colors"
               >
                 ADD TO WISHLIST
               </button>
@@ -352,13 +407,13 @@ export default function ProductDetailPage() {
         </div>
 
         {/* Description */}
-        <div className="bg-base-100 border-base-300 collapse border">
+        <div className="bg-white border-t border-b border-gray-200 collapse rounded-none">
           <input type="checkbox" className="peer" />
-          <div className="collapse-title flex flex-row justify-between items-center cursor-pointer font-semibold peer-checked:[&>p:last-child]:rotate-180"><p>PRODUCT DETAILS</p><p className="transition-transform duration-300"><FaChevronDown /></p></div>
+          <div className="collapse-title flex flex-row justify-between items-center cursor-pointer font-semibold peer-checked:[&>p:last-child]:rotate-180"><p className="text-[12px]">PRODUCT DETAILS</p><p className="transition-transform duration-300"><FaChevronDown /></p></div>
           <div className="collapse-content">
             {product.parent?.description && (
               <div className="prose">
-                <p className="text-sm lg:text-lg">{product.parent.description}</p>
+                <p className="text-[10px] lg:text-[12px]">{product.parent.description}</p>
               </div>
             )}
           </div>
@@ -371,10 +426,10 @@ export default function ProductDetailPage() {
         {/* Reviews Section */}
         <div className="mt-12">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-            <h2 className="text-xl sm:text-2xl font-bold">Customer Reviews</h2>
+            <h2 className="text-[12px] font-bold">Customer Reviews</h2>
             <button
               onClick={() => setShowReviewForm(!showReviewForm)}
-              className="btn btn-outline"
+              className="btn btn-outline text-[12px]"
             >
               Write a Review
             </button>
@@ -383,9 +438,9 @@ export default function ProductDetailPage() {
           {/* Review Form */}
           {showReviewForm && (
             <div className="card bg-base-200 p-6 mb-6">
-              <div className="form-control mb-4">
+              <div className="flex flex-col form-control mb-4">
                 <label className="label">
-                  <span className="label-text">Rating</span>
+                  <span className="label-text text-[12px]">Rating</span>
                 </label>
                 <div className="rating rating-lg">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -402,26 +457,26 @@ export default function ProductDetailPage() {
               </div>
               <div className="form-control mb-4">
                 <label className="label">
-                  <span className="label-text">Your Review</span>
+                  <span className="label-text text-[11px]">Your Review</span>
                 </label>
                 <textarea
-                  className="textarea textarea-bordered h-24"
+                  className="textarea textarea-bordered h-24 text-[10px]"
                   placeholder="Share your experience with this product..."
                   value={reviewData.body}
                   onChange={(e) => setReviewData({ ...reviewData, body: e.target.value })}
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-4">
                 <button
                   onClick={() => submitReviewMutation.mutate()}
                   disabled={submitReviewMutation.isPending}
-                  className="btn btn-primary"
+                  className="btn bg-black text-white text-[12px]"
                 >
                   {submitReviewMutation.isPending ? "Submitting..." : "Submit Review"}
                 </button>
                 <button
                   onClick={() => setShowReviewForm(false)}
-                  className="btn btn-outline"
+                  className="btn text-[12px] btn-outline"
                 >
                   Cancel
                 </button>
@@ -446,11 +501,11 @@ export default function ProductDetailPage() {
                         />
                       ))}
                     </div>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-[10px] text-gray-500 text-[12px]">
                       {new Date(review.createdAt).toLocaleDateString()}
                     </span>
                   </div>
-                  <p>{review.body}</p>
+                  <p className="text-[12px]">{review.body}</p>
                   {review.images && review.images.length > 0 && (
                     <div className="flex gap-2 mt-2">
                       {review.images.map((img: { url: string }, idx: number) => (
@@ -469,29 +524,25 @@ export default function ProductDetailPage() {
               </div>
             ))}
             {!reviewsData?.items?.length && (
-              <div className="text-center text-gray-500 py-8">
+              <div className="text-center text-[12px] text-gray-500 py-8">
                 No reviews yet. Be the first to review!
               </div>
             )}
           </div>
         </div>
-        <div className="flex md:hidden lg:hidden fixed justify-center p-4 bottom-0 left-0 mb-4 w-full bg-base-100 gap-4">
+        <div className="flex md:hidden lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 gap-3 z-50">
           <button
             onClick={() => addToCartMutation.mutate()}
             disabled={!selectedSize || addToCartMutation.isPending}
-            className="btn btn-primary"
+            className="flex-1 h-12 border border-black bg-white text-black uppercase text-xs font-bold tracking-wider disabled:opacity-50"
           >
-            {addToCartMutation.isPending ? (
-              <span className="loading loading-spinner"></span>
-            ) : (
-              "ADD TO CART"
-            )}
+            {addToCartMutation.isPending ? "..." : `ADD TO CART • ₹ ${selectedVariant?.price?.toLocaleString() || product.product.priceFrom?.toLocaleString()}`}
           </button>
           <button
             onClick={() => addToWishlistMutation.mutate()}
-            className="btn btn-outline"
+            className="flex-1 h-12 bg-black text-white uppercase text-xs font-bold tracking-wider"
           >
-            <FaRegHeart /> ADD TO WISHLIST
+            ADD TO WISHLIST
           </button>
         </div>
       </div>

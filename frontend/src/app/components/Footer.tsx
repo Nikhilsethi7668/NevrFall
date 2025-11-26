@@ -1,91 +1,109 @@
-"use client";
-import React from 'react';
+"use client"
+import { useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const Footer = () => {
+  useEffect(() => {
+    function autoLogin() {
+      const kwikPassText = document.getElementById('kwik-pass-text');
+      if (kwikPassText) {
+        kwikPassText.textContent = "ACCOUNT";
+      }
+    }
+
+    window.addEventListener('user-loggedin', function(event: any) {
+      const { token } = event?.detail;
+      if (token) {
+        autoLogin();
+      }
+    });
+
+    const userToken = localStorage.getItem('KWIKSESSIONTOKEN');
+    if (userToken) {
+      autoLogin();
+    }
+  }, []);
+
+  const kpHandleLogin = (route: string) => {
+    // Define the kpHandleLogin function logic here
+    console.log(`kpHandleLogin called with route: ${route}`);
+  };
+
   return (
-    <footer className="bg-base-100 text-base-content border-t border-base-300">
-      <div className="container mx-auto py-12 px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          <div className="col-span-1">
-            <h2 className="text-2xl font-bold mb-4">NevrFall</h2>
-            <p className="text-gray-400">
-              Discover the latest trends in fashion and accessories.
-            </p>
-          </div>
-          <div className="col-span-1">
-            <h6 className="font-semibold mb-4">Services</h6>
-            <nav className="flex flex-col space-y-2">
-              <Link href="/branding" className="link link-hover">
-                Branding
-              </Link>
-              <Link href="/design" className="link link-hover">
-                Design
-              </Link>
-              <Link href="/marketing" className="link link-hover">
-                Marketing
-              </Link>
-              <Link href="/advertisement" className="link link-hover">
-                Advertisement
-              </Link>
-            </nav>
-          </div>
-          <div className="col-span-1">
-            <h6 className="font-semibold mb-4">Company</h6>
-            <nav className="flex flex-col space-y-2">
-              <Link href="/about" className="link link-hover">
-                About us
-              </Link>
-              <Link href="/contact" className="link link-hover">
-                Contact
-              </Link>
-              <Link href="/jobs" className="link link-hover">
-                Jobs
-              </Link>
-              <Link href="/press-kit" className="link link-hover">
-                Press kit
-              </Link>
-            </nav>
-          </div>
-          <div className="col-span-1">
-            <h6 className="font-semibold mb-4">Legal</h6>
-            <nav className="flex flex-col space-y-2">
-              <Link href="/terms-of-use" className="link link-hover">
-                Terms of use
-              </Link>
-              <Link href="/privacy-policy" className="link link-hover">
-                Privacy policy
-              </Link>
-              <Link href="/cookie-policy" className="link link-hover">
-                Cookie policy
-              </Link>
-            </nav>
-          </div>
+    <footer
+      id="FooterMinimal"
+      className="py-8 border-t border-gray-200"
+      role="contentinfo"
+    >
+      <div className="px-8">
+        <div className="text-center">
+          <Link href="/" className="inline-block">
+            <Image
+              src="//gryape.com/cdn/shop/files/Untitled_Artwork_2_9.svg?crop=center&height=450&v=1737709164&width=2165"
+              alt="GRYAPE"
+              width="2165"
+
+              height="450"
+              loading="lazy"
+            />
+          </Link>
         </div>
-        {/* <div className="mt-12 border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between">
-          <div className="mb-4 md:mb-0">
-            <h6 className="font-semibold mb-2">Join our newsletter</h6>
-            <p className="text-gray-400">
-              Stay up to date with our latest news and promotions.
-            </p>
+      </div>
+
+      <div className="pt-4 pb-4 px-8 text-center">
+        <div>
+          <div className="flex flex-col items-center">
+            <div className="flex flex-wrap justify-center">
+              <Link href="/pages/about-us" className="mx-2 text-gray-500 text-[9px] hover:text-black">
+                ABOUT US
+              </Link>
+              <Link href="/pages/contact" className="mx-2 text-gray-500 text-[9px] hover:text-black">
+                CONTACT US
+              </Link>
+              <Link
+                href="/pages/client-services"
+                className="mx-2 text-gray-500 text-[9px] hover:text-black"
+              >
+                CLIENT SERVICES
+              </Link>
+              <Link href="/pages/shipping-policy" className="mx-2 text-gray-500 text-[9px] hover:text-black">
+                SHIPPING
+              </Link>
+              <Link href="/pages/faq" className="mx-2 text-gray-500 text-[9px] hover:text-black">
+                FAQ
+              </Link>
+              <Link
+                href="/pages/terms-and-conditions"
+                className="mx-2 text-gray-500 text-[9px] hover:text-black"
+              >
+                TERMS
+              </Link>
+              <Link href="/pages/careers" className="mx-2 text-gray-500 text-[9px] hover:text-black">
+                CAREERS
+              </Link>
+              <Link
+                href="#"
+                className="mx-2 text-gray-500 text-[9px] hover:text-black cursor-pointer"
+                id="kwik-pass-text"
+                onClick={() => kpHandleLogin('/account')}
+              >
+                ACCOUNT
+              </Link>
+              <Link
+                href="https://gryape.com/apps/return_prime"
+                className="mx-2 text-gray-500 text-[9px] hover:text-black"
+              >
+                PLACE AN EXCHANGE
+              </Link>
+              <Link
+                href="https://gryape.com/pages/return-exchange"
+                className="mx-2 text-gray-500 text-[9px] hover:text-black"
+              >
+                EXCHANGE POLICY
+              </Link>
+            </div>
           </div>
-          <form>
-            <fieldset className="form-control w-full md:w-80">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="username@site.com"
-                  className="input input-bordered w-full pr-16"
-                />
-                <button className="btn btn-primary absolute top-0 right-0 rounded-l-none">
-                  Subscribe
-                </button>
-              </div>
-            </fieldset>
-          </form>
-        </div> */}
-        <div className="mt-8 text-center text-gray-500">
-          <p>&copy; {new Date().getFullYear()} NevrFall. All rights reserved.</p>
         </div>
       </div>
     </footer>

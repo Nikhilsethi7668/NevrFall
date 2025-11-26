@@ -154,7 +154,7 @@ function ReturnPageContent() {
       <Navbar />
       <div className="container mx-auto p-4">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">Request Return</h1>
+          <h1 className="text-[12px] font-bold mb-6">Request Return</h1>
 
           {/* Order Info */}
           <div className="card bg-base-100 shadow mb-6">
@@ -194,7 +194,7 @@ function ReturnPageContent() {
                     />
                     <div className="flex-1">
                       <h3 className="font-semibold">{item.title}</h3>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-[10px] text-gray-600">
                         Size: {item.size} | Color: {item.color} | Qty: {item.quantity}
                       </p>
                       <p className="font-semibold">₹{item.price}</p>
@@ -281,7 +281,7 @@ function ReturnPageContent() {
           <div className="card bg-base-200 shadow mb-6">
             <div className="card-body">
               <h2 className="card-title">Return Policy</h2>
-              <ul className="list-disc list-inside space-y-2 text-sm">
+              <ul className="list-disc list-inside space-y-2 text-[10px]">
                 <li>Returns are accepted within 30 days of delivery</li>
                 <li>Items must be in original condition with tags attached</li>
                 <li>Return shipping will be arranged by us</li>

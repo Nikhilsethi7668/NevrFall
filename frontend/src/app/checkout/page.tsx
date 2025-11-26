@@ -157,7 +157,7 @@ export default function CheckoutPage() {
     <>
       <Navbar />
       <div className="container mx-auto p-4">
-        <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+        <h1 className="text-[12px] font-bold mb-8">Checkout</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Order Summary */}
@@ -175,11 +175,11 @@ export default function CheckoutPage() {
                         className="w-16 h-16 object-cover rounded"
                       />
                       <div className="flex-1">
-                        <p className="text-sm font-semibold">{item.title}</p>
+                        <p className="text-[10px] font-semibold">{item.title}</p>
                         <p className="text-xs text-gray-600">
                           {item.size} × {item.quantity}
                         </p>
-                        <p className="text-sm font-bold">₹{item.price * item.quantity}</p>
+                        <p className="text-[10px] font-bold">₹{item.price * item.quantity}</p>
                       </div>
                     </div>
                   ))}
@@ -197,7 +197,7 @@ export default function CheckoutPage() {
                     <span className="text-success">FREE</span>
                   </div>
                   <div className="divider"></div>
-                  <div className="flex justify-between text-xl font-bold">
+                  <div className="flex justify-between text-[12px] font-bold">
                     <span>Total</span>
                     <span>₹{subtotal.toFixed(2)}</span>
                   </div>

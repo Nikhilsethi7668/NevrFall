@@ -126,7 +126,7 @@ export default function OrdersPage() {
       <Navbar />
       <div className="container mx-auto p-4">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6">
-          <h1 className="text-3xl font-bold mb-4 sm:mb-0">My Orders</h1>
+          <h1 className="text-[12px] font-bold mb-4 sm:mb-0">My Orders</h1>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -144,7 +144,7 @@ export default function OrdersPage() {
 
         {orders && orders.length === 0 ? (
           <div className="text-center py-16">
-            <h2 className="text-2xl font-bold mb-4">No orders found</h2>
+            <h2 className="text-[12px] font-bold mb-4">No orders found</h2>
             <p className="text-gray-600 mb-8">
               {statusFilter === "all"
                 ? "You haven't placed any orders yet"
@@ -161,8 +161,8 @@ export default function OrdersPage() {
                 <div className="card-body p-4 sm:p-6">
                   <div className="flex flex-row justify-between sm:items-start mb-4">
                     <div className="mb-4 sm:mb-0">
-                      <h3 className="text-lg font-semibold">Order #{order._id.slice(-6)}</h3>
-                      <p className="text-sm text-gray-600">
+                      <h3 className="text-[12px] font-semibold">Order #{order._id.slice(-6)}</h3>
+                      <p className="text-[10px] text-gray-600">
                         Placed on {new Date(order.createdAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -170,7 +170,7 @@ export default function OrdersPage() {
                       <div className={`badge ${getStatusBadge(order.status)} mb-1`}>
                         {getStatusText(order.status)}
                       </div>
-                      <p className="text-lg font-bold">₹{order?.total}</p>
+                      <p className="text-[12px] font-bold">₹{order?.total}</p>
                     </div>
                   </div>
 
@@ -190,9 +190,9 @@ export default function OrdersPage() {
 
                               {/* Content */}
                               <div className="flex-1">
-                                <h3 className="font-bold text-sm sm:text-lg">{item.title}</h3>
+                                <h3 className="font-bold text-[10px] sm:text-[12px]">{item.title}</h3>
 
-                                <p className="text-sm text-gray-600">
+                                <p className="text-[10px] text-gray-600">
                                   Color: {item.color} | Size: {item.size}
                                 </p>
 
@@ -201,7 +201,7 @@ export default function OrdersPage() {
 
                                   {/* Quantity (read-only, as in orders) */}
                                   <div className="flex items-center md:gap-2 lg:gap-2 mt-1">
-                                    <span className="text-sm">Qty:</span>
+                                    <span className="text-[10px]">Qty:</span>
                                     <span className="w-8 text-center font-medium">{item.quantity}</span>
                                   </div>
                                 </div>
@@ -218,7 +218,7 @@ export default function OrdersPage() {
                   {order.shippingAddress && (
                     <div className="mb-4">
                       <h4 className="font-semibold mb-2">Shipping Address</h4>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-[10px] text-gray-600">
                         <p>{order.shippingAddress.name}</p>
                         <p>{order.shippingAddress.line1}</p>
                         {order.shippingAddress.line2 && <p>{order.shippingAddress.line2}</p>}

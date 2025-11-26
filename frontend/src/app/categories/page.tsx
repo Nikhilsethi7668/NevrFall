@@ -68,8 +68,8 @@ export default function CategoriesPage() {
               }`}
             >
               <div className="card-body text-center p-4">
-                <div className="text-3xl mb-2">{category.icon}</div>
-                <h3 className="font-semibold text-sm">{category.name}</h3>
+                <div className="text-[12px] mb-2">{category.icon}</div>
+                <h3 className="font-semibold text-[10px]">{category.name}</h3>
               </div>
             </button>
           ))}
@@ -78,7 +78,7 @@ export default function CategoriesPage() {
         {/* Category Products */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">
+            <h2 className="text-[12px] font-bold">
               {categories.find(c => c.id === selectedCategory)?.name || "All Products"}
             </h2>
             <Link
@@ -95,7 +95,7 @@ export default function CategoriesPage() {
             </div>
           ) : products.length === 0 ? (
             <div className="text-center py-16">
-              <h3 className="text-xl font-semibold mb-4">No products found</h3>
+              <h3 className="text-[12px] font-semibold mb-4">No products found</h3>
               <p className="text-gray-600 mb-8">
                 Try selecting a different category or browse all products
               </p>
@@ -119,14 +119,14 @@ export default function CategoriesPage() {
                       />
                     </figure>
                     <div className="card-body">
-                      <h2 className="card-title text-lg">{product.title}</h2>
-                      <p className="text-sm text-gray-600">{product.brand}</p>
+                      <h2 className="card-title text-[12px]">{product.title}</h2>
+                      <p className="text-[10px] text-gray-600">{product.brand}</p>
                       <div className="flex items-center gap-2">
-                        <span className="text-xl font-bold text-primary">
+                        <span className="text-[12px] font-bold text-primary">
                           ₹{product.priceFrom}
                         </span>
                         {product.compareAtFrom && (
-                          <span className="text-sm line-through text-gray-500">
+                          <span className="text-[10px] line-through text-gray-500">
                             ₹{product.compareAtFrom}
                           </span>
                         )}
@@ -148,7 +148,7 @@ export default function CategoriesPage() {
         {facetsData?.brands && facetsData.brands.length > 0 && (
           <div className="card bg-base-100 shadow">
             <div className="card-body">
-              <h2 className="card-title text-2xl mb-6">Popular Brands</h2>
+              <h2 className="card-title text-[12px] mb-6">Popular Brands</h2>
               <div className="flex flex-wrap gap-4">
                 {facetsData.brands.map((brand: string) => (
                   <button

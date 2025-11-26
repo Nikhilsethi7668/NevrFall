@@ -107,7 +107,7 @@ export default function ReturnDetailsPage() {
       <Navbar />
       <div className="container mx-auto p-4">
         {/* Breadcrumbs */}
-        <div className="breadcrumbs text-sm mb-6">
+        <div className="breadcrumbs text-[10px] mb-6">
           <ul>
             <li>
               <Link href="/">Home</Link>
@@ -127,7 +127,7 @@ export default function ReturnDetailsPage() {
               <div className="card-body">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h1 className="text-2xl font-bold">
+                    <h1 className="text-[12px] font-bold">
                       Return Request #{returnItem.returnNumber || returnItem._id.slice(-8)}
                     </h1>
                     <p className="text-gray-600">
@@ -138,10 +138,10 @@ export default function ReturnDetailsPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <div className={`badge ${getStatusBadge(returnItem.status)} text-lg`}>
+                    <div className={`badge ${getStatusBadge(returnItem.status)} text-[12px]`}>
                       {getStatusText(returnItem.status)}
                     </div>
-                    <p className="text-2xl font-bold mt-2">₹{returnItem.refundAmount || "0"}</p>
+                    <p className="text-[12px] font-bold mt-2">₹{returnItem.refundAmount || "0"}</p>
                   </div>
                 </div>
               </div>
@@ -178,7 +178,7 @@ export default function ReturnDetailsPage() {
                         className="w-20 h-20 object-cover rounded"
                       />
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{item.title}</h3>
+                        <h3 className="font-semibold text-[12px]">{item.title}</h3>
                         <p className="text-gray-600">
                           Brand: {item.product?.brand || "N/A"}
                         </p>
@@ -186,10 +186,10 @@ export default function ReturnDetailsPage() {
                           Size: {item.size} | Color: {item.color}
                         </p>
                         <p className="text-gray-600">Quantity: {item.quantity}</p>
-                        <p className="text-lg font-bold">₹{item.price}</p>
+                        <p className="text-[12px] font-bold">₹{item.price}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold">
+                        <p className="text-[12px] font-bold">
                           ₹{(item.price * item.quantity).toFixed(2)}
                         </p>
                       </div>
@@ -220,7 +220,7 @@ export default function ReturnDetailsPage() {
                   {returnItem.pickupAddress && (
                     <div>
                       <strong>Pickup Address:</strong>
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="text-[10px] text-gray-600 mt-1">
                         <p>{returnItem.pickupAddress.name}</p>
                         <p>{returnItem.pickupAddress.line1}</p>
                         {returnItem.pickupAddress.line2 && <p>{returnItem.pickupAddress.line2}</p>}
