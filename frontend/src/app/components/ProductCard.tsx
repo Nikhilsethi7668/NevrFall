@@ -73,7 +73,7 @@ export default function ProductCard({
             <button
               onClick={handleAddToWishlist}
               aria-label="Add to wishlist"
-              className={`absolute top-2 right-3 z-10 rounded-full p-2 shadow-sm focus:outline-none transform transition-transform duration-200 ${isHovered ? "scale-110" : "scale-100"
+              className={`absolute top-2 right-3 z-10 p-2 focus:outline-none transform transition-transform duration-200 ${isHovered ? "scale-110" : "scale-100"
                 }`}
             >
               <FaRegHeart size={10} />

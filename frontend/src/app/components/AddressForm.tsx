@@ -37,12 +37,12 @@ export default function AddressForm({ onSave, onCancel }: AddressFormProps) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="form-control">
         <label className="label">
-          <span className="label-text">Street</span>
+          <span className="label-text text-[10px] text-gray-600">Street</span>
         </label>
         <input
           type="text"
           name="street"
-          className="input input-bordered"
+          className="input input-bordered text-[10px] text-gray-600"
           value={address.street}
           onChange={handleChange}
           required
@@ -50,12 +50,12 @@ export default function AddressForm({ onSave, onCancel }: AddressFormProps) {
       </div>
       <div className="form-control">
         <label className="label">
-          <span className="label-text">City</span>
+          <span className="label-text text-[10px] text-gray-600">City</span>
         </label>
         <input
           type="text"
           name="city"
-          className="input input-bordered"
+          className="input input-bordered text-[10px] text-gray-600"
           value={address.city}
           onChange={handleChange}
           required
@@ -63,12 +63,12 @@ export default function AddressForm({ onSave, onCancel }: AddressFormProps) {
       </div>
       <div className="form-control">
         <label className="label">
-          <span className="label-text">State</span>
+          <span className="label-text text-[10px] text-gray-600">State</span>
         </label>
         <input
           type="text"
           name="state"
-          className="input input-bordered"
+          className="input input-bordered text-[10px] text-gray-600"
           value={address.state}
           onChange={handleChange}
           required
@@ -76,12 +76,12 @@ export default function AddressForm({ onSave, onCancel }: AddressFormProps) {
       </div>
       <div className="form-control">
         <label className="label">
-          <span className="label-text">Zip Code</span>
+          <span className="label-text text-[10px] text-gray-600">Zip Code</span>
         </label>
         <input
           type="text"
           name="zip"
-          className="input input-bordered"
+          className="input input-bordered text-[10px] text-gray-600"
           value={address.zip}
           onChange={handleChange}
           required
@@ -89,22 +89,22 @@ export default function AddressForm({ onSave, onCancel }: AddressFormProps) {
       </div>
       <div className="form-control">
         <label className="label">
-          <span className="label-text">Country</span>
+          <span className="label-text text-[10px] text-gray-600">Country</span>
         </label>
         <input
           type="text"
           name="country"
-          className="input input-bordered"
+          className="input input-bordered text-[10px] text-gray-600"
           value={address.country}
           onChange={handleChange}
           required
         />
       </div>
       <div className="flex gap-2">
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="btn bg-black text-white text-[10px]">
           Save
         </button>
-        <button type="button" onClick={onCancel} className="btn btn-outline">
+        <button type="button" onClick={onCancel} className="btn btn-outline text-[10px] text-gray-600">
           Cancel
         </button>
       </div>

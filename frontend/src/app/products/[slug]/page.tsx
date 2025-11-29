@@ -418,6 +418,23 @@ export default function ProductDetailPage() {
             )}
           </div>
         </div>
+        
+        <div className="bg-white border-b border-gray-200 collapse rounded-none">
+          <input type="checkbox" className="peer" />
+          <div className="collapse-title flex flex-row justify-between items-center cursor-pointer font-semibold peer-checked:[&>p:last-child]:rotate-180">
+            <p className="text-[12px] font-bold text-gray-600">RETURN AND EXCHANGE POLICY</p>
+            <p className="transition-transform duration-300">
+              <FaChevronDown />
+            </p>
+          </div>
+          <div className="collapse-content">
+            <div className="prose">
+              <p className="text-[10px] font-bold text-gray-600">
+                This product is eligible for returns and size exchanges. Please note that returns are accepted only for unused products with all original tags intact. Exchanges are subject to stock availability.
+              </p>
+            </div>
+          </div>
+        </div>
 
 
         {/* Product Recomendations */}

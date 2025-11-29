@@ -130,15 +130,15 @@ export default function OrdersPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="select select-bordered w-full p-2 sm:w-auto"
+            className="select select-bordered text-[10px] text-gray-600 font-bold w-full p-2 sm:w-auto"
           >
-            <option value="all">All Orders</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="shipped">Shipped</option>
-            <option value="delivered">Delivered</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="returned">Returned</option>
+            <option className="text-[10px] text-gray-600 font-bold" value="all">All Orders</option>
+            <option className="text-[10px] text-gray-600 font-bold" value="pending">Pending</option>
+            <option className="text-[10px] text-gray-600 font-bold" value="confirmed">Confirmed</option>
+            <option className="text-[10px] text-gray-600 font-bold" value="shipped">Shipped</option>
+            <option className="text-[10px] text-gray-600 font-bold" value="delivered">Delivered</option>
+            <option className="text-[10px] text-gray-600 font-bold" value="cancelled">Cancelled</option>
+            <option className="text-[10px] text-gray-600 font-bold" value="returned">Returned</option>
           </select>
         </div>
 
@@ -150,7 +150,7 @@ export default function OrdersPage() {
                 ? "You haven't placed any orders yet"
                 : `No ${statusFilter} orders found`}
             </p>
-            <Link href="/products" className="btn btn-primary">
+            <Link href="/products" className="btn bg-black text-[10px] text-white">
               Start Shopping
             </Link>
           </div>
@@ -167,7 +167,7 @@ export default function OrdersPage() {
                       </p>
                     </div>
                     <div className="text-left sm:text-right">
-                      <div className={`badge ${getStatusBadge(order.status)} mb-1`}>
+                      <div className={`badge text-[10px] font-bold ${getStatusBadge(order.status)} mb-1`}>
                         {getStatusText(order.status)}
                       </div>
                       <p className="text-[12px] font-bold">₹{order?.total}</p>
@@ -247,7 +247,7 @@ export default function OrdersPage() {
                           }
                         }}
                         disabled={cancelOrderMutation.isPending}
-                        className="btn btn-error btn-sm w-full sm:w-auto"
+                        className="btn bg-black text-[10px] text-white btn-sm w-full sm:w-auto"
                       >
                         Cancel Order
                       </button>
@@ -255,7 +255,7 @@ export default function OrdersPage() {
                     {order.status === "delivered" && (
                       <Link
                         href={`/return?orderId=${order._id}`}
-                        className="btn btn-warning btn-sm w-full sm:w-auto"
+                        className="btn bg-black text-[10px] text-white btn-sm w-full sm:w-auto"
                       >
                         Return
                       </Link>

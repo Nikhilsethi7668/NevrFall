@@ -81,7 +81,7 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      <div className="hero min-h-[78vh] relative">
+      <div className="hero min-h-[100vh] relative">
         <video
           className="absolute inset-0 w-full h-full object-cover"
           src="/hero.mp4"

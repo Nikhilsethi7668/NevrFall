@@ -563,7 +563,7 @@ export default function OrderDetailsPage() {
 
                                   {/* Continue button (same logic) */}
                                   <button
-                                    className="btn btn-primary w-full"
+                                    className="btn bg-black text-[10px] text-white w-full"
                                     onClick={() => setExchangeSteps("selectOrder")}
                                     disabled={!exchangeReason}
                                   >
@@ -663,7 +663,7 @@ export default function OrderDetailsPage() {
                                                 productDetail.variants.map((variant: IVariant) => (
                                                   <button
                                                     key={variant._id}
-                                                    className={`btn ${selectedProduct.skuId === variant.sku ? "btn-primary" : "btn-outline"
+                                                    className={`btn ${selectedProduct.skuId === variant.sku ? "bg-black text-[10px] text-white" : "btn-outline"
                                                       }`}
                                                     onClick={() => {
                                                       setSelectedProduct((prev) => ({
@@ -779,7 +779,7 @@ export default function OrderDetailsPage() {
                                         (document.getElementById("my_modal_5") as HTMLDialogElement)?.close();
                                         setExchangeSteps("selectOrder");
                                       }}
-                                      className="btn btn-primary btn-sm w-24"
+                                      className="btn bg-black text-[10px] text-white btn-sm w-24"
                                     >
                                       Yes
                                     </button>
@@ -866,7 +866,7 @@ export default function OrderDetailsPage() {
                         }
                       }}
                       disabled={cancelOrderMutation.isPending}
-                      className="btn btn-error w-full"
+                      className="btn bg-black text-[10px] text-white w-full"
                     >
                       {cancelOrderMutation.isPending ? "Cancelling..." : "Cancel Order"}
                     </button>
@@ -885,7 +885,7 @@ export default function OrderDetailsPage() {
                     Back to Orders
                   </Link>
 
-                  <Link href="/products" className="btn btn-primary w-full">
+                  <Link href="/products" className="btn bg-black text-[10px] text-white w-full">
                     Continue Shopping
                   </Link>
                 </div>

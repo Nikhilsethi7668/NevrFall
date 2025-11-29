@@ -274,7 +274,7 @@ export default function ProfilePage() {
                   </li>
                   <li>
                     <button
-                      onClick={() => setActiveTab("orders")}
+                      onClick={() => router.push("/orders")}
                       className={`btn btn-ghost justify-start ${activeTab === "orders" ? "btn-active" : ""
                         }`}
                     >
@@ -283,7 +283,7 @@ export default function ProfilePage() {
                   </li>
                   <li>
                     <button
-                      onClick={() => setActiveTab("refunds")}
+                      onClick={() => router.push("/returns")}
                       className={`btn btn-ghost justify-start ${activeTab === "refunds" ? "btn-active" : ""
                         }`}
                     >
@@ -319,31 +319,31 @@ export default function ProfilePage() {
             {activeTab === "overview" && (
               <div className="card bg-base-100 shadow">
                 <div className="card-body">
-                  <h2 className="card-title mb-6">Overview</h2>
+                  <h2 className="card-title text-[12px] mb-6">Overview</h2>
                   <div className="grid grid-cols-2 gap-4">
                     <div onClick={() => setActiveTab('profile')} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
-                      <IoPerson size={30} />
-                      <p>Manage Your Profile</p>
+                      <IoPerson size={22} />
+                      <p className='text-gray-600 font-bold text-[10px]'>Manage Your Profile</p>
                     </div>
                     <div onClick={() => setActiveTab('wishlist')} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
-                      <BsBagHeartFill size={30} />
-                      <p>Check Your Wishlist</p>
+                      <BsBagHeartFill size={22} />
+                      <p className='text-gray-600 font-bold text-[10px]'>Check Your Wishlist</p>
                     </div>
-                    <div onClick={() => setActiveTab('orders')} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
-                      <FaBox size={30} />
-                      <p>Track and manage your orders</p>
+                    <div onClick={() => router.push("/orders")} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
+                      <FaBox size={22} />
+                      <p className='text-gray-600 font-bold text-[10px]'>Track and manage your orders</p>
                     </div>
-                    <div onClick={() => setActiveTab('refunds')} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
-                      <LuBadgeIndianRupee size={30} />
-                      <p>Track your refunds</p>
+                    <div onClick={() => router.push("/returns")} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
+                      <LuBadgeIndianRupee size={22} />
+                      <p className='text-gray-600 font-bold text-[10px]'>Track your refunds</p>
                     </div>
                     <div onClick={() => setActiveTab('reviews')} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
-                      <FaStar size={30} />
-                      <p>Manage Your reviews</p>
+                      <FaStar size={22} />
+                      <p className='text-gray-600 font-bold text-[10px]'>Manage Your reviews</p>
                     </div>
                     <div onClick={() => setActiveTab('wallet')} className="card bg-base-200 justify-center py-6 gap-2 cursor-pointer text-center items-center hover:scale-105 hover:bg-base-300">
-                      <FaStar size={30} />
-                      <p>Amount in your wallet</p>
+                      <FaStar size={22} />
+                      <p className='text-gray-600 font-bold text-[10px]'>Amount in your wallet</p>
                     </div>
                   </div>
                 </div>
@@ -354,10 +354,10 @@ export default function ProfilePage() {
               <div className="card bg-base-100 shadow">
                 <div className="card-body">
                   <div className="flex justify-between items-center mb-6">
-                    <h2 className="card-title">Profile Information</h2>
+                    <h2 className="card-title text-[12px]">Profile Information</h2>
                     <button
                       onClick={() => setIsEditing(!isEditing)}
-                      className="btn btn-outline"
+                      className="btn btn-outline text-[10px] text-gray-600"
                     >
                       {isEditing ? "Cancel" : "Edit"}
                     </button>
@@ -366,11 +366,11 @@ export default function ProfilePage() {
                   <div className="space-y-4">
                     <div className="form-control">
                       <label className="label">
-                        <span className="label-text">Name</span>
+                        <span className="label-text text-[10px] text-gray-600">Name</span>
                       </label>
                       <input
                         type="text"
-                        className="input input-bordered"
+                        className="input input-bordered text-[10px] text-gray-600"
                         value={profileData.name}
                         onChange={(e) =>
                           setProfileData({ ...profileData, name: e.target.value })
@@ -381,11 +381,11 @@ export default function ProfilePage() {
 
                     <div className="form-control">
                       <label className="label">
-                        <span className="label-text">Email</span>
+                        <span className="label-text text-[10px] text-gray-600">Email</span>
                       </label>
                       <input
                         type="email"
-                        className="input input-bordered"
+                        className="input input-bordered text-[10px] text-gray-600"
                         value={profileData.email}
                         onChange={(e) =>
                           setProfileData({ ...profileData, email: e.target.value })
@@ -396,11 +396,11 @@ export default function ProfilePage() {
 
                     <div className="form-control">
                       <label className="label">
-                        <span className="label-text">Phone</span>
+                        <span className="label-text text-[10px] text-gray-600">Phone</span>
                       </label>
                       <input
                         type="tel"
-                        className="input input-bordered"
+                        className="input input-bordered text-[10px] text-gray-600"
                         value={profileData.phone}
                         onChange={(e) =>
                           setProfileData({ ...profileData, phone: e.target.value })
@@ -414,13 +414,13 @@ export default function ProfilePage() {
                         <button
                           onClick={handleSaveProfile}
                           disabled={updateProfileMutation.isPending}
-                          className="btn btn-primary"
+                          className="btn bg-black text-white text-[10px]"
                         >
                           {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
                         </button>
                         <button
                           onClick={() => setIsEditing(false)}
-                          className="btn btn-outline"
+                          className="btn btn-outline text-[10px]"
                         >
                           Cancel
                         </button>
@@ -435,10 +435,10 @@ export default function ProfilePage() {
               <div className="card bg-base-100 shadow">
                 <div className="card-body">
                   <div className="flex justify-between items-center mb-6">
-                    <h2 className="card-title">My Addresses</h2>
+                    <h2 className="card-title text-[12px] text-gray-600">My Addresses</h2>
                     <button
                       onClick={() => setIsAddingAddress(true)}
-                      className="btn btn-primary"
+                      className="btn bg-black text-white text-[10px]"
                     >
                       Add Address
                     </button>
@@ -455,11 +455,11 @@ export default function ProfilePage() {
                     {addressesData && addressesData.length > 0 && addressesData?.map((address: any) => (
                       <div key={address._id} className="card bg-base-200">
                         <div className="card-body">
-                          <h2 className="card-title">{address.name}</h2>
-                          <p>{address.phone}</p>
-                          <p>{address.line1}</p>
-                          {address.line2 && <p>{address.line2}</p>}
-                          <p>
+                          <h2 className="card-title text-[10px] text-gray-600">{address.name}</h2>
+                          <p className="text-[10px] text-gray-600">{address.phone}</p>
+                          <p className="text-[10px] text-gray-600">{address.line1}</p>
+                          {address.line2 && <p className="text-[10px] text-gray-600">{address.line2}</p>}
+                          <p className="text-[10px] text-gray-600">
                             {address.city}, {address.state} {address.pincode}
                           </p>
                           <div className="card-actions justify-end">
@@ -468,7 +468,7 @@ export default function ProfilePage() {
                                 onClick={() =>
                                   makeDefaultAddressMutation.mutate(address._id)
                                 }
-                                className="btn btn-xs btn-outline"
+                                className="btn btn-xs text-[10px] text-gray-600 btn-outline"
                               >
                                 Make Default
                               </button>
@@ -623,7 +623,7 @@ export default function ProfilePage() {
             </button>
             <FaChevronRight className='mr-2' />
           </li>
-          <li onClick={() => setActiveTab("orders")} className="flex flex-row justify-between rounded p-2 items-center mb-2">
+          <li onClick={() => router.push("/orders")} className="flex flex-row justify-between rounded p-2 items-center mb-2">
             <button
               className='btn btn-ghost justify-start'
             >
@@ -631,7 +631,7 @@ export default function ProfilePage() {
             </button>
             <FaChevronRight className='mr-2' />
           </li>
-          <li onClick={() => setActiveTab("refunds")} className="flex flex-row justify-between rounded p-2 items-center mb-2">
+          <li onClick={() => router.push("/returns")} className="flex flex-row justify-between rounded p-2 items-center mb-2">
             <button
               className='btn btn-ghost justify-start'
             >
