@@ -15,7 +15,7 @@ import { CiMenuBurger } from "react-icons/ci";
 import { IoSearchSharp } from "react-icons/io5";
 import { useCategoryStore } from '../store/useCategoryStore';
 import { MdPersonOutline } from "react-icons/md";
-import { PiShoppingCartSimpleBold } from "react-icons/pi";
+import { FaBagShopping } from "react-icons/fa6";
 
 const Navbar = () => {
   const { categories, fetchCategories } = useCategoryStore();
@@ -269,7 +269,7 @@ const Navbar = () => {
             onClick={() => router.push('/cart')}
           >
             <div className="indicator">
-              <PiShoppingCartSimpleBold size={22} />
+              <FaBagShopping size={22} />
               {cartData && cartData.count > 0 && (
                 <span className="badge badge-xs badge-primary indicator-item">
                   {cartData.count}
