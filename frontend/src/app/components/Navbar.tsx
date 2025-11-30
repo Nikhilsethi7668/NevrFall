@@ -147,8 +147,8 @@ const Navbar = () => {
                 }`}
               >
                 <div className="flex justify-between items-center mb-6">
-                  <Link href="/" className="drawer__logo">
-                    <span className="text-2xl font-bold">NevrFall</span>
+                  <Link href="/" className="drawer__logo w-[130px]">
+                    <img src='/logo.svg' alt='nevrfall'/>
                   </Link>
                   <button onClick={() => setSidebar(false)} className="btn btn-ghost btn-circle">
                     <IoClose size={24} />
@@ -232,7 +232,7 @@ const Navbar = () => {
         </div>
 
         <div className={`navbar-center ${isScrolled ? 'text-black' : 'text-white'}`}>
-          <Link href="/" className="text-lg sm:text-xl font-semibold uppercase tracking-wide">NevrFall</Link>
+          <Link href="/" className="text-lg sm:text-xl font-semibold uppercase tracking-wide"><img src='/logo.svg' alt='nevrfall' className='w-[130px]'/></Link>
         </div>
 
         <div className="flex flex-row justify-end items-center gap-1">

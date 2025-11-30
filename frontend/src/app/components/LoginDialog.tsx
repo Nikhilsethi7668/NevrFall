@@ -13,6 +13,7 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
   const router = useRouter();
   const [step, setStep] = useState<"request" | "verify" | "loggedin" | "updateProfile">("request");
   const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [otp, setOtp] = useState("");
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -20,9 +21,23 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPhone(value);
+    const phoneRegex = /^(?:(?:\+|0{0,2})91(\s*[\-]\s*)?|[0]?)?[6789]\d{9}$/;
+    if (value && !phoneRegex.test(value)) {
+      setPhoneError("Please enter a valid 10-digit mobile number.");
+    } else {
+      setPhoneError("");
+    }
+  };
+
   // Request OTP
   const handleRequestOtp = async () => {
-    if (!phone) return setMessage("Please enter phone number");
+    if (!phone || phoneError) {
+      setMessage("Please enter a valid phone number");
+      return;
+    }
     setLoading(true);
     setMessage("");
     const URL = SEND_OTP;
@@ -150,7 +165,7 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
         <Dialog.Content className="fixed top-1/2 left-1/2 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-lg p-6">
-          <Dialog.Title className="text-[12px] font-semibold text-center text-secondary mb-4">
+          <Dialog.Title className="text-[12px] font-semibold text-center text-black mb-4">
             Sign In
           </Dialog.Title>
 
@@ -160,10 +175,15 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
                 type="tel"
                 placeholder="+911234567890"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="input input-bordered w-full mb-3"
+                onChange={handlePhoneChange}
+                className="input input-sm text-[12px] input-bordered w-full mb-1"
               />
-              <button className="btn btn-primary w-full" onClick={handleRequestOtp}>
+              {phoneError && <p className="text-red-500 text-xs mb-2">{phoneError}</p>}
+              <button
+                className="btn bg-black text-white text-[12px] w-full"
+                onClick={handleRequestOtp}
+                disabled={!!phoneError || !phone}
+              >
                 Request OTP
               </button>
             </div>

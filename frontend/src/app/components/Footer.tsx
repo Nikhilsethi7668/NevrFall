@@ -40,7 +40,7 @@ const Footer = () => {
         <div className="text-center">
           <Link href="/" className="inline-block">
             <Image
-              src="//gryape.com/cdn/shop/files/Untitled_Artwork_2_9.svg?crop=center&height=450&v=1737709164&width=2165"
+              src="/logo.svg"
               alt="GRYAPE"
               width="2165"
 

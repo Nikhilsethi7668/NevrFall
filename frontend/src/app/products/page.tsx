@@ -82,7 +82,7 @@ function ProductsPageContent() {
         {/* --- Header with search and sort --- */}
         <div className="bg-base-100 border-b py-3 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-            <div className="flex flex-row items-center gap-2">
+            <div className="flex flex-row justify-between items-center gap-2">
               <select
                 value={filters.sort || 'newest'}
                 onChange={(e) => handleFilterChange({ ...filters, sort: e.target.value })}

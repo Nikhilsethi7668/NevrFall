@@ -194,10 +194,10 @@ export default function ProductDetailPage() {
 
     if (distance > minSwipeDistance) {
       // Swiped Left -> Previous
-      setSelectedImage((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+      setSelectedImage((prev) => (prev < images.length - 1 ? prev + 1 : 0));
     } else if (distance < -minSwipeDistance) {
       // Swiped Right -> Next
-      setSelectedImage((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+      setSelectedImage((prev) => (prev > 0 ? prev - 1 : images.length - 1));
     }
     setTouchEnd(0);
     setTouchStart(0);
@@ -314,12 +314,12 @@ export default function ProductDetailPage() {
             {/* Check Serviceability */}
             <div className="bg-white border border-gray-200 collapse rounded-none mb-4">
               <input type="checkbox" className="peer" />
-              <div className="collapse-title text-[12px]">Check Serviceability</div>
+              <div className="collapse-title text-[12px] uppercase text-gray-600 font-bold">Check Serviceability</div>
               <div className="collapse-content">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <input
                     type="text"
-                    className="input input-bordered w-full"
+                    className="input input-bordered input-sm text-[10px] w-full"
                     value={pinCode}
                     onChange={(e) => {
                       let value = e.target.value.replace(/\D/g, "");
@@ -336,7 +336,7 @@ export default function ProductDetailPage() {
                         handleCheckServiceability();
                       }
                     }}
-                    className={`btn ${pinCode.length === 6 ? "btn-primary" : "btn-outline"}`}
+                    className={`btn btn-sm text-[10px] ${pinCode.length === 6 ? "bg-black text-white" : "btn-outline"}`}
                   >
                     Check Serviceability
                   </button>
@@ -409,7 +409,7 @@ export default function ProductDetailPage() {
         {/* Description */}
         <div className="bg-white border-t border-b border-gray-200 collapse rounded-none">
           <input type="checkbox" className="peer" />
-          <div className="collapse-title flex flex-row justify-between items-center cursor-pointer font-semibold peer-checked:[&>p:last-child]:rotate-180"><p className="text-[12px]">PRODUCT DETAILS</p><p className="transition-transform duration-300"><FaChevronDown /></p></div>
+          <div className="collapse-title flex flex-row justify-between items-center cursor-pointer font-semibold peer-checked:[&>p:last-child]:rotate-180"><p className="text-[12px] text-gray-600">PRODUCT DETAILS</p><p className="transition-transform duration-300"><FaChevronDown /></p></div>
           <div className="collapse-content">
             {product.parent?.description && (
               <div className="prose">
