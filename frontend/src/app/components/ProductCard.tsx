@@ -59,7 +59,6 @@ export default function ProductCard({
   return (
     <div
       className={`group bg-base-100 overflow-hidden pb-3 transition-shadow hover:shadow-md ${className}`}
-      className={`group bg-base-100 overflow-hidden pb-3 transition-shadow hover:shadow-md ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
