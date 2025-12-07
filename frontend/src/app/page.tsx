@@ -13,6 +13,7 @@ import TrendingGrid from "./components/TrendingGrid";
 import TopCategories from "./components/TopCategories";
 import { useState, useEffect } from "react";
 import { useInView } from "react-intersection-observer";
+import { usePageLoad } from "./context/PageLoadContext";
 
 export default function Home() {
   const [quickFilter, setQuickFilter] = useState("Jacket");
@@ -22,6 +23,7 @@ export default function Home() {
     threshold: 0,
     rootMargin: '-56px 0px 0px 0px'
   });
+  const { setPageReady } = usePageLoad();
 
   // Infinite Scroll Query
   const {
@@ -55,6 +57,17 @@ export default function Home() {
   useEffect(() => {
     setIsSticky(!isStickyInView);
   }, [isStickyInView]);
+
+  // Signal page is ready when initial data loads
+  useEffect(() => {
+    if (status === 'success' && data?.pages?.[0]?.items?.length > 0) {
+      // Give a small delay to ensure images start loading
+      const timer = setTimeout(() => {
+        setPageReady();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [status, data, setPageReady]);
 
   return (
     <>
