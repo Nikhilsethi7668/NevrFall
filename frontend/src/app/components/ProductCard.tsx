@@ -18,6 +18,7 @@ interface ProductCardProps {
     title: string;
     brand?: string;
     coverImage?: string;
+    hoverImage?: string;
     priceFrom: number;
     compareAtFrom?: number;
     variants?: Variant[];
@@ -35,6 +36,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const queryClient = useQueryClient();
   const [isHovered, setIsHovered] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
   // Add to wishlist mutation
   const addToWishlistMutation = useMutation({
@@ -44,12 +46,11 @@ export default function ProductCard({
       toast.success("Added to wishlist!");
     },
     onError: (error: Error) => {
-      alert(error.message || "Failed to add to wishlist");
+      console.error("Failed to add to wishlist:", error);
     },
   });
 
   const handleAddToWishlist = (e: React.MouseEvent) => {
-    // prevent Link navigation when clicking heart
     e.preventDefault();
     e.stopPropagation();
     addToWishlistMutation.mutate();
@@ -57,6 +58,7 @@ export default function ProductCard({
 
   return (
     <div
+      className={`group bg-base-100 overflow-hidden pb-3 transition-shadow hover:shadow-md ${className}`}
       className={`group bg-base-100 overflow-hidden pb-3 transition-shadow hover:shadow-md ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -80,6 +82,7 @@ export default function ProductCard({
             </button>
           )}
 
+          {/* Main Image */}
           <Image
             src={product.coverImage || "/placeholder.png"}
             alt={product.title}
@@ -93,7 +96,23 @@ export default function ProductCard({
             className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
             priority={false}
             loading="lazy"
+            decoding="async"
           />
+
+          {/* Hover Image (if available) */}
+          {product.hoverImage && (
+            <Image
+              src={product.hoverImage}
+              alt={`${product.title} - alternate view`}
+              fill
+              sizes="(min-width: 1440px) calc((100vw - 120px - 60px) / 4), (min-width: 1024px) calc((100vw - 120px - 60px) / 4), (min-width: 768px) calc((100vw - 40px - 40px) / 3), calc((100vw - 40px - 20px) / 2)"
+              className={`object-cover object-center transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'
+                }`}
+              priority={false}
+              loading="lazy"
+              decoding="async"
+            />
+          )}
         </div>
 
         {/* Content area */}
@@ -101,17 +120,14 @@ export default function ProductCard({
           <p className="text-left text-[9px] text-gray-600 leading-none uppercase tracking-widest font-semibold line-clamp-2">
             {product.title}
           </p>
-
-          <div className=" flex items-center justify-between">
+          <div className="flex items-center justify-between">
             <div>
-              <span className="block tracking-widest text-[11px]">₹ {product.priceFrom}</span>
+              <span className="block text-[11px]">₹{product.priceFrom}</span>
             </div>
-
-            {/* small chevron or placeholder for alignment — remove if not needed */}
-            <div className="text-right text-xs text-muted hidden lg:block"> &nbsp;</div>
           </div>
         </div>
       </Link>
     </div>
   );
 }
+

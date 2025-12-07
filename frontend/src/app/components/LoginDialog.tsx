@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
 import { useProfileStore } from "../store/useProfileStore";
 
 export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) {
-  const {setIsLoggedIn} = useProfileStore();
+  const { setIsLoggedIn } = useProfileStore();
   const router = useRouter();
   const [step, setStep] = useState<"request" | "verify" | "loggedin" | "updateProfile">("request");
   const [phone, setPhone] = useState("");
@@ -81,16 +81,16 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
         localStorage.setItem(USER_ID_KEY, data.user.id);
         setUser(data.user);
         setIsLoggedIn(true);
-        if(data.user.name === "User"){
+        if (data.user.name === "User") {
           setStep("updateProfile");
-        }else{
+        } else {
           localStorage.setItem(USER_NAME, data.user.name);
           localStorage.setItem(USER_EMAIL, data.user.email);
           setStep("loggedin");
           setTimeout(() => {
-          setOpen(false);
-          window.location.reload();
-        }, 1500);
+            setOpen(false);
+            window.location.reload();
+          }, 1500);
         }
       } else {
         setMessage(data.error || "Invalid OTP");
@@ -115,7 +115,7 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
           "Content-Type": "application/json",
           Authorization: `Bearer ${secureLocalStorage.getItem(AUTH_TOKEN_KEY)}`,
         },
-        body: JSON.stringify({ name: userName, email: email}),
+        body: JSON.stringify({ name: userName, email: email }),
       });
       const data = await res.json();
       if (res.ok) {

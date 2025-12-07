@@ -1,8 +1,9 @@
 'use client';
 import Link from 'next/link';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter, usePathname } from 'next/navigation';
 import { useRouter, usePathname } from 'next/navigation';
 import { cartAPI, authAPI, productAPI } from '@/services/api';
 import LoginDialog from "./LoginDialog";
@@ -78,10 +79,8 @@ const Navbar = () => {
     setMounted(true);
     const token = secureLocalStorage.getItem('auth_token');
     const userId = localStorage.getItem('userId');
-    const storedUserName = localStorage.getItem('userName');
     if (token && userId) {
       setIsLoggedIn(true);
-      setUserName(storedUserName);
     }
   }, []);
 
@@ -115,7 +114,6 @@ const Navbar = () => {
       localStorage.removeItem('userName');
       setIsLoggedIn(false);
       setUser(null);
-      setUserName(null);
       router.push('/');
     } catch (error) {
       console.error('Logout error:', error);
@@ -123,11 +121,43 @@ const Navbar = () => {
   };
 
   const closeDrawer = () => {
-    const drawer = document.getElementById('my-drawer-1') as HTMLInputElement | null;
-    if (drawer) {
-      drawer.checked = false;
-    }
+    setSidebar(false);
   };
+
+  const navItems: NavItem[] = useMemo(() => {
+    const dynamicCollections: NavItem[] = collections.map((col: any) => ({
+      _id: `col-${col._id}`,
+      name: col.name,
+      href: `/products?collections=${col.slug || col.name}`,
+    }));
+
+    const dynamicCategories: NavItem = {
+      _id: 'cat-parent',
+      name: 'Categories',
+      children: categories.map((cat: any) => ({
+        _id: `cat-${cat._id}`,
+        name: cat.name,
+        href: `/products?categories=${cat.name}`,
+      })),
+    };
+
+    const supportItems: NavItem = {
+      _id: 'support-parent',
+      name: 'Support',
+      children: [
+        { _id: 'support-1', name: 'Track Order', href: '/orders' },
+        { _id: 'support-2', name: 'Return/Exchange', href: '/return' },
+        { _id: 'support-3', name: 'FAQ', href: '/faq' },
+      ],
+    };
+
+    return [
+      ...dynamicCollections,
+      dynamicCategories,
+      { _id: 'static-1', name: 'All Products', href: '/products' },
+      supportItems,
+    ];
+  }, [collections, categories]);
 
   return (
     <>
@@ -150,6 +180,7 @@ const Navbar = () => {
                   <Link href="/" className="drawer__logo w-[130px]">
                     <img src='/logo.svg' alt='nevrfall'/>
                   </Link>
+                  <button onClick={() => setSidebar(false)} className="btn btn-ghost btn-circle">
                   <button onClick={() => setSidebar(false)} className="btn btn-ghost btn-circle">
                     <IoClose size={24} />
                   </button>
@@ -215,7 +246,37 @@ const Navbar = () => {
                     My Account
                   </Link>
 
+                      <ul className="flex flex-row justify-between items-center mb-4">
+                        <li>
+                          <Link href="/profile" onClick={() => { setActiveTab(""); closeDrawer(); }} className="mobile-navlink text-[10px] text-gray-500 tracking-widest">
+                            My Profile
+                          </Link>
+                        </li>
+                        <li>
+                          <Link href="/orders" onClick={() => { setActiveTab("orders"); closeDrawer(); }} className="mobile-navlink text-[10px] text-gray-500 tracking-widest">
+                            My Orders
+                          </Link>
+                        </li>
+                        <li>
+                          <Link href="/returns" onClick={() => { setActiveTab("returns"); closeDrawer(); }} className="mobile-navlink text-[10px] text-gray-500 tracking-widest">
+                            My Returns
+                          </Link>
+                        </li>
+                      </ul>
+                  )}
+
+                  <Link href="/profile" onClick={() => { setActiveTab(""); closeDrawer(); }} className="mobile-navlink text-[10px] text-gray-500 font-bold tracking-widest">
+                    My Account
+                  </Link>
+
                   {isLoggedIn ? (
+                    <button onClick={() => { handleLogout(); closeDrawer(); }} className="mobile-navlink text-[10px] text-left text-gray-500 font-bold tracking-widest">
+                      Log out
+                    </button>
+                  ) : (
+                    <div onClick={closeDrawer}>
+                      <LoginDialog open={open} setOpen={setOpen} />
+                    </div>
                     <button onClick={() => { handleLogout(); closeDrawer(); }} className="mobile-navlink text-[10px] text-left text-gray-500 font-bold tracking-widest">
                       Log out
                     </button>
@@ -228,19 +289,45 @@ const Navbar = () => {
               </div>
             </>
           )}
+            </>
+          )}
           </div>
         </div>
 
         <div className={`navbar-center ${isScrolled ? 'text-black' : 'text-white'}`}>
           <Link href="/" className="text-lg sm:text-xl font-semibold uppercase tracking-wide"><img src='/logo.svg' alt='nevrfall' className='w-[130px]'/></Link>
+        <div className={`navbar-center ${isScrolled ? 'text-black' : 'text-white'}`}>
+          <Link href="/" className="text-lg sm:text-xl font-semibold uppercase tracking-wide"><img src='/logo.svg' alt='nevrfall' className='w-[130px]'/></Link>
         </div>
 
+        <div className="flex flex-row justify-end items-center gap-1">
         <div className="flex flex-row justify-end items-center gap-1">
 
           <button className="btn btn-ghost btn-circle" onClick={() => router.push('/search')}>
             <IoSearchSharp size={22} />
           </button>
 
+          {isLoggedIn ? (
+            <div className="dropdown dropdown-end">
+              <div tabIndex={0} role="button" className="btn btn-ghost btn-circle">
+                <div className="">
+                  <MdPersonOutline size={22} />
+                </div>
+              </div>
+              <ul
+                tabIndex={0}
+                className="menu menu-sm dropdown-content text-gray-600 bg-base-100 z-1 mt-3 w-40 p-2 shadow"
+              >
+                <li><Link className='text-gray-600 text-[10px]' href="/profile">My Profile</Link></li>
+                <li><Link className='text-gray-600 text-[10px]' href="/orders">My Orders</Link></li>
+                <li><Link className='text-gray-600 text-[10px]' href="/returns">My Returns</Link></li>
+                <li><button className='text-gray-600 text-[10px]' onClick={handleLogout}>Logout</button></li>
+              </ul>
+            </div>
+          ) : (
+            <div>
+              <LoginDialog open={open} setOpen={setOpen} />
+            </div>
           {isLoggedIn ? (
             <div className="dropdown dropdown-end">
               <div tabIndex={0} role="button" className="btn btn-ghost btn-circle">
@@ -270,6 +357,7 @@ const Navbar = () => {
           >
             <div className="indicator">
               <FaBagShopping size={22} />
+              <FaBagShopping size={22} />
               {cartData && cartData.count > 0 && (
                 <span className="badge badge-xs badge-primary indicator-item">
                   {cartData.count}
@@ -279,6 +367,7 @@ const Navbar = () => {
           </button>
 
           <button
+            className="btn btn-ghost btn-circle hidden sm:block"
             className="btn btn-ghost btn-circle hidden sm:block"
             onClick={() => { setActiveTab('wishlist'); router.push('/profile'); }}
           >

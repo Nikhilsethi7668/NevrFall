@@ -2,7 +2,10 @@ import { ThemeProvider } from './components/ThemeRegistry';
 import "./globals.css";
 import Providers from './components/Providers';
 import { ToastContainer } from 'react-toastify';
-import Preloader from './components/Preloader';
+import { Inter, Oswald } from 'next/font/google';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const oswald = Oswald({ subsets: ['latin'], variable: '--font-oswald' });
 
 export default function RootLayout({
   children,
@@ -11,8 +14,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning={true}>
-      <body>
-        <ThemeProvider attribute="data-theme" defaultTheme="gryape">
+      <body className={`${inter.variable} ${oswald.variable} font-sans antialiased`}>
+        <ThemeProvider attribute="data-theme" defaultTheme="light">
           <Providers>
             <Preloader />
             <ToastContainer />

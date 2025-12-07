@@ -6,7 +6,8 @@ import Category from "../Models/Category.js";
 import Collection from "../Models/Collection.js";
 import ProductVariant from "../Models/ProductVariant.js";
 import Cart from "../Models/Cart.js";
-import WishlistItem from "../Models/WishlistItem.js";
+//import WishlistItem from "../Models/Wishlist.js";
+import WishlistItem from "../Models/WishlistItem.js"
 import Review from "../Models/Review.js";
 import { redis } from "../lib/redis.js";
 import { cacheGet as redisGet, cacheSet as redisSet } from "../lib/cache.js";
@@ -25,12 +26,12 @@ const toNum = (v, d) => (v !== undefined && v !== null ? Number(v) : d);
 const toArr = (v) =>
   typeof v === "string"
     ? v
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
     : Array.isArray(v)
-    ? v
-    : [];
+      ? v
+      : [];
 
 const encodeCursor = (obj) =>
   Buffer.from(JSON.stringify(obj)).toString("base64");
@@ -128,12 +129,12 @@ const buildFilter = async (q) => {
   // price range applies to priceFrom (handle both price and priceMin/priceMax)
   const priceMin = toNum(q.priceMin, null);
   let priceMax = toNum(q.priceMax, null);
-  
+
   // If single 'price' param is provided, use it as max
   if (q.price && priceMax === null) {
     priceMax = toNum(q.price, null);
   }
-  
+
   if (priceMin !== null || priceMax !== null) {
     filter.priceFrom = {};
     if (priceMin !== null) filter.priceFrom.$gte = priceMin;
@@ -240,8 +241,8 @@ const afterBySort = (cursor, config) => {
     return field === "publishAt"
       ? { publishAt: v }
       : field === "_id"
-      ? { _id: v }
-      : { [field]: v };
+        ? { _id: v }
+        : { [field]: v };
   };
 
   const ladders = [];
@@ -325,10 +326,10 @@ export const getColorVariantFeed = async (req, res) => {
         sortKey === "new"
           ? { publishAt: -1, _id: -1 }
           : sortKey === "price_asc"
-          ? { priceFrom: 1, _id: 1 }
-          : sortKey === "price_desc"
-          ? { priceFrom: -1, _id: -1 }
-          : { purchases: -1, clicks: -1, publishAt: -1, _id: -1 }
+            ? { priceFrom: 1, _id: 1 }
+            : sortKey === "price_desc"
+              ? { priceFrom: -1, _id: -1 }
+              : { purchases: -1, clicks: -1, publishAt: -1, _id: -1 }
       )
       .limit(P)
       .lean();
@@ -390,12 +391,12 @@ export const getAllProducts = async (req, res) => {
   const nextCursor =
     items.length === limit
       ? encodeCursor({
-          _id: last?._id,
-          publishAt: last?.publishAt,
-          priceFrom: last?.priceFrom,
-          purchases: last?.purchases,
-          clicks: last?.clicks,
-        })
+        _id: last?._id,
+        publishAt: last?.publishAt,
+        priceFrom: last?.priceFrom,
+        purchases: last?.purchases,
+        clicks: last?.clicks,
+      })
       : null;
 
   const withCardVariant = await Promise.all(
@@ -435,12 +436,12 @@ export const getProductsByFilter = async (req, res) => {
   const nextCursor =
     items.length === limit
       ? encodeCursor({
-          _id: last?._id,
-          publishAt: last?.publishAt,
-          priceFrom: last?.priceFrom,
-          purchases: last?.purchases,
-          clicks: last?.clicks,
-        })
+        _id: last?._id,
+        publishAt: last?.publishAt,
+        priceFrom: last?.priceFrom,
+        purchases: last?.purchases,
+        clicks: last?.clicks,
+      })
       : null;
 
   const withCardVariant = await Promise.all(
@@ -733,9 +734,9 @@ export const getProductsBySearch = async (req, res) => {
   const nextCursor =
     items.length === limit
       ? encodeCursor({
-          score: items[items.length - 1].score ?? 0,
-          _id: items[items.length - 1]._id,
-        })
+        score: items[items.length - 1].score ?? 0,
+        _id: items[items.length - 1]._id,
+      })
       : null;
 
   const payload = { items: withCardVariant, nextCursor, limit, q };
@@ -856,9 +857,9 @@ export const getNewArrivals = async (req, res) => {
   const nextCursor =
     items.length === limit
       ? encodeCursor({
-          publishAt: items[items.length - 1].publishAt,
-          _id: items[items.length - 1]._id,
-        })
+        publishAt: items[items.length - 1].publishAt,
+        _id: items[items.length - 1]._id,
+      })
       : null;
 
   const payload = { items: withCardVariant, nextCursor, limit };
@@ -895,9 +896,9 @@ export const getFeatured = async (req, res) => {
   const nextCursor =
     items.length === limit
       ? encodeCursor({
-          publishAt: items[items.length - 1].publishAt,
-          _id: items[items.length - 1]._id,
-        })
+        publishAt: items[items.length - 1].publishAt,
+        _id: items[items.length - 1]._id,
+      })
       : null;
 
   const payload = { items: withCardVariant, nextCursor, limit };
@@ -972,9 +973,9 @@ export const getTrending = async (req, res) => {
   const nextCursor =
     items.length === limit
       ? encodeCursor({
-          publishAt: items[items.length - 1].publishAt,
-          _id: items[items.length - 1]._id,
-        })
+        publishAt: items[items.length - 1].publishAt,
+        _id: items[items.length - 1]._id,
+      })
       : null;
 
   const payload = { items: withCardVariant, nextCursor, limit };
@@ -1067,9 +1068,9 @@ export const getVariantByKey = async (req, res) => {
   const query = sku
     ? { sku: String(sku) }
     : {
-        product: new mongoose.Types.ObjectId(productId),
-        size: String(size).toUpperCase(),
-      };
+      product: new mongoose.Types.ObjectId(productId),
+      size: String(size).toUpperCase(),
+    };
 
   const variant = await ProductVariant.findOne(query)
     .select("sku size price compareAtPrice stock product")

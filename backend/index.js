@@ -33,14 +33,14 @@ app.set("trust proxy", 1);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const isProd = process.env.PRODUCTION === "true";
+const isProd = process.env.PRODUCTION === "false";
 app.use(
   cors({
     origin: [
       "http://localhost:3000",
       "http://localhost:5173",
-      // env.process.CLIENT_URL,
-      // env.process.ADMIN_URL
+      env.process.CLIENT_URL,
+      env.process.ADMIN_URL
     ],
     credentials: true,
   })

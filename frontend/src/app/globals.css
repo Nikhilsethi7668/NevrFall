@@ -9,3 +9,71 @@ body { font-family: Helvetica, Arial, sans-serif; }
 .section { padding-block: 3rem; }
 .section-title { font-weight: 700; letter-spacing: -0.01em; }
 
+/* Mobile Navigation Styles */
+.list--unstyled {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mobile-nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mobile-nav__item {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.mobile-nav__item[data-level="2"] {
+  padding-left: 1rem;
+}
+
+.mobile-nav__item[data-level="3"] {
+  padding-left: 2rem;
+}
+
+.mobile-nav__link {
+  display: block;
+  padding: 1rem 0;
+  text-decoration: none;
+  color: #333;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color 0.2s ease;
+}
+
+.mobile-nav__link:hover {
+  color: #000;
+}
+
+.mobile-nav__link.heading.h6 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.animated-plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 300;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.collapsible {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.drawer__content {
+  flex: 1;
+  overflow-y: auto;
+}
+

@@ -550,8 +550,8 @@ export const adminReceiveAndProcessRefund = async (req, res) => {
         const walletAmountToCredit = !isGatewayOnly
           ? finalRefund
           : refundResults.fallbackToWallet
-          ? finalRefund
-          : 0;
+            ? finalRefund
+            : 0;
 
         if (walletAmountToCredit > 0) {
           const walletTx = await creditUserWallet(

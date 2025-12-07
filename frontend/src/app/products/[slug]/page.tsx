@@ -254,7 +254,9 @@ export default function ProductDetailPage() {
                 <button
                   key={idx}
                   onClick={() => setSelectedImage(idx)}
-                  className="flex-shrink-0">
+                  className={`flex-shrink-0 ${selectedImage === idx ? "ring-2 ring-primary" : ""
+                    }`}
+                >
                   <Image
                     src={img.url}
                     alt={`${product.product.title} ${idx + 1}`}
@@ -269,7 +271,7 @@ export default function ProductDetailPage() {
 
           {/* Product Info */}
           <div>
-            <h1 className="text-[12px] text-[#707070] font-bold mb-2 uppercase tracking-wide">{product.product.title}</h1>
+            <h1 className="lg:text-2xl font-semibold mb-2">{product.product.title}</h1>
 
             {/* Price */}
             <div className="mb-2">
@@ -297,13 +299,10 @@ export default function ProductDetailPage() {
                     key={variant._id}
                     onClick={() => setSelectedSize(variant.size)}
                     disabled={variant.stock === 0}
-                    className={`h-8 p-4 flex items-center justify-center border text-xs transition-all duration-200
-                      ${selectedSize === variant.size
-                        ? "bg-black text-white border-black"
-                        : "bg-transparent text-black border-gray-200 hover:border-black"
-                      } 
-                      ${variant.stock === 0 ? "opacity-50 cursor-not-allowed decoration-slice line-through" : ""}
-                    `}
+                    className={`btn ${selectedSize === variant.size
+                        ? "btn-primary"
+                        : "btn-outline"
+                      } ${variant.stock === 0 ? "btn-disabled" : ""}`}
                   >
                     {variant.size}
                   </button>
@@ -413,7 +412,7 @@ export default function ProductDetailPage() {
           <div className="collapse-content">
             {product.parent?.description && (
               <div className="prose">
-                <p className="text-[10px] lg:text-[12px]">{product.parent.description}</p>
+                <p className="text-sm lg:text-lg">{product.parent.description}</p>
               </div>
             )}
           </div>
