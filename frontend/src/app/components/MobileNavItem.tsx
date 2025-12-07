@@ -36,8 +36,8 @@ const MobileNavItem = ({ item, level, delay, isSidebarOpen, closeDrawer }: Mobil
 
   return (
     <li
-      className={`mobile-nav__item transform transition-all duration-300 ease-out ${
-        isSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'
+      className={`mobile-nav__item transform transition-all duration-500 ease-out ${
+        isSidebarOpen ? 'translate-x-0 translate-y-0 opacity-100' : '-translate-x-full -translate-y-4 opacity-0'
       }`}
       style={{ transitionDelay: `${delay}ms` }}
       data-level={level}

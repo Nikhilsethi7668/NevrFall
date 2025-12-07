@@ -1,0 +1,96 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nevrfal-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=${PORT:-8080}
+      - MONGO_URI=${MONGO_URI}
+      - CLIENT_URL=${CLIENT_URL:-http://localhost:3000}
+      - ADMIN_URL=${ADMIN_URL:-http://localhost:5173}
+      - PRODUCTION=${PRODUCTION:-true}
+      - REDIS_HOST=${REDIS_HOST:-}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - JWT_SECRET=${JWT_SECRET}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-eu-north-1}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
+      - PAYU_MERCHANT_KEY=${PAYU_MERCHANT_KEY}
+      - PAYU_MERCHANT_SALT=${PAYU_MERCHANT_SALT}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - SHIPROCKET_BASE_URL=${SHIPROCKET_BASE_URL:-}
+      - SHIPROCKET_EMAIL=${SHIPROCKET_EMAIL:-}
+      - SHIPROCKET_PASSWORD=${SHIPROCKET_PASSWORD:-}
+      - SHIPROCKET_PICKUP_LOCATION=${SHIPROCKET_PICKUP_LOCATION:-Primary}
+      - SHIPROCKET_CHANNEL_ID=${SHIPROCKET_CHANNEL_ID:-}
+      - WAREHOUSE_NAME=${WAREHOUSE_NAME:-}
+      - WAREHOUSE_PHONE=${WAREHOUSE_PHONE:-}
+      - WAREHOUSE_ADDRESS_LINE1=${WAREHOUSE_ADDRESS_LINE1:-}
+      - WAREHOUSE_CITY=${WAREHOUSE_CITY:-}
+      - WAREHOUSE_STATE=${WAREHOUSE_STATE:-}
+      - WAREHOUSE_PINCODE=${WAREHOUSE_PINCODE:-}
+      - WAREHOUSE_EMAIL=${WAREHOUSE_EMAIL:-}
+    networks:
+      - nevrfal-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:8080/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    container_name: nevrfal-frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - nevrfal-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  nevrfal-network:
+    driver: bridge

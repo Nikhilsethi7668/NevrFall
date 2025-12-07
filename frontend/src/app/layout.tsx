@@ -3,6 +3,7 @@ import "./globals.css";
 import Providers from './components/Providers';
 import { ToastContainer } from 'react-toastify';
 import { Inter, Oswald } from 'next/font/google';
+import Preloader from './components/Preloader';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const oswald = Oswald({ subsets: ['latin'], variable: '--font-oswald' });
