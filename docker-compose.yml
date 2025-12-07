@@ -35,7 +35,7 @@ services:
       - REDIS_PORT=13685
       - REDIS_USERNAME=default
       - REDIS_PASSWORD=GM0y4QlJ1hHxoW7xMckJL6Ssk2l8gMbk
-      - REDIS_TLS=true
+      - REDIS_TLS=false
 
       - DELHIVERY_TOKEN=5b0c262a84480f05e7f9124185f419d8d393da9f
 
