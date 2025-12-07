@@ -8,7 +8,7 @@ import { wishlistAPI } from "@/services/api";
 import { FaRegHeart, FaHeart } from "react-icons/fa";
 import { toast } from "react-toastify";
 import secureLocalStorage from "react-secure-storage";
-import { addToGuestWishlist, removeFromGuestWishlist, isInGuestWishlist } from "@/utils/guestStorage";
+import { useGuestStore } from "@/app/store/useGuestStore";
 
 interface Variant {
   _id: string;
@@ -41,7 +41,10 @@ export default function ProductCard({
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check authentication status
+  // Zustand store for guest wishlist
+  const { isInGuestWishlist, addToGuestWishlist, removeFromGuestWishlist } = useGuestStore();
+
+  // Check authentication status and wishlist state
   useEffect(() => {
     const token = secureLocalStorage.getItem('auth_token');
     setIsAuthenticated(!!token);
@@ -50,7 +53,7 @@ export default function ProductCard({
     if (!token) {
       setIsWishlisted(isInGuestWishlist(product._id));
     }
-  }, [product._id]);
+  }, [product._id, isInGuestWishlist]);
 
   // Add to wishlist mutation (for authenticated users)
   const addToWishlistMutation = useMutation({

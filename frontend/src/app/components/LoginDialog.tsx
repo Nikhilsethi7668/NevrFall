@@ -7,7 +7,7 @@ import { LOGOUT, SEND_OTP, VERIFY_OTP, AUTH_TOKEN_KEY, USER_ID_KEY, UPDATE_PROFI
 import * as Dialog from "@radix-ui/react-dialog";
 import { toast } from "react-toastify";
 import { useProfileStore } from "../store/useProfileStore";
-import { getGuestCart, getGuestWishlist, clearAllGuestData } from "@/utils/guestStorage";
+import { useGuestStore } from "../store/useGuestStore";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) {
@@ -18,11 +18,15 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
   const [phone, setPhone] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [otp, setOtp] = useState("");
+  const [generatedOtp, setGeneratedOtp] = useState(""); // Store OTP for display
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
+
+  // Zustand store for guest data
+  const { guestCart, guestWishlist, clearAllGuestData } = useGuestStore();
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -33,6 +37,12 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
     } else {
       setPhoneError("");
     }
+  };
+
+  // Copy OTP to clipboard
+  const copyOtpToClipboard = () => {
+    navigator.clipboard.writeText(generatedOtp);
+    toast.success("OTP copied to clipboard!");
   };
 
   // Request OTP
@@ -54,6 +64,16 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
       if (res.ok) {
         setMessage("OTP sent successfully ");
         setStep("verify");
+
+        // For testing: Show OTP in alert (since SMS/email not working)
+        // In production, remove this and use actual OTP service
+        const testOtp = "123456"; // You can make this dynamic if backend returns it
+        setGeneratedOtp(testOtp);
+
+        // Show alert with OTP
+        setTimeout(() => {
+          alert(`🔐 TEST MODE OTP\n\nYour OTP is: ${testOtp}\n\nClick the "Copy OTP" button below to copy it.`);
+        }, 300);
       } else {
         setMessage(data.error || "Failed to send OTP");
         toast.error(data.error || "Failed to send OTP");
@@ -72,10 +92,7 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
     setLoading(true);
     setMessage("");
     try {
-      // Get guest cart and wishlist from localStorage
-      const guestCart = getGuestCart();
-      const guestWishlist = getGuestWishlist();
-
+      // Get guest cart and wishlist from Zustand store
       const requestBody: any = {
         phone: phone,
         otp: otp,
@@ -102,7 +119,7 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
         setUser(data.user);
         setIsLoggedIn(true);
 
-        // Clear guest data from localStorage after successful sync
+        // Clear guest data from Zustand store after successful sync
         clearAllGuestData();
 
         // Invalidate cart and wishlist queries to fetch merged data
@@ -224,6 +241,18 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
 
           {step === "verify" && (
             <div>
+              {generatedOtp && (
+                <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-xs text-yellow-800 mb-2">🔐 Test Mode OTP: <strong>{generatedOtp}</strong></p>
+                  <button
+                    onClick={copyOtpToClipboard}
+                    className="btn btn-xs btn-outline w-full"
+                    type="button"
+                  >
+                    📋 Copy OTP
+                  </button>
+                </div>
+              )}
               <input
                 type="text"
                 placeholder="Enter OTP"
