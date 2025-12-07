@@ -12,47 +12,43 @@ services:
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     environment:
+      # Server Configuration
+      - PORT=8080
       - NODE_ENV=production
-      - PORT=${PORT:-8080}
-      - MONGO_URI=${MONGO_URI}
-      - CLIENT_URL=${CLIENT_URL:-http://localhost:3000}
-      - ADMIN_URL=${ADMIN_URL:-http://localhost:5173}
-      - PRODUCTION=${PRODUCTION:-true}
-      - REDIS_HOST=${REDIS_HOST:-}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      - JWT_SECRET=${JWT_SECRET}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - AWS_REGION=${AWS_REGION:-eu-north-1}
-      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
-      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
-      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
-      - PAYU_MERCHANT_KEY=${PAYU_MERCHANT_KEY}
-      - PAYU_MERCHANT_SALT=${PAYU_MERCHANT_SALT}
-      - RESEND_API_KEY=${RESEND_API_KEY}
-      - SHIPROCKET_BASE_URL=${SHIPROCKET_BASE_URL:-}
-      - SHIPROCKET_EMAIL=${SHIPROCKET_EMAIL:-}
-      - SHIPROCKET_PASSWORD=${SHIPROCKET_PASSWORD:-}
-      - SHIPROCKET_PICKUP_LOCATION=${SHIPROCKET_PICKUP_LOCATION:-Primary}
-      - SHIPROCKET_CHANNEL_ID=${SHIPROCKET_CHANNEL_ID:-}
-      - WAREHOUSE_NAME=${WAREHOUSE_NAME:-}
-      - WAREHOUSE_PHONE=${WAREHOUSE_PHONE:-}
-      - WAREHOUSE_ADDRESS_LINE1=${WAREHOUSE_ADDRESS_LINE1:-}
-      - WAREHOUSE_CITY=${WAREHOUSE_CITY:-}
-      - WAREHOUSE_STATE=${WAREHOUSE_STATE:-}
-      - WAREHOUSE_PINCODE=${WAREHOUSE_PINCODE:-}
-      - WAREHOUSE_EMAIL=${WAREHOUSE_EMAIL:-}
+
+      # MongoDB Atlas Connection
+      - MONGO_URI=mongodb+srv://nevrfall:nevrfall@cluster0.mz1cqci.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+
+      # Redis Connection
+      - REDIS_URL=redis://13.61.7.132:6379
+
+      # JWT Secret (generate a strong random string)
+      - JWT_SECRET=NEVRFALLnevrfall0099889900
+
+      # Client URL (your frontend URL)# CLIENT_URL=https://51.20.31.57:3000
+      - CLIENT_URL=http://66.94.120.78:3000
+      - ADMIN_URL=https://66.94.120.78:5173
+
+      # AWS S3 Configuration (if using file uploads)
+      - AWS_ACCESS_KEY_ID=AKIA4DMVQXOOPR3APN6A
+      - AWS_SECRET_ACCESS_KEY=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
+      - AWS_REGION=eu-north-1
+      - AWS_BUCKET_NAME=neverfall-image-bucket
+
+      - REDIS_HOST=redis-13685.crce182.ap-south-1-1.ec2.redns.redis-cloud.com
+      - REDIS_PORT=13685
+      - REDIS_USERNAME=default
+      - REDIS_PASSWORD=GM0y4QlJ1hHxoW7xMckJL6Ssk2l8gMbk
+
+      - DELHIVERY_TOKEN=5b0c262a84480f05e7f9124185f419d8d393da9f
+
+      - EMAIL_SERVICE_API_KEY=re_gqkWstoN_LCZ16oHE72Bi724zrjRXnn7s
+      - MOBILE_SERVICE_SECRET=0c89df6bbad34970
+
     networks:
       - nevrfal-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:8080/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
-        ]
+      test: [ "CMD", "node", "-e", "require('http').get('http://66.94.120.78:8080/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -63,29 +59,23 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://66.94.120.78:8080}
     container_name: nevrfal-frontend
     restart: unless-stopped
     env_file:
       - .env
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - 3000:3000
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+      - NEXT_PUBLIC_API_URL=http://66.94.120.78:8080
     depends_on:
       backend:
         condition: service_healthy
     networks:
       - nevrfal-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
-        ]
+      test: [ "CMD", "node", "-e", "require('http').get('http://66.94.120.78:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" ]
       interval: 30s
       timeout: 10s
       retries: 3

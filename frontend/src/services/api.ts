@@ -2,7 +2,7 @@
 import axios from 'axios';
 import secureLocalStorage from 'react-secure-storage';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8080';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://66.94.120.78:8080';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -32,30 +32,30 @@ export const authAPI = {
   me: () => api.get('/api/auth/me'),
   logout: () => api.post('/api/auth/logout'),
   addAddress: (data: any) => api.post('/api/auth/profile/addAddress', data),
-  deleteSelectedAddress: (params: any) => api.post('/api/auth/delete-address/', {params}),
+  deleteSelectedAddress: (params: any) => api.post('/api/auth/delete-address/', { params }),
   getAllUserAddress: () => api.get('/api/auth/profile/getAllAddresses'),
-  markAddressDefault: (params: any) => api.post('/api/auth/profile/markAddressDefault/', {params}),
+  markAddressDefault: (params: any) => api.post('/api/auth/profile/markAddressDefault/', { params }),
 };
 
 // Product APIs
 export const productAPI = {
-  getAll: (params: { limit?: number; cursor?: string; sort?: string }) => 
+  getAll: (params: { limit?: number; cursor?: string; sort?: string }) =>
     api.get('/api/products/all', { params }),
   getByFilter: (params: any) => api.get('/api/products/filter', { params }),
-  search: (params: { q: string; limit?: number; cursor?: string }) => 
+  search: (params: { q: string; limit?: number; cursor?: string }) =>
     api.get('/api/products/search', { params }),
   getFacets: (params?: any) => api.get('/api/products/facets', { params }),
-  getNewArrivals: (params: { limit?: number; cursor?: string }) => 
+  getNewArrivals: (params: { limit?: number; cursor?: string }) =>
     api.get('/api/products/new-arrivals', { params }),
-  getFeatured: (params: { limit?: number; cursor?: string }) => 
+  getFeatured: (params: { limit?: number; cursor?: string }) =>
     api.get('/api/products/featured', { params }),
-  getTrending: (params: { limit?: number; cursor?: string }) => 
+  getTrending: (params: { limit?: number; cursor?: string }) =>
     api.get('/api/products/trending', { params }),
   getRecommended: (params: { limit?: number; cursor?: string }) =>
     api.get('/api/products/recommended', { params }),
-  getDetails: (idOrSlug: string, params?: { sku?: string }) => 
+  getDetails: (idOrSlug: string, params?: { sku?: string }) =>
     api.get(`/api/products/${idOrSlug}`, { params }),
-  getVariant: (params: { sku?: string; productId?: string; size?: string }) => 
+  getVariant: (params: { sku?: string; productId?: string; size?: string }) =>
     api.get('/api/products/variant/lookup', { params }),
   getColorFeed: (params: { limit?: number; cursor?: string; sort?: string; seed?: string }) =>
     api.get('/api/products/color-feed', { params }),
@@ -68,11 +68,11 @@ export const productAPI = {
 // Cart APIs
 export const cartAPI = {
   get: (userId: string) => api.get(`/api/cart/${userId}`),
-  add: (data: { userId: string; variantId: string; quantity?: number }) => 
+  add: (data: { userId: string; variantId: string; quantity?: number }) =>
     api.post('/api/cart/add', data),
-  remove: (data: { userId: string; variantId: string; size: string }) => 
+  remove: (data: { userId: string; variantId: string; size: string }) =>
     api.post('/api/cart/remove', data),
-  delete: (data: { userId: string; variantId: string }) => 
+  delete: (data: { userId: string; variantId: string }) =>
     api.delete('/api/cart/delete', { data }),
 };
 
@@ -80,13 +80,13 @@ export const cartAPI = {
 export const orderAPI = {
   create: (data: any) => api.post('/api/orders', data),
   get: (id: string) => api.get(`/api/orders/${id}`),
-  list: (params: { page?: number; limit?: number; status?: string }) => 
+  list: (params: { page?: number; limit?: number; status?: string }) =>
     api.get('/api/orders', { params }),
-  cancel: (id: string, data: { reason?: string }) => 
+  cancel: (id: string, data: { reason?: string }) =>
     api.post(`/api/orders/${id}/cancel`, data),
-  createPaymentSession: (orderId: string, data: any) => 
+  createPaymentSession: (orderId: string, data: any) =>
     api.post(`/api/orders/${orderId}/payment-session`, data),
-  checkPaymentStatus: (sessionId: string) => 
+  checkPaymentStatus: (sessionId: string) =>
     api.get(`/api/orders/payment/status/${sessionId}`),
 };
 
@@ -104,7 +104,7 @@ export const paymentAPI = {
 
 // Coupon APIs
 export const couponAPI = {
-  validate: (data: { code: string; userId: string; items: any[] }) => 
+  validate: (data: { code: string; userId: string; items: any[] }) =>
     api.post('/api/coupons/use', data),
 };
 
@@ -112,13 +112,13 @@ export const couponAPI = {
 export const wishlistAPI = {
   get: (params?: { fresh?: boolean }) => api.get('/api/wishlist', { params }),
   add: (data: { productId: string }) => api.post('/api/wishlist/add', data),
-  remove: (data: { itemId?: string; productId?: string }) => 
+  remove: (data: { itemId?: string; productId?: string }) =>
     api.post('/api/wishlist/remove', data),
 };
 
 // Review APIs
 export const reviewAPI = {
-  getProductReviews: (params: { parentProductId: string; page?: number; limit?: number }) => 
+  getProductReviews: (params: { parentProductId: string; page?: number; limit?: number }) =>
     api.get('/api/reviews', { params }),
   create: (data: {
     productId: string;
@@ -129,21 +129,21 @@ export const reviewAPI = {
   }) => api.post('/api/reviews', data),
   update: (id: string, data: any) => api.put(`/api/reviews/${id}`, data),
   delete: (id: string) => api.delete(`/api/reviews/${id}`),
-  getMyReview: (params: { productId: string }) => 
+  getMyReview: (params: { productId: string }) =>
     api.get('/api/reviews/my', { params }),
 };
 
 export const addressAPI = {
   addAddress: (data: any) => api.post('/api/auth/profile/addAddress', data),
-  deleteSelectedAddress: (params: any) => api.post('/api/auth/delete-address/', {params}),
+  deleteSelectedAddress: (params: any) => api.post('/api/auth/delete-address/', { params }),
   getAllUserAddress: () => api.get('/api/auth/profile/getAllAddresses'),
-  markAddressDefault: (params: any) => api.post('/api/auth/profile/markAddressDefault/', {params}),
+  markAddressDefault: (params: any) => api.post('/api/auth/profile/markAddressDefault/', { params }),
 };
 
 
 // Delivery APIs
 export const deliveryAPI = {
-  checkPincode: (pin: string) => 
+  checkPincode: (pin: string) =>
     api.get('/api/delivery/delivery/pincode/delhivery', { params: { pin } }),
 };
 
@@ -151,7 +151,7 @@ export const deliveryAPI = {
 export const returnAPI = {
   create: (data: any) => api.post('/api/return/create', data),
   cancel: (id: string) => api.post(`/api/return/${id}/cancel`),
-  list: (params: { page?: number; limit?: number }) => 
+  list: (params: { page?: number; limit?: number }) =>
     api.get('/api/return/my-returns', { params }),
   get: (id: string) => api.get(`/api/return/${id}`),
 };
@@ -159,7 +159,7 @@ export const returnAPI = {
 // Exchange APIs
 export const exchangeAPI = {
   create: (data: any) => api.post('/api/exchange/create', data),
-  confirmPayment: (data: { exchangeId: string; paymentMethod?: string }) => 
+  confirmPayment: (data: { exchangeId: string; paymentMethod?: string }) =>
     api.post('/api/exchange/confirm-payment', data),
 };
 
