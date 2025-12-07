@@ -7,9 +7,12 @@ import { LOGOUT, SEND_OTP, VERIFY_OTP, AUTH_TOKEN_KEY, USER_ID_KEY, UPDATE_PROFI
 import * as Dialog from "@radix-ui/react-dialog";
 import { toast } from "react-toastify";
 import { useProfileStore } from "../store/useProfileStore";
+import { getGuestCart, getGuestWishlist, clearAllGuestData } from "@/utils/guestStorage";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) {
   const { setIsLoggedIn } = useProfileStore();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const [step, setStep] = useState<"request" | "verify" | "loggedin" | "updateProfile">("request");
   const [phone, setPhone] = useState("");
@@ -69,11 +72,28 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
     setLoading(true);
     setMessage("");
     try {
+      // Get guest cart and wishlist from localStorage
+      const guestCart = getGuestCart();
+      const guestWishlist = getGuestWishlist();
+
+      const requestBody: any = {
+        phone: phone,
+        otp: otp,
+      };
+
+      // Include guest data if available
+      if (guestCart.length > 0) {
+        requestBody.guestCart = guestCart;
+      }
+      if (guestWishlist.length > 0) {
+        requestBody.guestWishlist = guestWishlist;
+      }
+
       const res = await fetch(VERIFY_OTP, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ phone: phone, otp: otp }),
+        body: JSON.stringify(requestBody),
       });
       const data = await res.json();
       if (res.ok) {
@@ -81,6 +101,19 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
         localStorage.setItem(USER_ID_KEY, data.user.id);
         setUser(data.user);
         setIsLoggedIn(true);
+
+        // Clear guest data from localStorage after successful sync
+        clearAllGuestData();
+
+        // Invalidate cart and wishlist queries to fetch merged data
+        queryClient.invalidateQueries({ queryKey: ["cart"] });
+        queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+
+        // Show success message if guest data was synced
+        if (guestCart.length > 0 || guestWishlist.length > 0) {
+          toast.success("Your cart and wishlist have been synced!");
+        }
+
         if (data.user.name === "User") {
           setStep("updateProfile");
         } else {
@@ -159,7 +192,7 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
       <Dialog.Trigger asChild>
         <button className="text-[12px] text-nowrap font-bold uppercase text-center">
           Sign In
-      </button>
+        </button>
       </Dialog.Trigger>
 
       <Dialog.Portal>

@@ -6,14 +6,30 @@ const WL_TTL = 120;
 const wlKey = (userId) => `wl:${userId}`;
 
 async function getCachedWishlist(userId) {
-  const cached = await redis.get(wlKey(userId));
-  return cached ? JSON.parse(cached) : null;
+  try {
+    if (!redis) return null;
+    const cached = await redis.get(wlKey(userId));
+    return cached ? JSON.parse(cached) : null;
+  } catch (err) {
+    console.warn("getCachedWishlist error:", err?.message);
+    return null;
+  }
 }
 async function setCachedWishlist(userId, payload, ttl = WL_TTL) {
-  await redis.set(wlKey(userId), JSON.stringify(payload), 'EX', ttl);
+  try {
+    if (!redis) return;
+    await redis.set(wlKey(userId), JSON.stringify(payload), 'EX', ttl);
+  } catch (err) {
+    console.warn("setCachedWishlist error:", err?.message);
+  }
 }
 async function invalidateWishlist(userId) {
-  await redis.del(wlKey(userId));
+  try {
+    if (!redis) return;
+    await redis.del(wlKey(userId));
+  } catch (err) {
+    console.warn("invalidateWishlist error:", err?.message);
+  }
 }
 
 async function queryWishlistFromDB(userId) {
@@ -90,8 +106,8 @@ export async function removeFromWishlist(req, res) {
   const filter = itemId
     ? { _id: itemId, user: userId }
     : productId
-    ? { user: userId, product: productId }
-    : null;
+      ? { user: userId, product: productId }
+      : null;
 
   if (!filter)
     return res.status(400).json({ error: "Provide itemId or productId" });
@@ -104,4 +120,58 @@ export async function removeFromWishlist(req, res) {
   const wishlist = await refreshWishlistCache(userId);
 
   return res.json({ removed: true, item: deleted, ...wishlist });
+}
+
+// Merge guest wishlist with user wishlist (called during login/signup)
+export async function mergeGuestWishlist(userId, guestProductIds = []) {
+  try {
+    if (!guestProductIds || guestProductIds.length === 0) {
+      return { success: true, wishlist: null };
+    }
+
+    // Validate product IDs and check if they exist
+    const validProductIds = [];
+    for (const productId of guestProductIds) {
+      if (!productId) continue;
+
+      const product = await Product.findById(productId).select("_id");
+      if (product) {
+        validProductIds.push(productId);
+      }
+    }
+
+    if (validProductIds.length === 0) {
+      return { success: true, wishlist: null, message: "No valid guest items to merge" };
+    }
+
+    // Get existing wishlist items for this user
+    const existingItems = await WishlistItem.find({ user: userId }).select("product").lean();
+    const existingProductIds = new Set(existingItems.map(item => item.product.toString()));
+
+    // Filter out duplicates - only add products not already in wishlist
+    const newProductIds = validProductIds.filter(
+      productId => !existingProductIds.has(productId.toString())
+    );
+
+    if (newProductIds.length === 0) {
+      return { success: true, wishlist: null, message: "All guest items already in wishlist" };
+    }
+
+    // Add new items to wishlist
+    const wishlistItems = newProductIds.map(productId => ({
+      user: userId,
+      product: productId,
+      addedAt: new Date(),
+    }));
+
+    await WishlistItem.insertMany(wishlistItems);
+
+    // Refresh cache and return updated wishlist
+    const wishlist = await refreshWishlistCache(userId);
+
+    return { success: true, wishlist, addedCount: newProductIds.length };
+  } catch (error) {
+    console.error("Error merging guest wishlist:", error);
+    return { success: false, error: error.message };
+  }
 }

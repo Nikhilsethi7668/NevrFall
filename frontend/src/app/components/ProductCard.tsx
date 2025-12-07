@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { wishlistAPI } from "@/services/api";
-import { FaRegHeart } from "react-icons/fa";
+import { FaRegHeart, FaHeart } from "react-icons/fa";
 import { toast } from "react-toastify";
+import secureLocalStorage from "react-secure-storage";
+import { addToGuestWishlist, removeFromGuestWishlist, isInGuestWishlist } from "@/utils/guestStorage";
 
 interface Variant {
   _id: string;
@@ -37,23 +39,70 @@ export default function ProductCard({
   const queryClient = useQueryClient();
   const [isHovered, setIsHovered] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Add to wishlist mutation
+  // Check authentication status
+  useEffect(() => {
+    const token = secureLocalStorage.getItem('auth_token');
+    setIsAuthenticated(!!token);
+
+    // Check if product is in guest wishlist (for non-authenticated users)
+    if (!token) {
+      setIsWishlisted(isInGuestWishlist(product._id));
+    }
+  }, [product._id]);
+
+  // Add to wishlist mutation (for authenticated users)
   const addToWishlistMutation = useMutation({
     mutationFn: () => wishlistAPI.add({ productId: product._id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+      setIsWishlisted(true);
       toast.success("Added to wishlist!");
     },
     onError: (error: Error) => {
       console.error("Failed to add to wishlist:", error);
+      toast.error("Failed to add to wishlist");
     },
   });
 
-  const handleAddToWishlist = (e: React.MouseEvent) => {
+  // Remove from wishlist mutation (for authenticated users)
+  const removeFromWishlistMutation = useMutation({
+    mutationFn: () => wishlistAPI.remove({ productId: product._id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+      setIsWishlisted(false);
+      toast.success("Removed from wishlist");
+    },
+    onError: (error: Error) => {
+      console.error("Failed to remove from wishlist:", error);
+      toast.error("Failed to remove from wishlist");
+    },
+  });
+
+  const handleToggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addToWishlistMutation.mutate();
+
+    if (isAuthenticated) {
+      // Authenticated user - use API
+      if (isWishlisted) {
+        removeFromWishlistMutation.mutate();
+      } else {
+        addToWishlistMutation.mutate();
+      }
+    } else {
+      // Guest user - use localStorage
+      if (isWishlisted) {
+        removeFromGuestWishlist(product._id);
+        setIsWishlisted(false);
+        toast.success("Removed from wishlist");
+      } else {
+        addToGuestWishlist(product._id);
+        setIsWishlisted(true);
+        toast.success("Added to wishlist!");
+      }
+    }
   };
 
   return (
@@ -72,12 +121,16 @@ export default function ProductCard({
           {/* Wishlist button overlay on top-right of image */}
           {showWishlist && (
             <button
-              onClick={handleAddToWishlist}
-              aria-label="Add to wishlist"
+              onClick={handleToggleWishlist}
+              aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
               className={`absolute top-2 right-3 z-10 p-2 focus:outline-none transform transition-transform duration-200 ${isHovered ? "scale-110" : "scale-100"
                 }`}
             >
-              <FaRegHeart size={10} />
+              {isWishlisted ? (
+                <FaHeart size={10} className="text-red-500" />
+              ) : (
+                <FaRegHeart size={10} />
+              )}
             </button>
           )}
 
@@ -129,4 +182,5 @@ export default function ProductCard({
     </div>
   );
 }
+
 

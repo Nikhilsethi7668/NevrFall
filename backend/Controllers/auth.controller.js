@@ -4,6 +4,9 @@ import { generateOtp, hashOtp } from "../utils/otp.js";
 import { generateToken } from "../Middlewares/auth.js";
 import { sendEmail } from "../Services/email.service.js";
 import { sendSms } from "../Services/phone.service.js";
+import { mergeGuestCart } from "./cart.controller.js";
+import { mergeGuestWishlist } from "./wishlist.controller.js";
+
 export async function requestOtp(req, res) {
   try {
     const { phone } = req.body;
@@ -46,7 +49,7 @@ export async function requestOtp(req, res) {
 //router.post("/otp/verify/mobile", verifyOtpByMobile);
 export async function verifyOtpByMobile(req, res) {
   try {
-    const { phone, otp } = req.body;
+    const { phone, otp, guestCart, guestWishlist } = req.body;
     if (!phone || !otp)
       return res.status(400).json({ error: "Phone & OTP required" });
 
@@ -78,16 +81,41 @@ export async function verifyOtpByMobile(req, res) {
     );
 
     const token = generateToken(user);
+
+    // Merge guest cart and wishlist if provided
+    let mergedCart = null;
+    let mergedWishlist = null;
+
+    if (guestCart && Array.isArray(guestCart) && guestCart.length > 0) {
+      const cartResult = await mergeGuestCart(user._id, guestCart);
+      if (cartResult.success) {
+        mergedCart = cartResult.cart;
+      }
+    }
+
+    if (guestWishlist && Array.isArray(guestWishlist) && guestWishlist.length > 0) {
+      const wishlistResult = await mergeGuestWishlist(user._id, guestWishlist);
+      if (wishlistResult.success) {
+        mergedWishlist = wishlistResult.wishlist;
+      }
+    }
+
+    const response = {
+      token,
+      user: { id: user._id, phone: user.phone, role: user.role, name: user.name },
+    };
+
+    // Include merged data in response if available
+    if (mergedCart) response.cart = mergedCart;
+    if (mergedWishlist) response.wishlist = mergedWishlist;
+
     res
       .cookie("token", token, {
         httpOnly: true,
         sameSite: "lax",
         secure: false,
       })
-      .json({
-        token,
-        user: { id: user._id, phone: user.phone, role: user.role, name: user.name},
-      });
+      .json(response);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "OTP verify failed" });
@@ -103,7 +131,7 @@ export async function requestOTPByEmail(req, res) {
     const otp = generateOtp();
     const dataKey = `otp:data:${email}`;
     await redis.set(dataKey, hashOtp(otp), "EX", 300);
-    console.log("Generated Email OTP:", otp); 
+    console.log("Generated Email OTP:", otp);
     await sendEmail(
       email,
       "Welcome to NevrFall , Do not share OTP with anyone",
@@ -127,7 +155,7 @@ export async function logout(req, res) {
 //router.post("/otp/verify/email", verifyOtpByEmail);
 export async function verifyOtpByEmail(req, res) {
   try {
-    const { email, otp, phone } = req.body;
+    const { email, otp, phone, guestCart, guestWishlist } = req.body;
     if (!email || !otp || !phone)
       return res.status(400).json({ error: "All Fields are required" });
 
@@ -162,21 +190,46 @@ export async function verifyOtpByEmail(req, res) {
     }
 
     const token = generateToken(user);
+
+    // Merge guest cart and wishlist if provided
+    let mergedCart = null;
+    let mergedWishlist = null;
+
+    if (guestCart && Array.isArray(guestCart) && guestCart.length > 0) {
+      const cartResult = await mergeGuestCart(user._id, guestCart);
+      if (cartResult.success) {
+        mergedCart = cartResult.cart;
+      }
+    }
+
+    if (guestWishlist && Array.isArray(guestWishlist) && guestWishlist.length > 0) {
+      const wishlistResult = await mergeGuestWishlist(user._id, guestWishlist);
+      if (wishlistResult.success) {
+        mergedWishlist = wishlistResult.wishlist;
+      }
+    }
+
+    const response = {
+      token,
+      user: {
+        id: user._id,
+        phone: user.phone,
+        email: user.email,
+        role: user.role,
+      },
+    };
+
+    // Include merged data in response if available
+    if (mergedCart) response.cart = mergedCart;
+    if (mergedWishlist) response.wishlist = mergedWishlist;
+
     res
       .cookie("token", token, {
         httpOnly: true,
         sameSite: "lax",
         secure: false,
       })
-      .json({
-        token,
-        user: {
-          id: user._id,
-          phone: user.phone,
-          email: user.email,
-          role: user.role,
-        },
-      });
+      .json(response);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "OTP verify failed" });

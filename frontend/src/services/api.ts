@@ -26,9 +26,15 @@ api.interceptors.request.use((config) => {
 // Auth APIs
 export const authAPI = {
   requestOtp: (phone: string) => api.post('/api/auth/otp/request/mobile', { phone }),
-  verifyOtp: (phone: string, otp: string) => api.post('/api/auth/otp/verify/mobile', { phone, otp }),
+  verifyOtp: (phone: string, otp: string, guestData?: {
+    guestCart?: Array<{ variantId: string; quantity: number }>;
+    guestWishlist?: Array<string>;
+  }) => api.post('/api/auth/otp/verify/mobile', { phone, otp, ...guestData }),
   requestEmailOtp: (email: string, phone: string) => api.post('/api/auth/otp/request/email', { email, phone }),
-  verifyEmailOtp: (email: string, otp: string, phone: string) => api.post('/api/auth/otp/verify/email', { email, otp, phone }),
+  verifyEmailOtp: (email: string, otp: string, phone: string, guestData?: {
+    guestCart?: Array<{ variantId: string; quantity: number }>;
+    guestWishlist?: Array<string>;
+  }) => api.post('/api/auth/otp/verify/email', { email, otp, phone, ...guestData }),
   me: () => api.get('/api/auth/me'),
   logout: () => api.post('/api/auth/logout'),
   addAddress: (data: any) => api.post('/api/auth/profile/addAddress', data),

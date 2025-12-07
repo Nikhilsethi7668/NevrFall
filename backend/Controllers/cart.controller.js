@@ -148,3 +148,96 @@ export const deleteFromCart = async (req, res) => {
 
   res.json(cart);
 };
+
+// Merge guest cart with user cart (called during login/signup)
+export const mergeGuestCart = async (userId, guestCartItems = []) => {
+  try {
+    if (!guestCartItems || guestCartItems.length === 0) {
+      return { success: true, cart: null };
+    }
+
+    // Validate and fetch all variants
+    const validItems = [];
+    for (const item of guestCartItems) {
+      const { variantId, quantity } = item;
+
+      if (!variantId || !quantity || quantity <= 0) continue;
+
+      const variant = await ProductVariant.findById(variantId).populate("product");
+      if (!variant || !variant.product) continue;
+
+      // Check stock availability
+      if (variant.stock < quantity) {
+        console.warn(`Insufficient stock for variant ${variantId}, skipping`);
+        continue;
+      }
+
+      validItems.push({
+        variantId: variant._id,
+        productId: variant.product._id,
+        quantity: Math.min(quantity, variant.stock),
+        variant,
+      });
+    }
+
+    if (validItems.length === 0) {
+      return { success: true, cart: null, message: "No valid guest items to merge" };
+    }
+
+    // Find or create user cart
+    let cart = await Cart.findOne({ user: userId });
+    if (!cart) cart = new Cart({ user: userId, items: [] });
+
+    // Merge items
+    for (const { variantId, productId, quantity, variant } of validItems) {
+      const itemIndex = cart.items.findIndex(
+        (i) => i.variant.toString() === variantId.toString()
+      );
+
+      if (itemIndex > -1) {
+        // Item exists - add quantities
+        const newQuantity = cart.items[itemIndex].quantity + quantity;
+        if (variant.stock >= newQuantity) {
+          cart.items[itemIndex].quantity = newQuantity;
+        } else {
+          // Set to max available stock
+          cart.items[itemIndex].quantity = variant.stock;
+        }
+      } else {
+        // New item - add to cart
+        cart.items.push({
+          product: productId,
+          variant: variantId,
+          title: variant.product.title,
+          color: variant.product.color,
+          size: variant.size,
+          image: variant.product.coverImage,
+          price: variant.price,
+          quantity,
+        });
+      }
+    }
+
+    cart.totalValue = calculateCartTotal(cart.items);
+    await cart.save();
+
+    // Populate for response
+    await cart.populate("items.product items.variant");
+
+    // Ensure images are present
+    cart.items.forEach((item) => {
+      if (!item.image && item.product && item.product.coverImage) {
+        item.image = item.product.coverImage;
+      }
+    });
+
+    // Clear cache
+    await cacheDelPattern(`cart:${userId}`);
+    await cacheSet(`cart:${userId}`, cart, CART_TTL);
+
+    return { success: true, cart };
+  } catch (error) {
+    console.error("Error merging guest cart:", error);
+    return { success: false, error: error.message };
+  }
+};
