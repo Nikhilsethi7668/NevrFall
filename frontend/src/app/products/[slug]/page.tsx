@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -8,11 +8,13 @@ import { productAPI, cartAPI, wishlistAPI, reviewAPI } from "@/services/api";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
 import { FaChevronDown } from "react-icons/fa";
-import { FaRegHeart } from "react-icons/fa6";
+import { FaRegHeart, FaHeart } from "react-icons/fa6";
 import ProductRecomendations from "@/app/components/ProductRecomendations";
 import { toast } from "react-toastify";
 import { DELIVERY_CHECK_PINCODE } from "@/app/constants/Constant";
 import axios from "axios";
+import secureLocalStorage from "react-secure-storage";
+import { useGuestStore } from "@/app/store/useGuestStore";
 
 interface Product {
   _id: string;
@@ -51,6 +53,22 @@ export default function ProductDetailPage() {
   const [quantity] = useState(1);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewData, setReviewData] = useState({ rating: 5, body: "" });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  // Zustand store for guest cart and wishlist
+  const {
+    addToGuestCart,
+    isInGuestWishlist,
+    addToGuestWishlist,
+    removeFromGuestWishlist
+  } = useGuestStore();
+
+  // Check authentication status
+  useEffect(() => {
+    const token = secureLocalStorage.getItem('auth_token');
+    setIsAuthenticated(!!token);
+  }, []);
 
   // Fetch product details
   const { data: product, isLoading } = useQuery<{ product: Product, variants: Variant[], parent: { description: string } }>({
@@ -101,36 +119,79 @@ export default function ProductDetailPage() {
   // Add to cart mutation
   const addToCartMutation = useMutation({
     mutationFn: async () => {
-      const userId = localStorage.getItem("userId");
-      if (!userId) throw new Error("Please login first");
-
       const selectedVariant = product?.variants.find(
         (v: Variant) => v.size === selectedSize
       );
 
       if (!selectedVariant) throw new Error("Please select a size");
 
-      return cartAPI.add({
-        userId,
-        variantId: selectedVariant._id,
-        quantity,
-      });
+      if (isAuthenticated) {
+        // Authenticated user - use API
+        const userId = localStorage.getItem("userId");
+        if (!userId) throw new Error("Please login first");
+
+        return cartAPI.add({
+          userId,
+          variantId: selectedVariant._id,
+          quantity,
+        });
+      } else {
+        // Guest user - use Zustand store
+        addToGuestCart(selectedVariant._id, quantity);
+        return Promise.resolve({ success: true });
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      if (isAuthenticated) {
+        queryClient.invalidateQueries({ queryKey: ["cart"] });
+      }
       toast.success("Added to cart successfully!");
     },
     onError: (error: Error) => {
-      alert(error.message || "Failed to add to cart");
+      toast.error(error.message || "Failed to add to cart");
     },
   });
 
-  // Add to wishlist mutation
-  const addToWishlistMutation = useMutation({
-    mutationFn: () => wishlistAPI.add({ productId: product!.product._id }),
+  // Check if product is in wishlist
+  useEffect(() => {
+    if (product?.product?._id) {
+      if (!isAuthenticated) {
+        setIsWishlisted(isInGuestWishlist(product.product._id));
+      }
+    }
+  }, [product, isAuthenticated, isInGuestWishlist]);
+
+  // Toggle wishlist mutation
+  const toggleWishlistMutation = useMutation({
+    mutationFn: async () => {
+      if (!product?.product?._id) throw new Error("Product not found");
+
+      if (isAuthenticated) {
+        // Authenticated user - use API
+        if (isWishlisted) {
+          return wishlistAPI.remove({ productId: product.product._id });
+        } else {
+          return wishlistAPI.add({ productId: product.product._id });
+        }
+      } else {
+        // Guest user - use Zustand store
+        if (isWishlisted) {
+          removeFromGuestWishlist(product.product._id);
+        } else {
+          addToGuestWishlist(product.product._id);
+        }
+        return Promise.resolve({ success: true });
+      }
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
-      toast.success("Added to wishlist!");
+      if (isAuthenticated) {
+        queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+      }
+      setIsWishlisted(!isWishlisted);
+      toast.success(isWishlisted ? "Removed from wishlist" : "Added to wishlist!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update wishlist");
     },
   });
 
@@ -300,8 +361,8 @@ export default function ProductDetailPage() {
                     onClick={() => setSelectedSize(variant.size)}
                     disabled={variant.stock === 0}
                     className={`btn ${selectedSize === variant.size
-                        ? "btn-primary"
-                        : "btn-outline"
+                      ? "btn-primary"
+                      : "btn-outline"
                       } ${variant.stock === 0 ? "btn-disabled" : ""}`}
                   >
                     {variant.size}
@@ -396,10 +457,21 @@ export default function ProductDetailPage() {
                 )}
               </button>
               <button
-                onClick={() => addToWishlistMutation.mutate()}
-                className="w-full h-12 mt-2 bg-black text-white hover:bg-gray-900 uppercase tracking-widest text-[10px] font-medium transition-colors"
+                onClick={() => toggleWishlistMutation.mutate()}
+                disabled={toggleWishlistMutation.isPending}
+                className="w-full h-12 mt-2 bg-black text-white hover:bg-gray-900 uppercase tracking-widest text-[10px] font-medium transition-colors flex items-center justify-center gap-2"
               >
-                ADD TO WISHLIST
+                {isWishlisted ? (
+                  <>
+                    <FaHeart className="text-red-500" />
+                    REMOVE FROM WISHLIST
+                  </>
+                ) : (
+                  <>
+                    <FaRegHeart />
+                    ADD TO WISHLIST
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -417,7 +489,7 @@ export default function ProductDetailPage() {
             )}
           </div>
         </div>
-        
+
         <div className="bg-white border-b border-gray-200 collapse rounded-none">
           <input type="checkbox" className="peer" />
           <div className="collapse-title flex flex-row justify-between items-center cursor-pointer font-semibold peer-checked:[&>p:last-child]:rotate-180">
@@ -555,10 +627,21 @@ export default function ProductDetailPage() {
             {addToCartMutation.isPending ? "..." : `ADD TO CART • ₹ ${selectedVariant?.price?.toLocaleString() || product.product.priceFrom?.toLocaleString()}`}
           </button>
           <button
-            onClick={() => addToWishlistMutation.mutate()}
-            className="flex-1 h-12 bg-black text-white uppercase text-xs font-bold tracking-wider"
+            onClick={() => toggleWishlistMutation.mutate()}
+            disabled={toggleWishlistMutation.isPending}
+            className="flex-1 h-12 bg-black text-white uppercase text-xs font-bold tracking-wider flex items-center justify-center gap-2"
           >
-            ADD TO WISHLIST
+            {isWishlisted ? (
+              <>
+                <FaHeart className="text-red-500" />
+                WISHLISTED
+              </>
+            ) : (
+              <>
+                <FaRegHeart />
+                WISHLIST
+              </>
+            )}
           </button>
         </div>
       </div>

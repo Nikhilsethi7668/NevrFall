@@ -69,14 +69,15 @@ const TrendingGrid = ({ selectedFilter }: TrendingGridProps) => {
     const products = data?.items || [];
 
     return (
-        <div className="w-full px-[1px] py-4">
+        <div className="w-full py-4">
             {isLoading ? (
                 <div className="h-[50vh] flex items-center justify-center">
                     <LoadingSpinner size="lg" text={`Loading ${categoryName}...`} />
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-2 gap-x-[1px] gap-y-2 mb-6">
+                    {/* Desktop: 4 columns with better spacing, Mobile: 2 columns */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 lg:gap-x-6 gap-y-6 lg:gap-y-8 mb-8">
                         {products.map((product: any) => (
                             <ProductCard key={product._id} product={product} />
                         ))}
