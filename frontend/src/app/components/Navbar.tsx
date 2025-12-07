@@ -1,19 +1,22 @@
 'use client';
-
 import Link from 'next/link';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { cartAPI, authAPI, productAPI } from '@/services/api';
 import LoginDialog from "./LoginDialog";
 import secureLocalStorage from 'react-secure-storage';
-import { IoMoonSharp, IoSunny, IoClose, IoSearchSharp, IoMenu } from "react-icons/io5";
+import { IoMoonSharp, IoSunny, IoClose } from "react-icons/io5";
 import { FaOpencart } from "react-icons/fa";
 import { BsBagHeartFill } from "react-icons/bs";
 import { useProfileStore } from '../store/useProfileStore';
+import { CiMenuBurger } from "react-icons/ci";
+import { IoSearchSharp } from "react-icons/io5";
 import { useCategoryStore } from '../store/useCategoryStore';
-import SearchPopdown from './SearchPopdown';
+import { MdPersonOutline } from "react-icons/md";
+import { FaBagShopping } from "react-icons/fa6";
+import MobileNavItem, { NavItem } from './MobileNavItem';
 
 const Navbar = () => {
   const { categories, fetchCategories } = useCategoryStore();
@@ -22,10 +25,11 @@ const Navbar = () => {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { activeTab, setActiveTab } = useProfileStore();
+  const [user, setUser] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
-  const [userName, setUserName] = useState<string | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [sidebar, setSidebar] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     fetchCategories();
@@ -40,27 +44,44 @@ const Navbar = () => {
   });
   const collections = collectionsData?.data || [];
 
-  const handleCategoryClick = (categoryName: string) => {
-    router.push(`/products?categories=${categoryName}`);
-    setMobileMenuOpen(false);
-  };
+  useEffect(() => {
+    const handleScroll = () => {
+      const isNotHome = pathname !== '/';
+      if (isNotHome || window.scrollY > 10) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
 
-  const handleCollectionClick = (slugOrName: string) => {
-    router.push(`/products?collections=${slugOrName}`);
-    setMobileMenuOpen(false);
-  };
+    handleScroll();
+
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [pathname]);
 
   // Check if user is logged in
   useEffect(() => {
     setMounted(true);
     const token = secureLocalStorage.getItem('auth_token');
     const userId = localStorage.getItem('userId');
-    const storedUserName = localStorage.getItem('userName');
     if (token && userId) {
       setIsLoggedIn(true);
-      setUserName(storedUserName);
     }
   }, []);
+
+  // Fetch user data
+  const { data: userData } = useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const res = await authAPI.me();
+      return res.data;
+    },
+    enabled: isLoggedIn,
+  });
 
   // Fetch cart count
   const { data: cartData } = useQuery({
@@ -81,195 +102,191 @@ const Navbar = () => {
       localStorage.removeItem('userId');
       localStorage.removeItem('userName');
       setIsLoggedIn(false);
-      setUserName(null);
-      setMobileMenuOpen(false);
+      setUser(null);
       router.push('/');
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
+  const closeDrawer = () => {
+    setSidebar(false);
+  };
+
+  const navItems: NavItem[] = useMemo(() => {
+    const dynamicCollections: NavItem[] = collections.map((col: any) => ({
+      _id: `col-${col._id}`,
+      name: col.name,
+      href: `/products?collections=${col.slug || col.name}`,
+    }));
+
+    const dynamicCategories: NavItem = {
+      _id: 'cat-parent',
+      name: 'Categories',
+      children: categories.map((cat: any) => ({
+        _id: `cat-${cat._id}`,
+        name: cat.name,
+        href: `/products?categories=${cat.name}`,
+      })),
+    };
+
+    const supportItems: NavItem = {
+      _id: 'support-parent',
+      name: 'Support',
+      children: [
+        { _id: 'support-1', name: 'Track Order', href: '/orders' },
+        { _id: 'support-2', name: 'Return/Exchange', href: '/return' },
+        { _id: 'support-3', name: 'FAQ', href: '/faq' },
+      ],
+    };
+
+    return [
+      ...dynamicCollections,
+      dynamicCategories,
+      { _id: 'static-1', name: 'All Products', href: '/products' },
+      supportItems,
+    ];
+  }, [collections, categories]);
+
   return (
     <>
-      {/* Mobile Navbar */}
-      <nav className="sticky top-0 z-40 bg-base-100 border-b border-base-300">
-        <div className="flex items-center justify-between px-2 py-2">
-          {/* Left: Menu */}
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className="btn btn-ghost btn-sm"
-          >
-            <IoMenu size={28} />
+      <div className={`grid grid-cols-3 w-full py-2 ${isScrolled ? 'bg-base-100 shadow sticky text-black' : "fixed text-white" } top-0 z-50`}>
+        <div className="navbar-start gap-7">
+          <div>
+          <label onClick={() => setSidebar(!sidebar)} className="btn-ghost font-semibold"><CiMenuBurger  size={20} className='ml-2' /></label>
+          {sidebar && (
+            <>
+              <div
+                className="fixed  inset-0 bg-opacity-50 backdrop-blur-md z-30 transition-opacity duration-300 ease-in-out"
+                onClick={() => setSidebar(false)}
+              ></div>
+              <div
+                className={`fixed inset-y-0 left-0 w-full md:w-[600px] lg:w-[600px] bg-base-100 text-black p-4 z-50 flex flex-col transform transition-transform duration-300 ease-in-out ${
+                  sidebar ? "translate-x-0" : "-translate-x-full"
+                }`}
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <Link href="/" className="drawer__logo w-[130px]">
+                    <img src='/logo.svg' alt='nevrfall'/>
+                  </Link>
+                  <button onClick={() => setSidebar(false)} className="btn btn-ghost btn-circle">
+                    <IoClose size={24} />
+                  </button>
+                </div>
+
+                <div className="drawer__content flex-1 overflow-y-auto">
+                  <ul className="mobile-nav list--unstyled" role="list">
+                    {navItems.map((item, index) => (
+                      <MobileNavItem
+                        key={item._id}
+                        item={item}
+                        level={1}
+                        delay={150 + index * 50}
+                        isSidebarOpen={sidebar}
+                        closeDrawer={closeDrawer}
+                      />
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="flex flex-col gap-4 pt-2 border-t-2 border-gray-600 mt-20">
+                  {isLoggedIn && (
+                      <ul className="flex flex-row justify-between items-center mb-4">
+                        <li>
+                          <Link href="/profile" onClick={() => { setActiveTab(""); closeDrawer(); }} className="mobile-navlink text-[10px] text-gray-500 tracking-widest">
+                            My Profile
+                          </Link>
+                        </li>
+                        <li>
+                          <Link href="/orders" onClick={() => { setActiveTab("orders"); closeDrawer(); }} className="mobile-navlink text-[10px] text-gray-500 tracking-widest">
+                            My Orders
+                          </Link>
+                        </li>
+                        <li>
+                          <Link href="/returns" onClick={() => { setActiveTab("returns"); closeDrawer(); }} className="mobile-navlink text-[10px] text-gray-500 tracking-widest">
+                            My Returns
+                          </Link>
+                        </li>
+                      </ul>
+                  )}
+
+                  <Link href="/profile" onClick={() => { setActiveTab(""); closeDrawer(); }} className="mobile-navlink text-[10px] text-gray-500 font-bold tracking-widest">
+                    My Account
+                  </Link>
+
+                  {isLoggedIn ? (
+                    <button onClick={() => { handleLogout(); closeDrawer(); }} className="mobile-navlink text-[10px] text-left text-gray-500 font-bold tracking-widest">
+                      Log out
+                    </button>
+                  ) : (
+                    <div onClick={closeDrawer}>
+                      <LoginDialog open={open} setOpen={setOpen} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+          </div>
+        </div>
+
+        <div className={`navbar-center ${isScrolled ? 'text-black' : 'text-white'}`}>
+          <Link href="/" className="text-lg sm:text-xl font-semibold uppercase tracking-wide"><img src='/logo.svg' alt='nevrfall' className='w-[130px]'/></Link>
+        </div>
+
+        <div className="flex flex-row justify-end items-center gap-1">
+
+          <button className="btn btn-ghost btn-circle" onClick={() => router.push('/search')}>
+            <IoSearchSharp size={22} />
           </button>
 
-          {/* Center: Logo */}
-          <Link href="/" className="text-xl font-bold uppercase tracking-widest text-base-content">
-            NevrFall
-          </Link>
-
-          {/* Right: Search, User, Cart */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setSearchOpen(true)}
-              className="btn btn-ghost btn-sm"
-            >
-              <IoSearchSharp size={24} />
-            </button>
-
-            {isLoggedIn ? (
-              <Link href="/profile" className="btn btn-ghost btn-sm">
-                <div className="w-7 h-7 rounded-full bg-primary text-primary-content flex items-center justify-center text-sm font-bold">
-                  {userName?.charAt(0)?.toUpperCase()}
+          {isLoggedIn ? (
+            <div className="dropdown dropdown-end">
+              <div tabIndex={0} role="button" className="btn btn-ghost btn-circle">
+                <div className="">
+                  <MdPersonOutline size={22} />
                 </div>
-              </Link>
-            ) : (
-              <div onClick={() => setOpen(true)}>
-                <button className="btn btn-ghost btn-sm">
-                  <svg width="24" height="24" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M22.9129 12.935L13.7571 23.0474C13.5348 23.2929 13.1284 23.1084 13.1669 22.7794L14.0816 14.9731H10.6991C10.4034 14.9731 10.2484 14.6219 10.4478 14.4035L20.3133 3.59739C20.5589 3.32834 20.9984 3.58134 20.8891 3.92887L18.2354 12.3664H22.6607C22.9557 12.3664 23.1109 12.7163 22.9129 12.935Z" fill="#FEA203"></path>
-                    <path fillRule="evenodd" clipRule="evenodd" d="M16.6079 5.35819C16.4805 5.1933 16.3421 5.03582 16.1932 4.8869C15.2702 3.96387 14.0183 3.44531 12.7129 3.44531C11.4075 3.44531 10.1556 3.96387 9.2326 4.8869C8.30957 5.80993 7.79102 7.06183 7.79102 8.36719C7.79102 9.67255 8.30957 10.9244 9.2326 11.8475C9.48368 12.0986 9.75909 12.3197 10.0533 12.5086L11.0235 11.4503C10.7335 11.2914 10.4649 11.0911 10.227 10.8531C9.56766 10.1938 9.19727 9.29959 9.19727 8.36719C9.19727 7.43479 9.56766 6.54057 10.227 5.88127C10.8863 5.22196 11.7805 4.85156 12.7129 4.85156C13.6453 4.85156 14.5395 5.22196 15.1988 5.88127C15.3636 6.04604 15.5103 6.22549 15.6377 6.41654L16.6079 5.35819ZM20.6413 18.6497L19.6746 19.7132C20.1676 20.4122 20.4473 21.2264 20.4473 22.0781V23.8359C20.4473 24.2243 20.7621 24.5391 21.1504 24.5391C21.5387 24.5391 21.8535 24.2243 21.8535 23.8359V22.0781C21.8535 20.7863 21.4016 19.6103 20.6413 18.6497ZM12.3111 17.5078H10.3026C7.27113 17.5078 4.97852 19.6394 4.97852 22.0781V23.8359C4.97852 24.2243 4.66372 24.5391 4.27539 24.5391C3.88707 24.5391 3.57227 24.2243 3.57227 23.8359V22.0781C3.57227 18.6922 6.67684 16.1016 10.3026 16.1016H12.4885L12.3111 17.5078Z" fill="currentColor" stroke="currentColor"></path>
-                  </svg>
-                </button>
               </div>
-            )}
+              <ul
+                tabIndex={0}
+                className="menu menu-sm dropdown-content text-gray-600 bg-base-100 z-1 mt-3 w-40 p-2 shadow"
+              >
+                <li><Link className='text-gray-600 text-[10px]' href="/profile">My Profile</Link></li>
+                <li><Link className='text-gray-600 text-[10px]' href="/orders">My Orders</Link></li>
+                <li><Link className='text-gray-600 text-[10px]' href="/returns">My Returns</Link></li>
+                <li><button className='text-gray-600 text-[10px]' onClick={handleLogout}>Logout</button></li>
+              </ul>
+            </div>
+          ) : (
+            <div>
+              <LoginDialog open={open} setOpen={setOpen} />
+            </div>
+          )}
 
-            <Link href="/cart" className="btn btn-ghost btn-sm relative">
-              <FaOpencart size={24} />
+          <button
+            className="btn btn-ghost btn-circle"
+            onClick={() => router.push('/cart')}
+          >
+            <div className="indicator">
+              <FaBagShopping size={22} />
               {cartData && cartData.count > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-primary-content text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                <span className="badge badge-xs badge-primary indicator-item">
                   {cartData.count}
                 </span>
               )}
-            </Link>
-          </div>
+            </div>
+          </button>
+
+          <button
+            className="btn btn-ghost btn-circle hidden sm:block"
+            onClick={() => { setActiveTab('wishlist'); router.push('/profile'); }}
+          >
+            <BsBagHeartFill size={22} />
+          </button>
         </div>
-      </nav>
-
-      {/* Mobile Menu Drawer - Matching gryape.com exactly */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-base-100 overflow-hidden">
-          {/* Header with logo and close */}
-          <div className="flex items-center justify-between px-5 py-5 border-b border-base-300">
-            <Link
-              href="/"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-base font-bold uppercase"
-              style={{ letterSpacing: '0.2em' }}
-            >
-              NevrFall
-            </Link>
-            <button
-              onClick={() => setMobileMenuOpen(false)}
-              className="p-1 -mr-1"
-              aria-label="Close menu"
-            >
-              <IoClose size={24} className="text-base-content" />
-            </button>
-          </div>
-
-          {/* Scrollable menu content */}
-          <div className="h-[calc(100vh-73px)] overflow-y-auto">
-            {/* Main navigation */}
-            <ul className="mobile-nav" style={{ fontWeight: 400, letterSpacing: '0.05em' }}>
-              {collections.map((collection: any) => (
-                <li key={collection._id} className="border-b border-base-300">
-                  <button
-                    onClick={() => handleCollectionClick(collection.slug || collection.name)}
-                    className="block w-full text-left py-4 px-5 text-sm uppercase text-base-content"
-                  >
-                    {collection.name}
-                  </button>
-                </li>
-              ))}
-
-              {categories.map((category) => (
-                <li key={category._id} className="border-b border-base-300">
-                  <button
-                    onClick={() => handleCategoryClick(category.name)}
-                    className="block w-full text-left py-4 px-5 text-sm uppercase text-base-content"
-                  >
-                    {category.name}
-                  </button>
-                </li>
-              ))}
-
-              <li className="border-b border-base-300">
-                <Link
-                  href="/contact"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block py-4 px-5 text-sm uppercase text-base-content"
-                >
-                  CONTACT US
-                </Link>
-              </li>
-
-              <li className="border-b border-base-300">
-                <Link
-                  href="/return"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block py-4 px-5 text-sm uppercase text-base-content"
-                >
-                  EXCHANGE
-                </Link>
-              </li>
-            </ul>
-
-            {/* Bottom menu */}
-            <ul className="mt-auto border-t border-base-300" style={{ fontWeight: 400 }}>
-              {mounted && (
-                <li className="border-b border-base-300">
-                  <button
-                    onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                    className="flex items-center gap-2 w-full text-left py-3 px-5 text-xs text-base-content"
-                  >
-                    {theme === 'light' ? <IoMoonSharp size={16} /> : <IoSunny size={16} />}
-                    {theme === 'light' ? 'Dark' : 'Light'} Mode
-                  </button>
-                </li>
-              )}
-
-              {isLoggedIn ? (
-                <>
-                  <li className="border-b border-base-300">
-                    <Link
-                      href="/profile"
-                      onClick={() => { setActiveTab(''); setMobileMenuOpen(false); }}
-                      className="block py-3 px-5 text-xs text-base-content"
-                    >
-                      My Account
-                    </Link>
-                  </li>
-                  <li className="border-b border-base-300">
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left py-3 px-5 text-xs text-base-content"
-                    >
-                      Log out
-                    </button>
-                  </li>
-                </>
-              ) : (
-                <li className="border-b border-base-300">
-                  <button
-                    onClick={() => { setMobileMenuOpen(false); setOpen(true); }}
-                    className="block w-full text-left py-3 px-5 text-xs text-base-content"
-                  >
-                    Log in
-                  </button>
-                </li>
-              )}
-            </ul>
-          </div>
-        </div>
-      )}
-
-      {/* Search Popdown */}
-      <SearchPopdown isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
-
-      {/* Login Dialog - only shows when open is true */}
-      <LoginDialog open={open} setOpen={setOpen} />
+      </div>
     </>
-  );
-};
+  )
+}
 
 export default Navbar;

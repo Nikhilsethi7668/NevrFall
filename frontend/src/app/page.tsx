@@ -1,223 +1,144 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { productAPI } from "@/services/api";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import ProductCard from "./components/ProductCard";
 import LoadingSpinner from "./components/LoadingSpinner";
-import Link from "next/link";
-import Categories from "./components/Categories";
 import ImageCarousel from "./components/ImageCarousel";
-import { useProductStore } from "./store/useProductStore";
-import Pagination from "./components/Pagination";
-import { useEffect, useState } from "react";
-import secureLocalStorage from "react-secure-storage";
+import CategoryChips from "./components/CategoryChips";
+import QuickFilters from "./components/QuickFilters";
+import TrendingGrid from "./components/TrendingGrid";
+import TopCategories from "./components/TopCategories";
+import { useState, useEffect } from "react";
+import { useInView } from "react-intersection-observer";
 
 export default function Home() {
-  const router = useRouter();
+  const [quickFilter, setQuickFilter] = useState("Jacket");
+  const [isSticky, setIsSticky] = useState(false);
+  const { ref, inView } = useInView();
+  const { ref: stickyRef, inView: isStickyInView } = useInView({
+    threshold: 0,
+    rootMargin: '-56px 0px 0px 0px'
+  });
+
+  // Infinite Scroll Query
   const {
-    products,
-    loading,
-    filters,
-    page,
-    totalPages,
-    fetchProducts,
-    setFilters,
-  } = useProductStore();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    status,
+    error
+  } = useInfiniteQuery({
+    queryKey: ["products-infinite"],
+    queryFn: async ({ pageParam }) => {
+      const res = await productAPI.getAll({
+        limit: 8,
+        cursor: pageParam as string | undefined
+      });
+      return res.data;
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
+  });
 
+  // Load more when scrolling to bottom
   useEffect(() => {
-    fetchProducts(filters, page);
-    const token = secureLocalStorage.getItem("auth_token");
-    if (token) {
-      setIsLoggedIn(true);
+    if (inView && hasNextPage) {
+      fetchNextPage();
     }
-  }, [page]);
+  }, [inView, hasNextPage, fetchNextPage]);
 
-  const handlePageChange = (newPage: number) => {
-    useProductStore.setState({ page: newPage });
-  };
-
-  // Fetch featured products
-  const { data: featuredProducts, isLoading: featuredLoading } = useQuery({
-    queryKey: ["featured-products"],
-    queryFn: async () => {
-      const res = await productAPI.getFeatured({ limit: 6 });
-      return res.data;
-    },
-  });
-
-  // Fetch new arrivals
-  const { data: newArrivals, isLoading: newArrivalsLoading } = useQuery({
-    queryKey: ["new-arrivals"],
-    queryFn: async () => {
-      const res = await productAPI.getNewArrivals({ limit: 4 });
-      return res.data;
-    },
-  });
-
-  // Fetch trending products
-  const { data: trendingProducts, isLoading: trendingLoading } = useQuery({
-    queryKey: ["trending-products"],
-    queryFn: async () => {
-      const res = await productAPI.getTrending({ limit: 4 });
-      return res.data;
-    },
-  });
-
-  // Fetch recommended products
-  const { data: recommendedProducts, isLoading: recommendedLoading } = useQuery({
-    queryKey: ["recommended-products"],
-    queryFn: async () => {
-      const res = await productAPI.getRecommended({ limit: 4 });
-      return res.data;
-    },
-    enabled: isLoggedIn,
-  });
-
+  // Detect sticky state
+  useEffect(() => {
+    setIsSticky(!isStickyInView);
+  }, [isStickyInView]);
 
   return (
     <>
       <Navbar />
-      <div className="hero min-h-[60vh] relative">
-        <video
-          className="absolute inset-0 w-full h-full object-cover"
-          src="/hero.mp4"
-          autoPlay
-          loop
-          muted
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/20" />
-      </div>
 
-      {/* Recommended Products */}
-      {isLoggedIn && recommendedProducts && recommendedProducts.items.length > 0 && (
-        <div className="bg-base-300 py-12">
-          <div className="p-2 lg:p-6">
-            <h2 className="text-3xl font-bold text-center mb-8">Recommended For You</h2>
-            {recommendedLoading ? (
-              <LoadingSpinner size="lg" text="Loading recommendations..." />
-            ) : (
-              <div className="flex items-stretch overflow-x-auto py-4 gap-2">
-                {recommendedProducts?.items?.map((product: any) => (
-                  <div key={product._id} className="shrink-0 w-[55vw] md:w-[45vw] lg:w-[45vw]">
-                    <ProductCard key={product._id} product={product} />
-                  </div>
-                ))}
+      <main className="min-h-screen bg-white pb-20">
+        {/* 1. Carousel */}
+        <section className="w-full">
+          <ImageCarousel />
+        </section>
+
+        {/* 2. Category & Collection Chips */}
+        <div ref={stickyRef} className={isSticky ? "" : "mt-4"}>
+          <section className="sticky top-[56px] z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+            <CategoryChips />
+          </section>
+        </div>
+
+        {/* 3. Quick Filters */}
+        <section>
+          <QuickFilters
+            selectedFilter={quickFilter}
+            onFilterChange={setQuickFilter}
+          />
+        </section>
+
+        {/* 4. Trending Grid (based on Quick Filter) */}
+        <section>
+          <TrendingGrid selectedFilter={quickFilter} />
+        </section>
+
+        {/* 5. Top Categories */}
+        <TopCategories />
+
+        {/* 6. All Products (Infinite Scroll) */}
+        <section className="py-8">
+          <div className="w-full px-[1px]">
+            <div className="mb-6 px-4">
+              <h2 className="text-xl font-bold tracking-wider uppercase text-left">
+                All Products
+              </h2>
+            </div>
+
+            {status === 'pending' ? (
+              <div className="flex justify-center py-20">
+                <LoadingSpinner size="lg" text="Loading products..." />
               </div>
+            ) : status === 'error' ? (
+              <div className="text-center py-20 text-red-500">
+                Error loading products. Please try again.
+                <button
+                  onClick={() => window.location.reload()}
+                  className="block mx-auto mt-4 px-4 py-2 bg-black text-white text-xs uppercase"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-[1px] gap-y-2">
+                  {data.pages.map((page, i) => (
+                    page.items.map((product: any) => (
+                      <ProductCard key={product._id} product={product} />
+                    ))
+                  ))}
+                </div>
+
+                {/* Loading indicator for next page */}
+                <div ref={ref} className="py-8 flex justify-center w-full">
+                  {isFetchingNextPage ? (
+                    <LoadingSpinner size="md" />
+                  ) : hasNextPage ? (
+                    <span className="text-gray-400 text-xs">Load more</span>
+                  ) : (
+                    <span className="text-gray-400 text-xs uppercase tracking-widest">
+                      You've reached the end
+                    </span>
+                  )}
+                </div>
+              </>
             )}
           </div>
-        </div>
-      )}
-
-      {/* New Arrivals */}
-      <div className="py-8 lg:py-12">
-        <div className="px-0.5 max-w-7xl mx-auto">
-          <div className="mb-6 px-4">
-            <Link href="/products?sort=newest" className="inline-block">
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-normal tracking-normal">
-                New Arrivals
-              </h2>
-            </Link>
-          </div>
-          {newArrivalsLoading ? (
-            <LoadingSpinner size="lg" text="Loading new arrivals..." />
-          ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-0.5 gap-y-5">
-              {newArrivals?.items?.slice(0, 8).map((product: any) => (
-                <ProductCard key={product._id} product={product} />
-              ))}
-            </div>
-          )}
-
-          {/* Explore Button */}
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={() => router.push('/products?sort=newest')}
-              className="btn btn-primary uppercase px-8"
-            >
-              Explore
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Trending Products */}
-      <div className="py-8 lg:py-12 bg-base-100">
-        <div className="px-0.5 max-w-7xl mx-auto">
-          <div className="mb-6 px-4">
-            <Link href="/products?sort=trending" className="inline-block">
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-normal tracking-normal">
-                Trending Now
-              </h2>
-            </Link>
-          </div>
-          {trendingLoading ? (
-            <LoadingSpinner size="lg" text="Loading trending products..." />
-          ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-0.5 gap-y-5">
-              {trendingProducts?.items?.slice(0, 8).map((product: any) => (
-                <ProductCard key={product._id} product={product} />
-              ))}
-            </div>
-          )}
-          {/* Explore Button */}
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={() => router.push('/products?sort=trending')}
-              className="btn btn-primary uppercase px-8"
-            >
-              Explore
-            </button>
-          </div>
-        </div>
-      </div>
-
-
-      <div className="container mx-auto p-6">
-        <Categories />
-      </div>
-
-      <div className="px-0.5 max-w-7xl mx-auto pb-12">
-        <div className="lg:col-span-3">
-          <h1 className="text-center font-semibold text-2xl my-6 uppercase px-4">Products</h1>
-          {loading ? (
-            <LoadingSpinner size="lg" text="Loading products..." />
-          ) : products.length === 0 ? (
-            <div className="text-center py-16">
-              <h2 className="text-2xl font-bold mb-4">No products found</h2>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-0.5 gap-y-5">
-                {products.map((product: any) => (
-                  <ProductCard key={product._id} product={product} />
-                ))}
-              </div>
-
-              {/* Pagination */}
-              <Pagination
-                currentPage={page}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-                className="mt-8"
-              />
-            </>
-          )}
-
-          {/* Explore Button */}
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={() => router.push('/products')}
-              className="btn btn-primary uppercase px-8"
-            >
-              Explore
-            </button>
-          </div>
-        </div>
-      </div>
+        </section>
+      </main>
 
       <Footer />
     </>

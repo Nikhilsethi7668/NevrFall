@@ -2,10 +2,10 @@ import { ThemeProvider } from './components/ThemeRegistry';
 import "./globals.css";
 import Providers from './components/Providers';
 import { ToastContainer } from 'react-toastify';
-import { Poppins } from 'next/font/google';
+import { Inter, Oswald } from 'next/font/google';
 
-const poppins = Poppins({ subsets: ['latin'], weight: ['400','600','700'] });
-
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const oswald = Oswald({ subsets: ['latin'], variable: '--font-oswald' });
 
 export default function RootLayout({
   children,
@@ -14,8 +14,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning={true}>
-      <body className={poppins.className}>
-        <ThemeProvider attribute="data-theme" defaultTheme="gryape">
+      <body className={`${inter.variable} ${oswald.variable} font-sans antialiased`}>
+        <ThemeProvider attribute="data-theme" defaultTheme="light">
           <Providers>
             <ToastContainer />
             {children}

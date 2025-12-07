@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { wishlistAPI } from "@/services/api";
-import { FaRegHeart } from "react-icons/fa";
+import { FaRegHeart, FaHeart } from "react-icons/fa";
 
 interface Variant {
   _id: string;
@@ -17,6 +17,7 @@ interface ProductCardProps {
     title: string;
     brand?: string;
     coverImage?: string;
+    hoverImage?: string;
     priceFrom: number;
     compareAtFrom?: number;
     variants?: Variant[];
@@ -34,16 +35,17 @@ export default function ProductCard({
 }: ProductCardProps) {
   const queryClient = useQueryClient();
   const [isHovered, setIsHovered] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
   // Add to wishlist mutation
   const addToWishlistMutation = useMutation({
     mutationFn: () => wishlistAPI.add({ productId: product._id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
-      alert("Added to wishlist!");
+      setIsWishlisted(true);
     },
     onError: (error: Error) => {
-      alert(error.message || "Failed to add to wishlist");
+      console.error("Failed to add to wishlist:", error);
     },
   });
 
@@ -55,63 +57,79 @@ export default function ProductCard({
 
   return (
     <div
-      className={`group ${className}`}
+      className={`group bg-base-100 overflow-hidden pb-3 transition-shadow hover:shadow-md ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Image container */}
-      <div>
-        {/* Image container with exact aspect ratio from reference */}
-        <div className="relative w-full bg-base-200 overflow-hidden" style={{ aspectRatio: '0.6756373937677054' }}>
-          {/* Wishlist button overlay on top-right of image */}
+      <Link
+        href={`/products/${product.slug || product._id}`}
+        className="block"
+        aria-label={product.title}
+      >
+        {/* Image container with aspect ratio */}
+        <div className="relative aspect-[2/3] w-full">
+          {/* Wishlist button overlay */}
           {showWishlist && (
             <button
               onClick={handleAddToWishlist}
               aria-label="Add to wishlist"
-              className="absolute top-2 right-2 z-10 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-base-100 shadow-sm focus:outline-none"
+              className="absolute top-2 right-3 z-10 p-2 focus:outline-none transform transition-transform duration-200 scale-100"
             >
-              <FaRegHeart size={14} className="text-base-content" />
+              {isWishlisted ? (
+                <FaHeart size={10} className="text-red-500" />
+              ) : (
+                <FaRegHeart size={10} className="text-base-content" />
+              )}
             </button>
           )}
-          <Link
-            href={`/products/${product.slug || product._id}`}
-            aria-label={product.title}
-          >
+
+          {/* Main Image */}
+          <Image
+            src={product.coverImage || "/placeholder.png"}
+            alt={product.title}
+            fill
+            sizes="(min-width: 1440px) calc((100vw - 120px - 60px) / 4), (min-width: 1024px) calc((100vw - 120px - 60px) / 4), (min-width: 768px) calc((100vw - 40px - 40px) / 3), calc((100vw - 40px - 20px) / 2)"
+            className={`object-cover object-center transition-transform duration-300 ${isHovered && product.hoverImage ? 'opacity-0' : 'opacity-100'
+              } group-hover:scale-105`}
+            priority={false}
+            loading="lazy"
+            decoding="async"
+          />
+
+          {/* Hover Image (if available) */}
+          {product.hoverImage && (
             <Image
-              src={product.coverImage || "/placeholder.png"}
-              alt={product.title}
-              width={800}
-              height={1200}
-              sizes="(max-width: 768px) 50vw, 25vw"
-              className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+              src={product.hoverImage}
+              alt={`${product.title} - alternate view`}
+              fill
+              sizes="(min-width: 1440px) calc((100vw - 120px - 60px) / 4), (min-width: 1024px) calc((100vw - 120px - 60px) / 4), (min-width: 768px) calc((100vw - 40px - 40px) / 3), calc((100vw - 40px - 20px) / 2)"
+              className={`object-cover object-center transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'
+                }`}
               priority={false}
               loading="lazy"
+              decoding="async"
             />
-          </Link>
+          )}
         </div>
-      </div>
 
-      {/* Info container - matching reference structure */}
-      <div className="mt-2">
-        <Link
-          href={`/products/${product.slug || product._id}`}
-          className="block text-base-content no-underline hover:text-base-content"
-          aria-label={product.title}
-        >
-          <div className="text-[11px] leading-[1.3] uppercase tracking-wide mb-1">
+        {/* Product Info */}
+        <div className="flex flex-col my-3.5 gap-1">
+          <p className="text-left text-[9px] text-gray-600 leading-none uppercase tracking-widest font-semibold line-clamp-2">
             {product.title}
+          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="block tracking-widest text-[11px]">
+                ₹ {product.priceFrom.toLocaleString('en-IN')}
+              </span>
+            </div>
+            <div className="text-right text-xs text-muted hidden lg:block">
+              &nbsp;
+            </div>
           </div>
-        </Link>
-
-        <Link
-          href={`/products/${product.slug || product._id}`}
-          className="block text-base-content no-underline hover:text-base-content"
-        >
-          <div className="text-[11px] leading-[1.3]">
-            ₹ {product.priceFrom.toLocaleString()}
-          </div>
-        </Link>
-      </div>
+        </div>
+      </Link>
     </div>
   );
 }
+

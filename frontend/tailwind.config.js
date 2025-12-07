@@ -1,6 +1,28 @@
 module.exports = {
   content: ["./src/**/*.{js,ts,jsx,tsx}"],
   plugins: [require("daisyui")],
+  theme: {
+    extend: {
+      colors: {
+        gryape: {
+          dark: "#0f2e35",
+          red: "#d02020",
+          yellow: "#ffc800",
+          text: "#ffffff",
+          muted: "#a0a0a0",
+          black: "#000000",
+        },
+      },
+      fontFamily: {
+        sans: ["var(--font-inter)", "sans-serif"],
+        display: ["var(--font-oswald)", "sans-serif"],
+      },
+      spacing: {
+        '18': '4.5rem',
+        '22': '5.5rem',
+      },
+    },
+  },
   daisyui: {
     themes: [
       {
