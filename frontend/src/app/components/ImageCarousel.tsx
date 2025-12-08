@@ -151,11 +151,7 @@ const ImageCarousel = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="w-full max-w-[1600px] mx-auto">
-        <div className="w-full aspect-[16/9] lg:aspect-[21/9] bg-gray-100 animate-pulse" />
-      </div>
-    );
+    return <div className="w-full h-[50vh] sm:h-[60vh] md:h-[70vh] bg-gray-100 animate-pulse rounded-xl" />;
   }
 
   if (slides.length === 0) {
@@ -163,95 +159,93 @@ const ImageCarousel = () => {
   }
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto">
-      <div
-        className="relative w-full aspect-[16/9] lg:aspect-[21/9] overflow-hidden group"
-        role="region"
-        aria-roledescription="carousel"
-        aria-label="Trending Products"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        {/* Slides */}
-        {slides.map((slide: any, index: number) => (
-          <Link
-            href={`/products/${slide.slug}`}
-            key={slide.id}
-            role="group"
-            aria-roledescription="slide"
-            aria-label={`Slide ${index + 1} of ${slides.length}: ${slide.title}`}
-            className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${index === current ? "opacity-100 z-10" : "opacity-0 z-0"
-              }`}
-            onClick={(e) => {
-              // Allow navigation unless it was a swipe
-              if (touchStartX.current && touchEndX.current && Math.abs(touchStartX.current - touchEndX.current) > 10) {
-                e.preventDefault();
-              }
-            }}
+    <div
+      className="relative w-full h-[80vh] sm:h-[60vh] md:h-[70vh] overflow-hidden  group"
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="Trending Products"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {/* Slides */}
+      {slides.map((slide: any, index: number) => (
+        <Link
+          href={`/products/${slide.slug}`}
+          key={slide.id}
+          role="group"
+          aria-roledescription="slide"
+          aria-label={`Slide ${index + 1} of ${slides.length}: ${slide.title}`}
+          className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${index === current ? "opacity-100 z-10" : "opacity-0 z-0"
+            }`}
+          onClick={(e) => {
+            // Allow navigation unless it was a swipe
+            if (touchStartX.current && touchEndX.current && Math.abs(touchStartX.current - touchEndX.current) > 10) {
+              e.preventDefault();
+            }
+          }}
+        >
+          <Image
+            src={slide.src}
+            alt={slide.alt}
+            fill
+            priority={index === 0}
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+          />
+
+          {/* Optional: Title Overlay */}
+          <div className="absolute bottom-12 left-0 w-full p-4 bg-gradient-to-t from-black/60 to-transparent text-white">
+            <h3 className="text-lg font-bold uppercase tracking-widest drop-shadow-md text-center">
+              {slide.title}
+            </h3>
+          </div>
+        </Link>
+      ))}
+
+      {/* Overlay gradient */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/20 z-20" />
+
+      {/* Navigation Buttons - Hidden on mobile, visible on hover/desktop */}
+      {slides.length > 1 && (
+        <div className="hidden sm:flex absolute justify-between items-center w-full px-4 top-1/2 -translate-y-1/2 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={handleManualPrev}
+            className="btn btn-circle btn-outline bg-base-100/70 border-base-300 hover:bg-accent hover:text-white"
+            aria-label="Previous slide"
           >
-            <Image
-              src={slide.src}
-              alt={slide.alt}
-              fill
-              priority={index === 0}
-              className="object-cover object-center"
-              sizes="(max-width: 1600px) 100vw, 1600px"
-            />
-
-            {/* Optional: Title Overlay */}
-            <div className="absolute bottom-0 left-0 w-full p-4 lg:p-6 bg-gradient-to-t from-black/70 to-transparent text-white">
-              <h3 className="text-base lg:text-xl font-bold uppercase tracking-widest drop-shadow-md text-center">
-                {slide.title}
-              </h3>
-            </div>
-          </Link>
-        ))}
-
-        {/* Overlay gradient */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/10 z-20" />
-
-        {/* Navigation Buttons - Hidden on mobile, visible on hover/desktop */}
-        {slides.length > 1 && (
-          <div className="hidden sm:flex absolute justify-between items-center w-full px-4 lg:px-8 top-1/2 -translate-y-1/2 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={handleManualPrev}
-              className="btn btn-circle btn-outline bg-base-100/70 border-base-300 hover:bg-accent hover:text-white"
-              aria-label="Previous slide"
-            >
-              <IoChevronBackOutline size={18} />
-            </button>
-            <button
-              onClick={handleManualNext}
-              className="btn btn-circle btn-outline bg-base-100/70 border-base-300 hover:bg-accent hover:text-white"
-              aria-label="Next slide"
-            >
-              <IoChevronForwardOutline size={18} />
-            </button>
-          </div>
-        )}
-
-        {/* Indicators */}
-        {slides.length > 1 && (
-          <div className="absolute bottom-4 lg:bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-30">
-            {slides.map((_: any, i: number) => (
-              <button
-                key={i}
-                onClick={(e) => handleDotClick(i, e)}
-                aria-label={`Go to slide ${i + 1}`}
-                aria-current={i === current ? "true" : "false"}
-                className={`w-2 h-2 lg:w-3 lg:h-3 rounded-full transition-all ${i === current ? "bg-accent scale-110" : "bg-base-300/80 hover:bg-base-100"
-                  }`}
-              />
-            ))}
-          </div>
-        )}
-
-        <div className="sr-only" aria-live="polite">
-          Showing slide {current + 1} of {slides.length}
+            <IoChevronBackOutline size={18} />
+          </button>
+          <button
+            onClick={handleManualNext}
+            className="btn btn-circle btn-outline bg-base-100/70 border-base-300 hover:bg-accent hover:text-white"
+            aria-label="Next slide"
+          >
+            <IoChevronForwardOutline size={18} />
+          </button>
         </div>
+      )}
+
+      {/* Indicators */}
+      {slides.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+          {slides.map((_: any, i: number) => (
+            <button
+              key={i}
+              onClick={(e) => handleDotClick(i, e)}
+              aria-label={`Go to slide ${i + 1}`}
+              aria-current={i === current ? "true" : "false"}
+              className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all ${i === current ? "bg-accent scale-110" : "bg-base-300/80 hover:bg-base-100"
+                }`}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="sr-only" aria-live="polite">
+        Showing slide {current + 1} of {slides.length}
       </div>
     </div>
   );
