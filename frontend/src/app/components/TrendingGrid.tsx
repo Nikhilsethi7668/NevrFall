@@ -76,7 +76,8 @@ const TrendingGrid = ({ selectedFilter }: TrendingGridProps) => {
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-2 gap-x-[1px] gap-y-2 mb-6">
+                    {/* Mobile: 2 columns, Desktop: 4 columns (same as ProductCard) */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-[1px] gap-y-2 mb-6">
                         {products.map((product: any) => (
                             <ProductCard key={product._id} product={product} />
                         ))}

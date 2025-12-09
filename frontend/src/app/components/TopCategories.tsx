@@ -37,7 +37,8 @@ const TopCategories = () => {
                 </header>
 
                 <div className="shop-by-category">
-                    <div className="shop-by-category_grid grid grid-cols-2 gap-2 px-2">
+                    {/* Mobile: 2 columns, Desktop: 4 columns */}
+                    <div className="shop-by-category_grid grid grid-cols-2 lg:grid-cols-4 gap-2 px-2">
                         {topCategories.map((category) => (
                             <div key={category._id} className="shop-by-category_item">
                                 <Link
@@ -50,7 +51,7 @@ const TopCategories = () => {
                                             alt={category.name}
                                             fill
                                             className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                            sizes="(max-width: 740px) 52vw, calc(min(100vw - 80px, 1520px) / 2)"
+                                            sizes="(max-width: 1024px) 50vw, 25vw"
                                             loading="lazy"
                                         />
                                     </div>

@@ -58,7 +58,8 @@ const CategoryChips = () => {
 
     return (
         <div className="w-full py-2 bg-base-100">
-            <div className="flex overflow-x-auto gap-4 px-4 no-scrollbar pb-2 animate-fade-in">
+            {/* Mobile: left-aligned scrollable, Desktop: centered with larger items */}
+            <div className="flex overflow-x-auto gap-4 px-4 no-scrollbar pb-2 animate-fade-in lg:justify-center lg:gap-6">
                 {allItems.map((item, index) => (
                     <button
                         key={`${item.type}-${item.id}`}
@@ -67,21 +68,22 @@ const CategoryChips = () => {
                                 ? handleCategoryClick(item.value)
                                 : handleCollectionClick(item.value)
                         }
-                        className="flex flex-col items-center gap-2 min-w-[72px] group animate-slide-up"
+                        className="flex flex-col items-center gap-2 min-w-[72px] lg:min-w-[108px] group animate-slide-up"
                         style={{ animationDelay: `${index * 50}ms` }}
                     >
-                        <div className="relative w-[72px] h-[72px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-accent transition-all">
+                        {/* Mobile: 72px, Desktop: 108px (1.5x) */}
+                        <div className="relative w-[72px] h-[72px] lg:w-[108px] lg:h-[108px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-accent transition-all">
                             <Image
                                 src={item.image || '/placeholder.png'}
                                 alt={item.name}
                                 fill
                                 className="object-cover"
-                                sizes="72px"
+                                sizes="(max-width: 1024px) 72px, 108px"
                                 loading="lazy"
                                 decoding="async"
                             />
                         </div>
-                        <span className="text-[10px] uppercase font-medium text-center tracking-wide line-clamp-2 w-full">
+                        <span className="text-[10px] lg:text-xs uppercase font-medium text-center tracking-wide line-clamp-2 w-full">
                             {item.name}
                         </span>
                     </button>
