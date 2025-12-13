@@ -810,7 +810,7 @@ export const verifyPayment = async (req, res) => {
               reason: `verification_failed: ${error.message}`,
             },
           },
-          { json: () => {} }
+          { json: () => { } }
         );
       } catch (fallbackError) {
         logger.error("Fallback failure handling also failed", {
@@ -921,7 +921,7 @@ export const getOrder = async (req, res) => {
     let order = await cacheGet(cacheKey);
 
     if (!order) {
-      order = await Order.findById(id).populate("items.product items.variant");
+      order = await Order.findById(id).populate("items.product items.variant").populate("deliveryDetails");
       if (!order) return res.status(404).json({ message: "Order not found" });
 
       await cacheSet(cacheKey, order, 600);

@@ -241,3 +241,44 @@ export const mergeGuestCart = async (userId, guestCartItems = []) => {
     return { success: false, error: error.message };
   }
 };
+
+export const hydrateGuestCart = async (req, res) => {
+  try {
+    const { items } = req.body;
+    console.log("Hydrate Guest Cart Called with items:", JSON.stringify(items));
+    if (!items || !Array.isArray(items)) {
+      return res.json({ items: [], totalValue: 0 });
+    }
+
+    const populatedItems = [];
+    let totalValue = 0;
+
+    for (const item of items) {
+      const { variantId, quantity } = item;
+      if (!variantId) continue;
+
+      const variant = await ProductVariant.findById(variantId).populate("product");
+
+      if (variant && variant.product) {
+
+        populatedItems.push({
+          product: variant.product,
+          variant: variant,
+          title: variant.product.title,
+          color: variant.product.color,
+          size: variant.size,
+          image: variant.product.coverImage,
+          price: variant.price,
+          quantity: Number(quantity),
+          _id: variant._id // simulated item id
+        });
+        totalValue += variant.price * Number(quantity);
+      }
+    }
+
+    return res.json({ items: populatedItems, totalValue });
+  } catch (error) {
+    console.error("Hydration error:", error);
+    res.status(500).json({ message: "Failed to hydrate cart" });
+  }
+};

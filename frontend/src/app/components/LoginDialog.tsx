@@ -67,7 +67,7 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
 
         // For testing: Show OTP in alert (since SMS/email not working)
         // In production, remove this and use actual OTP service
-        const testOtp = "123456"; // You can make this dynamic if backend returns it
+        const testOtp = data.otp || "888888"; // Use backend OTP if available, else fallback
         setGeneratedOtp(testOtp);
 
         // Show alert with OTP

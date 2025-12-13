@@ -8,6 +8,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import secureLocalStorage from "react-secure-storage";
 import { useProfileStore } from "../store/useProfileStore";
+import { useGuestStore } from "../store/useGuestStore";
 import { IoPerson } from "react-icons/io5";
 import { BsBagHeartFill } from "react-icons/bs";
 import { FaBox } from "react-icons/fa6";
@@ -23,6 +24,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeTab, setActiveTab, isLoggedIn } = useProfileStore();
+  const { guestWishlist, removeFromGuestWishlist, clearGuestWishlist } = useGuestStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [profileData, setProfileData] = useState({
@@ -35,12 +37,18 @@ export default function ProfilePage() {
 
   useEffect(() => {
     setMounted(true);
-    setUserId(localStorage.getItem("userId"));
+    const storedUserId = localStorage.getItem("userId");
+    setUserId(storedUserId);
     setProfileData({
       name: localStorage.getItem("userName") || "",
       email: localStorage.getItem("userEmail") || "",
       phone: localStorage.getItem("userPhone") || "",
     });
+
+    // If guest, default to wishlist tab
+    if (!storedUserId) {
+      setActiveTab("wishlist");
+    }
   }, []);
 
   // Fetch user profile
@@ -58,18 +66,28 @@ export default function ProfilePage() {
   const { data: addressesData } = useQuery({
     queryKey: ["addresses"],
     queryFn: async () => {
+      if (!userId) return [];
       const res = await addressAPI.getAllUserAddress();
       return res.data.addresses;
     },
+    enabled: !!userId,
   });
 
   // Fetch wishlist
   const { data: wishlistData } = useQuery({
-    queryKey: ["wishlist"],
+    queryKey: ["wishlist", userId, guestWishlist],
     queryFn: async () => {
-      const res = await wishlistAPI.get();
-      return res.data;
+      if (userId) {
+        const res = await wishlistAPI.get();
+        return res.data;
+      } else {
+        // Guest Wishlist Hydration
+        if (guestWishlist.length === 0) return { items: [] };
+        const res = await wishlistAPI.hydrate(guestWishlist);
+        return res.data;
+      }
     },
+    enabled: mounted
   });
 
   // Update profile mutation
@@ -107,7 +125,13 @@ export default function ProfilePage() {
   // Remove from wishlist mutation
   const removeFromWishlistMutation = useMutation({
     mutationFn: async (productId: string) => {
-      return wishlistAPI.remove({ productId });
+      if (userId) {
+        return wishlistAPI.remove({ productId });
+      } else {
+        removeFromGuestWishlist(productId);
+        // invalidate queries manually or rely on store update
+        return Promise.resolve();
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
@@ -176,19 +200,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!userId) {
-    return (
-      <>
-        <Navbar />
-        <div className="container mx-auto p-4">
-          <div className="alert alert-warning">
-            <span>Please login to view your profile</span>
-          </div>
-        </div>
-        <Footer />
-      </>
-    );
-  }
+  // Removed login guard
 
   if (isLoading) {
     return (
@@ -236,7 +248,7 @@ export default function ProfilePage() {
             <div className="card bg-base-200">
               <div className="card-body">
                 <ul className="menu">
-                  <li>
+                  {userId && <li>
                     <button
                       onClick={() => setActiveTab("overview")}
                       className={`btn btn-ghost justify-start ${activeTab === "overview" ? "btn-active" : ""
@@ -244,8 +256,8 @@ export default function ProfilePage() {
                     >
                       Overview
                     </button>
-                  </li>
-                  <li>
+                  </li>}
+                  {userId && <li>
                     <button
                       onClick={() => setActiveTab("profile")}
                       className={`btn btn-ghost justify-start ${activeTab === "profile" ? "btn-active" : ""
@@ -253,8 +265,8 @@ export default function ProfilePage() {
                     >
                       Profile
                     </button>
-                  </li>
-                  <li>
+                  </li>}
+                  {userId && <li>
                     <button
                       onClick={() => setActiveTab("address")}
                       className={`btn btn-ghost justify-start ${activeTab === "address" ? "btn-active" : ""
@@ -262,7 +274,7 @@ export default function ProfilePage() {
                     >
                       Address
                     </button>
-                  </li>
+                  </li>}
                   <li>
                     <button
                       onClick={() => setActiveTab("wishlist")}
@@ -272,7 +284,7 @@ export default function ProfilePage() {
                       Wishlist
                     </button>
                   </li>
-                  <li>
+                  {userId && <li>
                     <button
                       onClick={() => router.push("/orders")}
                       className={`btn btn-ghost justify-start ${activeTab === "orders" ? "btn-active" : ""
@@ -280,8 +292,8 @@ export default function ProfilePage() {
                     >
                       Orders
                     </button>
-                  </li>
-                  <li>
+                  </li>}
+                  {userId && <li>
                     <button
                       onClick={() => router.push("/returns")}
                       className={`btn btn-ghost justify-start ${activeTab === "refunds" ? "btn-active" : ""
@@ -289,8 +301,8 @@ export default function ProfilePage() {
                     >
                       Refunds
                     </button>
-                  </li>
-                  <li>
+                  </li>}
+                  {userId && <li>
                     <button
                       onClick={() => setActiveTab("reviews")}
                       className={`btn btn-ghost justify-start ${activeTab === "reviews" ? "btn-active" : ""
@@ -298,8 +310,8 @@ export default function ProfilePage() {
                     >
                       Ratings & Reviews
                     </button>
-                  </li>
-                  <li>
+                  </li>}
+                  {userId && <li>
                     <button
                       onClick={() => setActiveTab("wallet")}
                       className={`btn btn-ghost justify-start ${activeTab === "wallet" ? "btn-active" : ""
@@ -307,7 +319,7 @@ export default function ProfilePage() {
                     >
                       Wallet
                     </button>
-                  </li>
+                  </li>}
                 </ul>
               </div>
             </div>
@@ -492,7 +504,7 @@ export default function ProfilePage() {
                       Add some products to your wishlist to see them here
                     </p>
                     <button
-                      onClick={() => router.push("/products")}
+                      onClick={() => router.push("/")}
                       className="btn btn-primary"
                     >
                       Browse Products

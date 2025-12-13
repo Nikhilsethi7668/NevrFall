@@ -175,3 +175,35 @@ export async function mergeGuestWishlist(userId, guestProductIds = []) {
     return { success: false, error: error.message };
   }
 }
+
+export async function hydrateGuestWishlist(req, res) {
+  try {
+    const { productIds } = req.body;
+    console.log("Hydrate Guest Wishlist Called with IDs:", JSON.stringify(productIds));
+    if (!productIds || !Array.isArray(productIds)) {
+      return res.json({ items: [] });
+    }
+
+    const populatedItems = [];
+
+    for (const productId of productIds) {
+      if (!productId) continue;
+      const product = await Product.findById(productId)
+        .select("title slug color colorLabel coverImage priceFrom compareAtFrom inStock currency")
+        .lean();
+
+      if (product) {
+        populatedItems.push({
+          product: product,
+          _id: "guest_" + product._id, // simulated item id
+          addedAt: new Date()
+        });
+      }
+    }
+
+    return res.json({ items: populatedItems });
+  } catch (error) {
+    console.error("Hydration error:", error);
+    res.status(500).json({ message: "Failed to hydrate wishlist" });
+  }
+}

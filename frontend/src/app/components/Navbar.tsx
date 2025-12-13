@@ -17,6 +17,7 @@ import { useCategoryStore } from '../store/useCategoryStore';
 import { MdPersonOutline } from "react-icons/md";
 import { FaBagShopping } from "react-icons/fa6";
 import MobileNavItem, { NavItem } from "./MobileNavItem";
+import { useGuestStore } from '../store/useGuestStore';
 
 const Navbar = () => {
   const { categories, fetchCategories } = useCategoryStore();
@@ -33,6 +34,8 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [sidebar, setSidebar] = useState(false);
   const pathname = usePathname();
+  const guestCartCount = useGuestStore((state) => state.getGuestCartCount());
+
 
   useEffect(() => {
     fetchCategories();
@@ -161,25 +164,23 @@ const Navbar = () => {
 
   return (
     <>
-      <div className={`grid grid-cols-3 w-full py-2 ${isScrolled ? 'bg-base-100 shadow sticky text-black' : "fixed text-white" } top-0 z-20`}>
+      <div className={`grid grid-cols-3 w-full py-2 ${isScrolled ? 'bg-base-100 shadow sticky text-black' : "fixed text-white"} top-0 z-20`}>
         <div className="navbar-start gap-7">
           <div>
-          <label onClick={() => setSidebar(!sidebar)} className="btn-ghost font-semibold"><CiMenuBurger  size={20} className='ml-2' /></label>
-          <>
-            <div
-              className={`fixed inset-0 bg-black/50 backdrop-blur-md z-40 transition-opacity duration-300 ease-in-out ${
-                sidebar ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-              }`}
-              onClick={() => setSidebar(false)}
-            ></div>
-            <div
-              className={`fixed inset-y-0 left-0 w-full md:w-[600px] lg:w-[600px] bg-base-100 text-black p-4 z-50 flex flex-col transform transition-transform duration-500 ease-out ${
-                sidebar ? "translate-x-0" : "-translate-x-full"
-              }`}
-            >
+            <label onClick={() => setSidebar(!sidebar)} className="btn-ghost font-semibold"><CiMenuBurger size={20} className='ml-2' /></label>
+            <>
+              <div
+                className={`fixed inset-0 bg-black/50 backdrop-blur-md z-40 transition-opacity duration-300 ease-in-out ${sidebar ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                  }`}
+                onClick={() => setSidebar(false)}
+              ></div>
+              <div
+                className={`fixed inset-y-0 left-0 w-full md:w-[600px] lg:w-[600px] bg-base-100 text-black p-4 z-50 flex flex-col transform transition-transform duration-500 ease-out ${sidebar ? "translate-x-0" : "-translate-x-full"
+                  }`}
+              >
                 <div className="flex justify-between items-center mb-6">
                   <Link href="/" className="drawer__logo w-[130px]">
-                    <img src='/logo.svg' alt='nevrfall'/>
+                    <img src='/logo.svg' alt='nevrfall' />
                   </Link>
                   <button onClick={() => setSidebar(false)} className="btn btn-ghost btn-circle">
                     <IoClose size={24} />
@@ -237,12 +238,12 @@ const Navbar = () => {
                   )}
                 </div>
               </div>
-          </>
+            </>
           </div>
         </div>
 
         <div className={`navbar-center ${isScrolled ? 'text-black' : 'text-white'}`}>
-          <Link href="/" className="text-lg sm:text-xl font-semibold uppercase tracking-wide"><img src='/logo.svg' alt='nevrfall' className='w-[130px]'/></Link>
+          <Link href="/" className="text-lg sm:text-xl font-semibold uppercase tracking-wide"><img src='/logo.svg' alt='nevrfall' className='w-[130px]' /></Link>
         </div>
 
         <div className="flex flex-row justify-end items-center gap-1">
@@ -280,9 +281,9 @@ const Navbar = () => {
           >
             <div className="indicator">
               <FaBagShopping size={22} />
-              {cartData && cartData.count > 0 && (
+              {mounted && (isLoggedIn ? (cartData?.count || 0) : guestCartCount) > 0 && (
                 <span className="badge badge-xs badge-primary indicator-item">
-                  {cartData.count}
+                  {isLoggedIn ? (cartData?.count || 0) : guestCartCount}
                 </span>
               )}
             </div>

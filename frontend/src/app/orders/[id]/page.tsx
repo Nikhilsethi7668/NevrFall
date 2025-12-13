@@ -113,8 +113,8 @@ export default function OrderDetailsPage() {
 
   // Cancel order mutation
   const cancelOrderMutation = useMutation({
-    mutationFn: async () => {
-      return orderAPI.cancel(orderId, { reason: "Customer requested cancellation" });
+    mutationFn: async (reason: string) => {
+      return orderAPI.cancel(orderId, { reason });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
@@ -410,26 +410,30 @@ export default function OrderDetailsPage() {
 
                       {/* Action button and modal remain exactly the same (no extra buttons/data) */}
                       <div className="px-3 pb-3">
-                        <button
-                          className="btn w-full sm:w-auto"
-                          disabled={
-                            pendingExchangeItems.includes(index) ||
-                            (!!returnedItemIds && returnedItemIds.includes(item._id))
-                          }
-                          onClick={() => {
-                            getAllProducts();
-                            setItemToReplace(index);
-                            setCurrentPrice(item.price);
-                            setExchangeSteps("reason");
-                            (document.getElementById("my_modal_5") as HTMLDialogElement)?.showModal();
-                          }}
-                        >
-                          {pendingExchangeItems.includes(index)
-                            ? "Exchange Pending"
-                            : !!returnedItemIds && returnedItemIds.includes(item._1d)
-                              ? "Returned"
-                              : "Exchange Item"}
-                        </button>
+                        {(pendingExchangeItems.includes(index) ||
+                          (!!returnedItemIds && returnedItemIds.includes(item._id)) ||
+                          (order.status === "delivered" && (new Date().getTime() - new Date(order.deliveryDetails?.deliveredAt || order.updatedAt).getTime() <= 7 * 24 * 60 * 60 * 1000))) && (
+                            <button
+                              className="btn w-full sm:w-auto text-[10px]"
+                              disabled={
+                                pendingExchangeItems.includes(index) ||
+                                (!!returnedItemIds && returnedItemIds.includes(item._id))
+                              }
+                              onClick={() => {
+                                getAllProducts();
+                                setItemToReplace(index);
+                                setCurrentPrice(item.price);
+                                setExchangeSteps("reason");
+                                (document.getElementById("my_modal_5") as HTMLDialogElement)?.showModal();
+                              }}
+                            >
+                              {pendingExchangeItems.includes(index)
+                                ? "Exchange Pending"
+                                : !!returnedItemIds && returnedItemIds.includes(item._id)
+                                  ? "Returned"
+                                  : "Exchange Item"}
+                            </button>
+                          )}
 
                         {/* keep the exact same dialog/flow you had */}
                         <dialog id="my_modal_5" className="modal modal-bottom sm:modal-middle">
@@ -858,11 +862,12 @@ export default function OrderDetailsPage() {
               <div className="card-body p-4 sm:p-6">
                 <h2 className="card-title mb-4">Order Actions</h2>
                 <div className="space-y-3">
-                  {order.status === "pending" && (
+                  {["pending", "confirmed"].includes(order.status) && (
                     <button
                       onClick={() => {
-                        if (confirm("Are you sure you want to cancel this order?")) {
-                          cancelOrderMutation.mutate();
+                        const reason = prompt("Please enter a reason for cancellation:");
+                        if (reason) {
+                          cancelOrderMutation.mutate(reason);
                         }
                       }}
                       disabled={cancelOrderMutation.isPending}

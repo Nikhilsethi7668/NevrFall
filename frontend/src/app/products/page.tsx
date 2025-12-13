@@ -20,8 +20,7 @@ function ProductsPageContent() {
     products,
     loading,
     filters,
-    page,
-    totalPages,
+    hasMore,
     fetchProducts,
     setFilters,
   } = useProductStore();
@@ -30,18 +29,29 @@ function ProductsPageContent() {
   useEffect(() => {
     const params: Record<string, any> = {};
     searchParams.forEach((value, key) => {
-      params[key] = value;
+      // Handle comma-separated values for arrays like colors
+      if (value.includes(',')) {
+        params[key] = value.split(',');
+      } else {
+        params[key] = value;
+      }
     });
     setFilters(params);
-  }, []);
+    // Initial fetch
+    fetchProducts(params, false);
+  }, []); // Run once on mount
 
-  // --- Update URL and fetch data when filters/page changes ---
+  // --- Update URL when filters change ---
   const pathname = usePathname();
   useEffect(() => {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
       if (value) {
-        query.set(key, String(value));
+        if (Array.isArray(value)) {
+          if (value.length > 0) query.set(key, value.join(','));
+        } else {
+          query.set(key, String(value));
+        }
       }
     }
 
@@ -51,8 +61,35 @@ function ProductsPageContent() {
     if (queryString !== currentString) {
       router.push(`${pathname}?${queryString}`);
     }
-    fetchProducts(filters, page);
+    // We trigger fetch here whenever filters change.
+    // Important: Avoid double fetch on mount.
+    // The initial useEffect sets filters. This dependency [filters] will trigger.
+    // Simplest approach: Trust this useEffect to handle all data fetching based on filter state.
+    fetchProducts(filters, false);
   }, [filters]);
+
+  // --- Infinite Scroll Observer ---
+  // Using a callback ref or simple useEffect with ID
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          fetchProducts(filters, true);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    const sentinel = document.getElementById('sentinel');
+    if (sentinel) {
+      observer.observe(sentinel);
+    }
+
+    return () => {
+      if (sentinel) observer.unobserve(sentinel);
+    };
+  }, [filters, hasMore, loading]);
+
 
   // --- Fetch facets for dynamic filters ---
   const { data: facetsData } = useQuery({
@@ -65,10 +102,6 @@ function ProductsPageContent() {
 
   const handleFilterChange = (newFilters: Record<string, any>) => {
     setFilters(newFilters);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    useProductStore.setState({ page: newPage });
   };
 
   const clearFilters = () => {
@@ -122,11 +155,7 @@ function ProductsPageContent() {
 
           {/* --- Product Grid Area --- */}
           <div className="w-full lg:w-3/4">
-            {loading ? (
-              <div className="flex justify-center py-16">
-                <LoadingSpinner size="lg" text="Loading products..." />
-              </div>
-            ) : products.length === 0 ? (
+            {products.length === 0 && !loading ? (
               <div className="text-center py-16">
                 <h2 className="text-[12px] font-semibold mb-3">No products found</h2>
                 <p className="text-gray-500 mb-6">
@@ -144,13 +173,12 @@ function ProductsPageContent() {
                   ))}
                 </div>
 
-                {/* Pagination */}
-                <div className="mt-10">
-                  <Pagination
-                    currentPage={page}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                  />
+                {/* Loading / Sentinel */}
+                <div id="sentinel" className="h-10 w-full flex justify-center items-center mt-4">
+                  {loading && <LoadingSpinner size="md" />}
+                  {!hasMore && products.length > 0 && (
+                    <p className="text-xs text-gray-400">No more products</p>
+                  )}
                 </div>
               </>
             )}

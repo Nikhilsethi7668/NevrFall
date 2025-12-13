@@ -67,11 +67,22 @@ const listSelect = {
 };
 
 const buildFilter = async (q) => {
+  console.log("buildFilter received query:", q);
   const filter = {};
 
-  // Handle category filtering by primaryCategoryId (support both singular and plural)
-  const categoryParam = q.category || q.categories;
-  const categories = toArr(categoryParam);
+  // Helper to resolve parameter values checking both "key" and "key[]"
+  // (Handling potential parser differences for array params)
+  const getVal = (keys) => {
+    if (typeof keys === 'string') keys = [keys];
+    for (const k of keys) {
+      if (q[k] !== undefined) return q[k];
+      if (q[`${k}[]`] !== undefined) return q[`${k}[]`];
+    }
+    return undefined;
+  };
+
+  // Handle category filtering
+  const categories = toArr(getVal(['category', 'categories']));
   if (categories.length) {
     // Convert category names/slugs to ObjectIds
     const categoryIds = [];
@@ -105,28 +116,25 @@ const buildFilter = async (q) => {
     }
   }
 
-  const colors = toArr(q.colors);
+  const colors = toArr(getVal('colors'));
   if (colors.length) filter.color = { $in: colors.map((c) => c.toLowerCase()) };
 
-  // Handle sizes (support both singular and plural)
-  const sizeParam = q.size || q.sizes;
-  const sizes = toArr(sizeParam);
+  // Handle sizes
+  const sizes = toArr(getVal(['size', 'sizes']));
   if (sizes.length)
     filter.availableSizes = { $in: sizes.map((s) => s.toUpperCase()) };
 
-  // Handle tags and sleeves (support both singular and plural)
-  const tagParam = q.tag || q.tags || q.sleeve || q.sleeves;
-  const tags = toArr(tagParam);
+  // Handle tags and sleeves
+  const tags = toArr(getVal(['tag', 'tags', 'sleeve', 'sleeves']));
   if (tags.length) filter.tags = { $in: tags.map((t) => t.toLowerCase()) };
 
-  // Handle collections (support both singular and plural)
-  const collectionParam = q.collection || q.collections;
-  const collections = toArr(collectionParam);
+  // Handle collections
+  const collections = toArr(getVal(['collection', 'collections']));
   if (collections.length) {
     filter.collections = { $in: collections };
   }
 
-  // price range applies to priceFrom (handle both price and priceMin/priceMax)
+  // price range
   const priceMin = toNum(q.priceMin, null);
   let priceMax = toNum(q.priceMax, null);
 
@@ -141,6 +149,7 @@ const buildFilter = async (q) => {
     if (priceMax !== null) filter.priceFrom.$lte = priceMax;
   }
 
+  console.log("buildFilter generated filter:", JSON.stringify(filter, null, 2));
   return filter;
 };
 

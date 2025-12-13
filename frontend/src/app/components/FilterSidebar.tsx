@@ -17,17 +17,17 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
 
   // --- Initialize pending filters from URL or defaults ---
   useEffect(() => {
-    const initialFilters: Record<string, any> = { price: filters.price || 5000 };
-    if (facetsData) {
-      Object.keys(facetsData).forEach(key => {
-        initialFilters[key] = filters[key] || '';
-      });
-    }
+    const initialFilters: Record<string, any> = { ...filters };
+    if (!initialFilters.price) initialFilters.price = 10000;
+
     setPendingFilters(initialFilters);
+
     // Open sections that have active filters
-    const activeSections = Object.keys(initialFilters).filter(key => initialFilters[key] && key !== 'price');
-    setOpenSections(['price', ...activeSections]);
-  }, [filters, facetsData]);
+    const activeSections = Object.keys(initialFilters).filter(key =>
+      initialFilters[key] && key !== 'price'
+    );
+    setOpenSections(prev => Array.from(new Set([...prev, 'price', ...activeSections])));
+  }, [filters]);
 
   const toggleSection = (section: string) => {
     setOpenSections((prev) =>
@@ -37,9 +37,44 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
 
   const isOpen = (section: string) => openSections.includes(section);
 
-  // --- Handle local filter changes ---
+  // --- Handle local filter changes (Multi-select support) ---
   const handleLocalFilterChange = (key: string, value: string | number) => {
-    setPendingFilters((prev) => ({ ...prev, [key]: value }));
+    setPendingFilters((prev) => {
+      const current = prev[key];
+
+      // For Price (number), just replace
+      if (key === 'price') {
+        return { ...prev, [key]: value };
+      }
+
+      // For other filters (assume array or implicit array)
+      let newValue;
+      if (Array.isArray(current)) {
+        if (current.includes(value)) {
+          newValue = current.filter(item => item !== value); // Remove
+        } else {
+          newValue = [...current, value]; // Add
+        }
+      } else {
+        // If it was a single string or undefined, convert to array logic
+        if (current === value) {
+          newValue = []; // Toggle off
+        } else if (current) {
+          newValue = [current, value]; // Add to existing single
+        } else {
+          newValue = [value]; // Start new array
+        }
+      }
+
+      // If empty array, remove they key or set to null/empty? 
+      // Let's keep it as empty array or undefined to represent no filter.
+      if (Array.isArray(newValue) && newValue.length === 0) {
+        const { [key]: _, ...rest } = prev;
+        return rest;
+      }
+
+      return { ...prev, [key]: newValue };
+    });
   };
 
   // --- Apply all pending filters ---
@@ -50,25 +85,26 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
 
   // --- Clear all filters ---
   const handleClearFilters = () => {
-    const cleared: Record<string, any> = { price: 5000 };
-    if (facetsData) {
-      Object.keys(facetsData).forEach(key => {
-        cleared[key] = '';
-      });
-    }
+    const cleared: Record<string, any> = { price: 10000 };
     setPendingFilters(cleared);
-    clearFilters();
+    clearFilters(); // Calls setFilters({}) in parent
   };
 
   // --- Count active filters (excluding default price) ---
   const activeFilterCount = Object.entries(pendingFilters).filter(
-    ([key, value]) => value && (key !== 'price' || value !== 5000)
+    ([key, value]) => value && (key !== 'price' || Number(value) !== 10000)
   ).length;
 
   // --- Render a single filter section ---
   const renderFilterSection = (key: string, facet: any) => {
     const options = facet || [];
-    const currentSelection = pendingFilters[key];
+    const current = pendingFilters[key]; // Can be string or array
+
+    // Helper to check if option is selected
+    const isSelected = (val: string) => {
+      if (Array.isArray(current)) return current.includes(val);
+      return current === val;
+    };
 
     return (
       <div key={key} className='border-t py-3'>
@@ -80,28 +116,31 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
         </button>
         {isOpen(key) && (
           <div className='mt-3 flex flex-wrap gap-2'>
-            {options && options.length > 0 && options.map((option: any) => (
-              <button
-                key={option.slug || option.size || option.color}
-                onClick={() => handleLocalFilterChange(key, option.slug || option.size || option.color)}
-                className={`border px-3 py-1 text-[10px] ${
-                  currentSelection === (option.slug || option.size || option.color) ? 'bg-black text-white' : 'hover:bg-gray-100'
-                }`}
-              >
-                {option.name || option.size || option.color} ({option.count})
-              </button>
-            ))}
+            {options && options.length > 0 && options.map((option: any) => {
+              const val = option.slug || option.size || option.color;
+              const selected = isSelected(val);
+              return (
+                <button
+                  key={val}
+                  onClick={() => handleLocalFilterChange(key, val)}
+                  className={`border px-3 py-1 text-[10px] transition-colors ${selected ? 'bg-black text-white' : 'hover:bg-gray-100'
+                    }`}
+                >
+                  {option.name || option.size || option.color} ({option.count})
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
     );
   };
-  
+
   const renderDesktopSidebar = () => (
     <aside className='w-full lg:w-72 hidden sm:block bg-white border-r sticky top-20 h-fit px-4 py-5'>
       <h2 className='text-[12px] font-bold mb-4'>FILTERS</h2>
 
-      {facetsData && Object.entries(facetsData).map(([key, facet]: [string, any]) => 
+      {facetsData && Object.entries(facetsData).map(([key, facet]: [string, any]) =>
         renderFilterSection(key, facet)
       )}
 
@@ -118,14 +157,14 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
             <input
               type='range'
               min='0'
-              max='5000'
-              value={pendingFilters.price || 5000}
+              max='10000'
+              value={pendingFilters.price || 10000}
               className='range range-sm'
               onChange={(e) => handleLocalFilterChange('price', parseInt(e.target.value, 10))}
             />
             <div className='flex justify-between text-[10px] mt-1'>
               <span>₹0</span>
-              <span>₹{pendingFilters.price || 5000}</span>
+              <span>₹{pendingFilters.price || 10000}</span>
             </div>
           </div>
         )}
@@ -156,10 +195,10 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
             Filters
           </Dialog.Title>
           <div className="overflow-y-auto grow">
-            {facetsData && Object.entries(facetsData).map(([key, facet]: [string, any]) => 
+            {facetsData && Object.entries(facetsData).map(([key, facet]: [string, any]) =>
               renderFilterSection(key, facet)
             )}
-            
+
             {/* Price */}
             <div className='border-t py-3'>
               <button
@@ -173,14 +212,14 @@ export default function FilterSidebar({ filters, facetsData, handleFilterChange,
                   <input
                     type='range'
                     min='0'
-                    max='5000'
-                    value={pendingFilters.price || 5000}
+                    max='10000'
+                    value={pendingFilters.price || 10000}
                     className='range range-sm'
                     onChange={(e) => handleLocalFilterChange('price', parseInt(e.target.value, 10))}
                   />
                   <div className='flex justify-between text-[10px] mt-1'>
                     <span>₹0</span>
-                    <span>₹{pendingFilters.price || 5000}</span>
+                    <span>₹{pendingFilters.price || 10000}</span>
                   </div>
                 </div>
               )}

@@ -40,7 +40,7 @@ export async function requestOtp(req, res) {
     const dataKey = `otp:data:${phone}`;
     await redis.set(dataKey, hashOtp(otp), "EX", 300);
     await sendSms(phone, otp);
-    return res.json({ ok: true, message: "OTP sent" });
+    return res.json({ ok: true, message: "OTP sent", otp });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Failed to send OTP" });
@@ -138,7 +138,7 @@ export async function requestOTPByEmail(req, res) {
       `<p>Your OTP is <strong>${otp}</strong>. It is valid for 5 minutes.</p>`
     );
 
-    res.status(200).json({ ok: true, message: "OTP sent to email" });
+    res.status(200).json({ ok: true, message: "OTP sent to email", otp });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Failed to send OTP" });

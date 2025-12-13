@@ -13,17 +13,21 @@ import { toast } from "react-toastify";
 import { DELIVERY_CHECK_PINCODE } from "../constants/Constant";
 import axios from "axios";
 import { FaCaretDown } from "react-icons/fa";
+import { useGuestStore } from "../store/useGuestStore";
+import LoginDialog from "../components/LoginDialog";
 
 export default function CartPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { coupon, setCoupon, cartRecomendation, address, setAddress } = useOrderStore();
+  const { guestCart, updateGuestCartQuantity, removeFromGuestCart, addToGuestWishlist, clearGuestCart } = useGuestStore();
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [showAddAddressForm, setShowAddAddressForm] = useState(false);
   const [notDeliverable, setNotDeliverable] = useState(true);
   const [message, setMessage] = useState("");
+  const [loginOpen, setLoginOpen] = useState(false);
   const [newAddress, setNewAddress] = useState({
     name: "",
     phone: "",
@@ -69,13 +73,20 @@ export default function CartPage() {
 
   // Fetch cart
   const { data: cart, isLoading } = useQuery({
-    queryKey: ["cart", userId],
+    queryKey: ["cart", userId, guestCart],
     queryFn: async () => {
-      if (!userId) return null;
-      const res = await cartAPI.get(userId);
-      return res.data;
+      if (userId) {
+        const res = await cartAPI.get(userId);
+        return res.data;
+      } else {
+        // Guest cart hydration
+        if (guestCart.length === 0) return { items: [], totalValue: 0 };
+        const res = await cartAPI.hydrate(guestCart);
+        return res.data;
+      }
     },
-    enabled: !!userId,
+    // Always enabled if mounted, because we support guest cart
+    enabled: mounted,
   });
 
   const { data: addresses, isLoading: isLoadingAddresses, refetch: refetchAddresses } = useQuery({
@@ -146,35 +157,58 @@ export default function CartPage() {
 
   const updateQuantityMutation = useMutation({
     mutationFn: async ({ variantId, action }: { variantId: string; action: "add" | "remove" }) => {
-      if (!userId) throw new Error("Please login first");
-      if (action === "add") {
-        return cartAPI.add({ userId, variantId, quantity: 1 });
-      } else {
-        const item = cart.items.find((i: any) => (i.variant._id || i.variant) === variantId);
-        if (item) {
-          return cartAPI.remove({ userId, variantId, size: item.size });
+      if (userId) {
+        if (action === "add") {
+          return cartAPI.add({ userId, variantId, quantity: 1 });
+        } else {
+          const item = cart.items.find((i: any) => (i.variant._id || i.variant) === variantId);
+          if (item) {
+            return cartAPI.remove({ userId, variantId, size: item.size });
+          }
+          throw new Error("Item not found");
         }
-        // As a safeguard, we can throw an error or handle it gracefully.
-        throw new Error("Attempted to remove an item that is not in the cart.");
+      } else {
+        // Guest action
+        const item = cart.items.find((i: any) => (i.variant._id || i.variant === variantId || i.variant._id === variantId)); // loose match
+        const currentQty = item ? item.quantity : 0;
+        const newQty = action === "add" ? currentQty + 1 : currentQty - 1;
+
+        if (newQty <= 0) {
+          removeFromGuestCart(variantId);
+        } else {
+          updateGuestCartQuantity(variantId, newQty);
+        }
+        return Promise.resolve();
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart", userId] });
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
   });
 
   const removeItemMutation = useMutation({
     mutationFn: async (variantId: string) => {
-      if (!userId) throw new Error("Please login first");
-      return cartAPI.delete({ userId, variantId });
+      if (userId) {
+        return cartAPI.delete({ userId, variantId });
+      } else {
+        removeFromGuestCart(variantId);
+        return Promise.resolve();
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart", userId] });
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
   });
 
   const addToWishlistMutation = useMutation({
-    mutationFn: (productId: string) => wishlistAPI.add({ productId }),
+    mutationFn: (productId: string) => {
+      if (userId) {
+        return wishlistAPI.add({ productId })
+      } else {
+        addToGuestWishlist(productId);
+        return Promise.resolve();
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
       toast.success("Added to wishlist!");
@@ -222,15 +256,7 @@ export default function CartPage() {
     );
   }
 
-  if (!userId) {
-    return (
-      <>
-        <Navbar />
-        <div className="container mx-auto p-4"><div className="alert alert-warning"><span>Please login to view your cart</span></div></div>
-        <Footer />
-      </>
-    );
-  }
+  // Removed login guard
 
   if (isLoading) {
     return (
@@ -250,7 +276,7 @@ export default function CartPage() {
           <div className="text-center py-16">
             <h1 className="text-3xl font-bold mb-4">Your cart is empty</h1>
             <p className="text-gray-600 mb-8">Add some products to get started!</p>
-            <button onClick={() => router.push("/products")} className="btn btn-primary">Continue Shopping</button>
+            <button onClick={() => router.push("/")} className="btn btn-primary">Continue Shopping</button>
           </div>
         </div>
         <Footer />
@@ -402,22 +428,36 @@ export default function CartPage() {
                   <div className="flex justify-between text-[12px] font-bold"><span>Total</span><span>₹{total.toFixed(2)}</span></div>
                 </div>
 
-                <button onClick={() => router.push("/checkout")} className="btn hidden sm:block btn-primary w-full mt-6" disabled={isDisabled()}>
+                <button onClick={() => {
+                  if (userId) {
+                    router.push("/checkout");
+                  } else {
+                    setLoginOpen(true);
+                  }
+                }} className="btn hidden sm:block btn-primary w-full mt-6" disabled={isDisabled()}>
                   Proceed to Checkout
                 </button>
 
-                <button onClick={() => router.push("/products")} className="btn hidden sm:block btn-outline w-full mt-2">Continue Shopping</button>
+                <button onClick={() => router.push("/")} className="btn hidden sm:block btn-outline w-full mt-2">Continue Shopping</button>
               </div>
             </div>
           </div>
         </div>
         <div className="flex bg-base-100 fixed bottom-5 left-1/2 -translate-x-1/2 p-4 w-full align-middle justify-evenly items-center flex-row gap-2">
           <div className="flex justify-between text-[10px] font-bold text-[12px]">₹{total.toFixed(2)}</div>
-          <button onClick={() => router.push("/checkout")} className="btn bg-black text-white text-[12px]" disabled={!address}>
+          <button onClick={() => {
+            if (userId) {
+              router.push("/checkout");
+            } else {
+              setLoginOpen(true);
+            }
+          }} className="btn bg-black text-white text-[12px]" disabled={!address && Boolean(userId)}>
+            {/* Disabled logic slightly changed: if not logged in, allowing click to trigger login */}
             Proceed to Checkout
           </button>
         </div>
       </div>
+      <LoginDialog open={loginOpen} setOpen={setLoginOpen} />
       <Footer />
     </>
   );

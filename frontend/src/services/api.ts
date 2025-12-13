@@ -1,8 +1,9 @@
 // frontend/src/services/api.ts
 import axios from 'axios';
 import secureLocalStorage from 'react-secure-storage';
+import { API_BASE_URL } from '../app/constants/Constant';
 
-const BASE_URL = 'http://94.250.203.249:8080';
+const BASE_URL = API_BASE_URL;
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -80,6 +81,7 @@ export const cartAPI = {
     api.post('/api/cart/remove', data),
   delete: (data: { userId: string; variantId: string }) =>
     api.delete('/api/cart/delete', { data }),
+  hydrate: (items: any[]) => api.post('/api/cart/hydrate', { items }),
 };
 
 // Order APIs
@@ -120,6 +122,7 @@ export const wishlistAPI = {
   add: (data: { productId: string }) => api.post('/api/wishlist/add', data),
   remove: (data: { itemId?: string; productId?: string }) =>
     api.post('/api/wishlist/remove', data),
+  hydrate: (productIds: string[]) => api.post('/api/wishlist/hydrate', { productIds }),
 };
 
 // Review APIs
