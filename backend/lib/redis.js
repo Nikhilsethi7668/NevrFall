@@ -26,6 +26,7 @@ export const getRedis = () => {
     _redis.on("ready", () => console.log("Redis ready"));
     _redis.on("error", (e) => console.error("Redis error", e));
   }
+
   return _redis;
 };
 
@@ -53,7 +54,7 @@ export async function connectRedis() {
     await r.set("foo", "bar");
     console.log("foo =", await r.get("foo"));
   } catch (err) {
-    console.warn('Redis unavailable, caching disabled');
+    console.warn("Redis unavailable, caching disabled");
     // Silently fail - app will work without cache
   }
 }
