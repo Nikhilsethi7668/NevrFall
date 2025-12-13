@@ -1,5 +1,5 @@
 // API Base URL
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8080';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://94.250.203.249:8080';
 
 // Auth API Endpoints
 export const SEND_OTP = `${API_BASE_URL}/api/auth/otp/request/mobile`;

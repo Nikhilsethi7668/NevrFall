@@ -4,10 +4,10 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Build arguments
-ARG NEXT_PUBLIC_API_URL=http://94.250.203.249:3000
+ARG NEXT_PUBLIC_API_URL=http://94.250.203.249:8080
 
 # Set environment variables for build
-ENV NEXT_PUBLIC_API_URL=http://94.250.203.249:3000
+ENV NEXT_PUBLIC_API_URL=http://94.250.203.249:8080
 
 # Copy package files
 COPY package*.json ./
