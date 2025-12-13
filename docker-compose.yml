@@ -51,6 +51,19 @@ services:
       retries: 3
       start_period: 40s
 
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    container_name: nevrfal-admin
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_BACKEND_URL=http://94.250.203.249:8080
+    networks:
+      - nevrfal-network
+
   frontend:
     build:
       context: ./frontend
