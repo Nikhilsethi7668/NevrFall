@@ -41,8 +41,8 @@ app.use(
       "http://localhost:5173",
       process.env.CLIENT_URL,
       process.env.ADMIN_URL,
-      "http://66.94.120.78:3000",
-      "http://66.94.120.78:5173",
+      "http://94.250.203.249:3000",
+      "http://94.250.203.249:5173",
     ],
     credentials: true,
   })

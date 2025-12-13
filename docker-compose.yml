@@ -21,8 +21,8 @@ services:
       - JWT_SECRET=NEVRFALLnevrfall0099889900
 
       # Client URL (your frontend URL)
-      - CLIENT_URL=http://66.94.120.78:3000
-      - ADMIN_URL=http://66.94.120.78:5173
+      - CLIENT_URL=http://94.250.203.249:3000
+      - ADMIN_URL=http://94.250.203.249:5173
 
       # AWS S3 Configuration (if using file uploads)
       - AWS_ACCESS_KEY_ID=AKIA4DMVQXOOPR3APN6A
@@ -56,14 +56,14 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://66.94.120.78:8080}
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://94.250.203.249:8080}
     container_name: nevrfal-frontend
     restart: unless-stopped
     ports:
       - 3000:3000
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://66.94.120.78:8080
+      - NEXT_PUBLIC_API_URL=http://94.250.203.249:8080
     depends_on:
       backend:
         condition: service_healthy

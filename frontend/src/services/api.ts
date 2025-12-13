@@ -2,7 +2,7 @@
 import axios from 'axios';
 import secureLocalStorage from 'react-secure-storage';
 
-const BASE_URL = 'http://66.94.120.78:8080';
+const BASE_URL = 'http://94.250.203.249:8080';
 
 const api = axios.create({
   baseURL: BASE_URL,
