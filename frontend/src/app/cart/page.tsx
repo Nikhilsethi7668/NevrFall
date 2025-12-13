@@ -201,12 +201,12 @@ export default function CartPage() {
   });
 
   const addToWishlistMutation = useMutation({
-    mutationFn: (productId: string) => {
+    mutationFn: (productId: string): Promise<any> => {
       if (userId) {
         return wishlistAPI.add({ productId })
       } else {
         addToGuestWishlist(productId);
-        return Promise.resolve();
+        return Promise.resolve(null);
       }
     },
     onSuccess: () => {
