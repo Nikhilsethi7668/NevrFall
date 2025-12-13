@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8080';
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://94.250.203.249:8080';
 
 export const API_URL = BASE_URL;
 

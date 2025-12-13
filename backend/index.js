@@ -37,12 +37,10 @@ const isProd = process.env.PRODUCTION === "false";
 app.use(
   cors({
     origin: [
-      "http://localhost:3000",
-      "http://localhost:5173",
-      process.env.CLIENT_URL,
-      process.env.ADMIN_URL,
       "http://94.250.203.249:3000",
       "http://94.250.203.249:5173",
+      process.env.CLIENT_URL,
+      process.env.ADMIN_URL,
     ],
     credentials: true,
   })
