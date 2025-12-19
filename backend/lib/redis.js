@@ -43,11 +43,11 @@ export const getRedisBullMQ = () => {
   return _redisBullMQ;
 };
 
-// Keep backwards compatibility
 export const redis = getRedis();
 
 export const redisBullMQ = getRedisBullMQ();
 
+//Helper function to test connection
 export async function connectRedis() {
   try {
     const r = getRedis();

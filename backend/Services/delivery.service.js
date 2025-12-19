@@ -38,7 +38,7 @@ export async function checkHeavyPincode(
   }
 }
 
-/* -------------------- TAT / Cost -------------------- */
+/* -------------------- TAT - Delivery Time  -------------------- */
 export async function expectedTAT(
   { origin_pin, destination_pin, mot, pdt, expected_pickup_date },
   configName = "default"
@@ -218,7 +218,7 @@ export async function downloadDocument(
     wrapError(e);
   }
 }
-
+// Handles delivery failure 
 export async function ndrAction(items, configName = "default") {
   try {
     const { client } = await getDelhiveryClient(configName);

@@ -2,51 +2,38 @@
 import 'dotenv/config.js';
 import mongoose from "mongoose";
 import connectDB from "../Config/db.js";
-
-// Define a simple schema for pickup locations
-const pickupLocationSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true },
-  address: { type: String, required: true },
-  pincode: { type: String, required: true },
-  city: { type: String, required: true },
-  state: { type: String, required: true },
-  country: { type: String, required: true },
-  phone: { type: String, required: true },
-  isDefault: { type: Boolean, default: false },
-});
-
-const PickupLocation = mongoose.model("PickupLocation", pickupLocationSchema);
+import WarehouseLocation from "../Models/WarehouseLocation.js";
 
 const seedDelhivery = async () => {
-  console.log("Starting Delhivery seeder...");
+  console.log("Starting Warehouse Location seeder...");
   await connectDB();
   console.log("Database connected.");
 
   try {
     // Check if a default location already exists
-    const existing = await PickupLocation.findOne({ isDefault: true });
-    console.log("Existing location:", existing);
+    const existing = await WarehouseLocation.findOne({ default: true });
+    console.log("Existing default warehouse:", existing);
     if (existing) {
-      console.log("Default pickup location already exists.");
+      console.log("Default warehouse location already exists.");
       return;
     }
 
-    // Create a default pickup location
-    console.log("Creating default pickup location...");
-    await PickupLocation.create({
+    // Create a default warehouse location
+    console.log("Creating default warehouse location...");
+    await WarehouseLocation.create({
       name: "Default Warehouse",
-      address: "123, Industrial Area",
+      phone: "9876543210",
       pincode: "110037",
+      line1: "123, Industrial Area",
+      line2: "Okhla Phase III",
       city: "New Delhi",
       state: "Delhi",
-      country: "India",
-      phone: "9876543210",
-      isDefault: true,
+      default: true,
     });
 
-    console.log("Delhivery seeder executed successfully: Default pickup location added.");
+    console.log("Warehouse seeder executed successfully: Default warehouse added.");
   } catch (error) {
-    console.error("Error seeding Delhivery data:", error);
+    console.error("Error seeding Warehouse data:", error);
   } finally {
     mongoose.connection.close();
     console.log("Database connection closed.");
