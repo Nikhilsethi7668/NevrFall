@@ -57,7 +57,7 @@ const CategoryChips = () => {
     if (allItems.length === 0) return null;
 
     return (
-        <div className="w-full py-2 bg-base-100">
+        <div className="w-full py-2 bg-base-100 relative z-0">
             {/* Mobile: left-aligned scrollable, Desktop: centered with larger items */}
             <div className="flex overflow-x-auto gap-4 px-4 no-scrollbar pb-2 animate-fade-in lg:justify-center lg:gap-6">
                 {allItems.map((item, index) => (

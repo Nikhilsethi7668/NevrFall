@@ -213,8 +213,8 @@ export default function LoginDialog({ open, setOpen }: { open: boolean; setOpen:
       </Dialog.Trigger>
 
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-lg p-6">
+        <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999]" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-lg p-6 z-[10000]">
           <Dialog.Title className="text-[12px] font-semibold text-center text-black mb-4">
             Sign In
           </Dialog.Title>
