@@ -28,7 +28,7 @@ const PaymentDetailSchema = new mongoose.Schema(
   {
     method: {
       type: String,
-      enum: ["cod", "wallet", "razorpay", "payu"],
+      enum: ["cod", "wallet", "razorpay", "payu", "stripe"],
       required: true,
     },
     amount: { type: Number, required: true },
@@ -94,7 +94,7 @@ const OrderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ["cod", "wallet", "razorpay", "payu", "none"],
+      enum: ["cod", "wallet", "razorpay", "payu", "none", "stripe"],
       default: "none",
     },
 

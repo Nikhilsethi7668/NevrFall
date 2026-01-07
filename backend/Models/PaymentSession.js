@@ -25,7 +25,7 @@ const PaymentSessionSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ["razorpay", "payu", "cod"],
+      enum: ["razorpay", "payu", "cod", "stripe"],
       required: true,
     },
     gatewayOrderId: {

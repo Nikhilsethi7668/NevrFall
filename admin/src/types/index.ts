@@ -167,7 +167,7 @@ export interface Payment {
   _id: string;
   order: Order | string;
   user: User | string;
-  method: 'cod' | 'wallet' | 'razorpay' | 'payu';
+  method: 'cod' | 'wallet' | 'razorpay' | 'payu' | 'stripe';
   walletTransactionId?: string;
   amount: number;
   currency: string;
