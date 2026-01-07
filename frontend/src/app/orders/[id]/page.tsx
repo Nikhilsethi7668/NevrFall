@@ -88,11 +88,11 @@ export default function OrderDetailsPage() {
   // Stripe Verification Logic
   const [verifying, setVerifying] = useState(false);
   const searchParams = useSearchParams();
-  const sessionId = searchParams.get('session_id');
-  const paymentStatus = searchParams.get('status');
+  const sessionId = searchParams?.get('session_id');
+  const paymentStatus = searchParams?.get('status');
 
   useEffect(() => {
-    if (sessionId && paymentStatus === 'success' && order && order.status === 'pending' && !verifying) {
+    if (sessionId && paymentStatus === 'success' && order && order?.status === 'pending' && !verifying) {
       verifyStripePayment();
     }
   }, [sessionId, paymentStatus, order]);
@@ -129,14 +129,14 @@ export default function OrderDetailsPage() {
   });
 
   const returnedItemIds = (myReturns || [])
-    .filter((r: any) => r.orderId === orderId && r.status !== "cancelled")
+    .filter((r: any) => r && r.orderId === orderId && r.status !== "cancelled")
     .flatMap((r: any) => r.items?.map((i: any) => i.itemId) || []);
 
   useEffect(() => {
     if (!order) return;
     if (!returnedItemIds?.length) return;
     const updated = pendingExchangeItems.filter((idx) => {
-      const item = order.items[idx];
+      const item = order.items?.[idx];
       return item && !returnedItemIds.includes(item._id);
     });
     setPendingExchangeItems(updated);
@@ -338,7 +338,7 @@ export default function OrderDetailsPage() {
     );
   }
 
-  const { steps, currentIndex } = getTrackingStatus(order.status);
+  const { steps, currentIndex } = getTrackingStatus(order?.status);
 
   return (
     <>
