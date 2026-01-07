@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { orderAPI, returnAPI, paymentAPI } from "@/services/api";
 import Image from "next/image";
 import Navbar from "../../components/Navbar";
@@ -335,6 +335,8 @@ export default function OrderDetailsPage() {
       { key: "shipped", label: "Shipped" },
       { key: "delivered", label: "Delivered" },
     ];
+
+    if (!status) return { steps, currentIndex: -1 };
 
     const currentIndex = steps.findIndex((step) => step.key === status);
     return { steps, currentIndex };
