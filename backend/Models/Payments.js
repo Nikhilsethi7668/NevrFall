@@ -14,7 +14,7 @@ const PaymentSchema = new mongoose.Schema(
     // method: instrument used for this payment chunk
     method: {
       type: String,
-      enum: ["cod", "wallet", "razorpay", "payu"],
+      enum: ["cod", "wallet", "razorpay", "payu", "stripe"],
       required: true,
     },
     walletTransactionId: {

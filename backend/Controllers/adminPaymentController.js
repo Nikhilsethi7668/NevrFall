@@ -2,7 +2,7 @@
 import PaymentGatewayConfig from "../Models/PaymentGatewayConfig.js";
 export const validateAndSetGateway = async (req, res) => {
   const { gateway } = req.body;
-  if (!["razorpay", "payu", "none"].includes(gateway))
+  if (!["razorpay", "payu", "stripe", "none"].includes(gateway))
     return res.status(400).json({ ok: false, error: "invalid gateway" });
 
   if (
@@ -17,6 +17,11 @@ export const validateAndSetGateway = async (req, res) => {
     return res
       .status(400)
       .json({ ok: false, error: "PayU keys missing on server" });
+
+  if (gateway === "stripe" && !process.env.STRIPE_SECRET_KEY)
+    return res
+      .status(400)
+      .json({ ok: false, error: "Stripe keys missing on server" });
 
   const cfg = await PaymentGatewayConfig.findOneAndUpdate(
     {},

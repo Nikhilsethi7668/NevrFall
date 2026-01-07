@@ -5,7 +5,7 @@ const PaymentGatewayConfigSchema = new mongoose.Schema(
   {
     activeGateway: {
       type: String,
-      enum: ["razorpay", "payu", "none"],
+      enum: ["razorpay", "payu", "stripe", "none"],
       default: process.env.ACTIVE_GATEWAY || "none",
     },
   },

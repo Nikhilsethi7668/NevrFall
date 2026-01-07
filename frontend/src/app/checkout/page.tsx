@@ -138,6 +138,10 @@ export default function CheckoutPage() {
 
 
   const handlePlaceOrder = () => {
+    if (!address) {
+      toast.error("Please select an address first.");
+      return;
+    }
     createOrderMutation.mutate();
   };
 

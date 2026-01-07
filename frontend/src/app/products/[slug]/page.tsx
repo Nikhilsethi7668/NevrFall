@@ -447,7 +447,7 @@ export default function ProductDetailPage() {
             <div className="flex flex-col hidden sm:block gap-3 mb-8">
               <button
                 onClick={() => addToCartMutation.mutate()}
-                disabled={!selectedSize || addToCartMutation.isPending}
+                disabled={addToCartMutation.isPending}
                 className="w-full h-12 border border-black bg-white text-black hover:bg-gray-50 uppercase tracking-widest text-[10px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {addToCartMutation.isPending ? (
@@ -621,7 +621,7 @@ export default function ProductDetailPage() {
         <div className="flex md:hidden lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 gap-3 z-50">
           <button
             onClick={() => addToCartMutation.mutate()}
-            disabled={!selectedSize || addToCartMutation.isPending}
+            disabled={addToCartMutation.isPending}
             className="flex-1 h-12 border border-black bg-white text-black uppercase text-xs font-bold tracking-wider disabled:opacity-50"
           >
             {addToCartMutation.isPending ? "..." : `ADD TO CART • ₹ ${selectedVariant?.price?.toLocaleString() || product.product.priceFrom?.toLocaleString()}`}
