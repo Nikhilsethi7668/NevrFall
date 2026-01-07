@@ -4,6 +4,7 @@ import createPayuAdapter from "./payuAdapter.js";
 import createStripeAdapter from "./stripeAdapter.js";
 
 export async function getActiveGatewayAdapter(paymentMethod = "none") {
+  console.log("getActiveGatewayAdapter called with:", paymentMethod);
   // If specific method requested (e.g. Stripe/Razorpay selected in frontend), use that.
   if (paymentMethod === "stripe") {
     const key = process.env.STRIPE_SECRET_KEY;

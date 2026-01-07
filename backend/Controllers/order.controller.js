@@ -505,7 +505,7 @@ export const createPaymentSession = async (req, res) => {
       const userId = req.user.id;
       const sessionId = retrySessionId || generateSessionId();
 
-      const validMethods = ["cod", "razorpay", "payu"];
+      const validMethods = ["cod", "razorpay", "payu", "stripe"];
       if (!validMethods.includes(paymentMethod)) {
         throw new Error("Unsupported payment method");
       }
@@ -677,8 +677,11 @@ export const createPaymentSession = async (req, res) => {
   } catch (error) {
     logger.error("Payment session creation failed", {
       error: error.message,
+      stack: error.stack,
       orderId: orderId,
+      body: req.body
     });
+    console.error("Payment Error Debug:", error); // Direct console log for immediate visibility
     res.status(400).json({ message: error.message });
   } finally {
     // --- 12. Safeguard: release lock if something failed before the success path ---
