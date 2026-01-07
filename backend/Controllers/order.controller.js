@@ -627,7 +627,7 @@ export const createPaymentSession = async (req, res) => {
         await paymentSession.save({ session });
       } else {
         // --- Online payment flow ---
-        const adapter = await getActiveGatewayAdapter();
+        const adapter = await getActiveGatewayAdapter(paymentMethod);
         gatewayPayload = await adapter.createOrder({
           amount: gatewayAmount,
           currency: "INR",
@@ -690,6 +690,81 @@ export const createPaymentSession = async (req, res) => {
 };
 
 /**
+ * Core logic to finalize payment (Update Order, Wallet, Cart, Cache)
+ * Reused by verifyPayment (frontend) and Webhooks (backend)
+ */
+export async function finalizeOrderPayment(paymentSession, verification, gatewayPaymentId, session) {
+  const userId = paymentSession.user; // paymentSession must be populated or we use paymentSession.user (ID)
+  const orderId = paymentSession.order;
+
+  // Check if loaded, if not load
+  // Assuming paymentSession is the doc.
+  const order = await Order.findById(orderId).session(session);
+  if (!order) throw new Error("Order not found during finalization");
+
+  // NOW process wallet payment (only after gateway payment is confirmed)
+  if (paymentSession.walletAmount > 0) {
+    if (!userId) throw new Error("User ID missing from session");
+
+    const walletTx = await processWalletPayment(
+      userId,
+      paymentSession.walletAmount,
+      order._id,
+      session
+    );
+
+    order.payments.push({
+      method: "wallet",
+      amount: paymentSession.walletAmount,
+      status: "success",
+      meta: { walletTransactionId: walletTx._id },
+    });
+  }
+
+  // Add gateway payment record
+  order.payments.push({
+    method: paymentSession.paymentMethod,
+    amount: verification.amount,
+    gatewayPaymentId,
+    status: "success",
+    meta: { verification },
+  });
+
+  order.status = "confirmed";
+  await order.save({ session });
+
+  // Mark session as completed
+  paymentSession.status = "completed";
+  paymentSession.completedAt = new Date();
+  paymentSession.gatewayPaymentId = gatewayPaymentId;
+  await paymentSession.save({ session });
+
+  // --- CLEAR USER CART AFTER PAYMENT SUCCESS ---
+  // Use userId from session
+  if (userId) {
+    await Cart.deleteMany({ user: userId }).session(session);
+    await cacheDelPattern(`orders:${userId}:*`);
+  }
+
+  // Clear cache
+  await cacheDelPattern(`order:${order._id}`);
+
+  logger.info("Payment verified successfully", {
+    sessionId: paymentSession.sessionId,
+    orderId: order._id,
+    gatewayAmount: verification.amount,
+    walletAmount: paymentSession.walletAmount,
+    method: paymentSession.paymentMethod
+  });
+
+  return {
+    success: true,
+    orderId: order._id,
+    orderStatus: order.status,
+  };
+}
+
+/**
  * Verify and Process Payment - FRONTEND CALLBACK ENDPOINT
  */
 export const verifyPayment = async (req, res) => {
@@ -702,14 +777,17 @@ export const verifyPayment = async (req, res) => {
 
       const userId = req.user._id;
 
-      // Find payment session
+      // Find payment session by sessionId OR gatewayOrderId (for Stripe redirect)
       const paymentSession = await PaymentSession.findOne({
-        sessionId,
+        $or: [
+          { sessionId: sessionId },
+          { gatewayOrderId: gatewayOrderId }
+        ],
         user: userId,
       }).session(session);
 
       if (!paymentSession) {
-        throw new Error("Payment session not found");
+        throw new Error("Payment session not found for verification");
       }
 
       // If already processed, return success
@@ -726,7 +804,7 @@ export const verifyPayment = async (req, res) => {
       }
 
       // Verify payment with gateway
-      const adapter = await getActiveGatewayAdapter();
+      const adapter = await getActiveGatewayAdapter(paymentSession.paymentMethod);
       const verification = await adapter.verifyPayment({
         gatewayPaymentId,
         gatewayOrderId: gatewayOrderId || paymentSession.gatewayOrderId,
@@ -737,62 +815,10 @@ export const verifyPayment = async (req, res) => {
         throw new Error("Payment verification failed");
       }
 
-      const order = await Order.findById(paymentSession.order).session(session);
+      // Reuse core logic
+      const result = await finalizeOrderPayment(paymentSession, verification, gatewayPaymentId, session);
 
-      // NOW process wallet payment (only after gateway payment is confirmed)
-      if (paymentSession.walletAmount > 0) {
-        const walletTx = await processWalletPayment(
-          userId,
-          paymentSession.walletAmount,
-          order._id,
-          session
-        );
-
-        order.payments.push({
-          method: "wallet",
-          amount: paymentSession.walletAmount,
-          status: "success",
-          meta: { walletTransactionId: walletTx._id },
-        });
-      }
-
-      // Add gateway payment record
-      order.payments.push({
-        method: paymentSession.paymentMethod,
-        amount: verification.amount,
-        gatewayPaymentId,
-        status: "success",
-        meta: { verification },
-      });
-
-      order.status = "confirmed";
-      await order.save({ session });
-
-      // Mark session as completed
-      paymentSession.status = "completed";
-      paymentSession.completedAt = new Date();
-      paymentSession.gatewayPaymentId = gatewayPaymentId;
-      await paymentSession.save({ session });
-
-      // --- CLEAR USER CART AFTER PAYMENT SUCCESS ---
-      await Cart.deleteMany({ user: userId }).session(session);
-
-      // Clear cache
-      await cacheDelPattern(`orders:${userId}:*`);
-      await cacheDelPattern(`order:${order._id}`);
-
-      logger.info("Payment verified successfully", {
-        sessionId,
-        orderId: order._id,
-        gatewayAmount: verification.amount,
-        walletAmount: paymentSession.walletAmount,
-      });
-
-      res.json({
-        success: true,
-        orderId: order._id,
-        orderStatus: order.status,
-      });
+      res.json(result);
     });
   } catch (error) {
     logger.error("Payment verification failed", {

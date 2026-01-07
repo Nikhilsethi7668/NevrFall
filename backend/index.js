@@ -26,6 +26,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { env } from "process";
+import { initCronJobs } from "./lib/cronScheduler.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -46,7 +47,14 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({
+  limit: "1mb",
+  verify: (req, res, buf) => {
+    if (req.originalUrl.startsWith('/api/payments/webhook')) {
+      req.rawBody = buf;
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: false }));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -99,6 +107,10 @@ const PORT = Number(process.env.PORT || 8080);
         err.message
       );
     }
+
+    // Initialize Cron Jobs
+    initCronJobs();
+
     const server = app.listen(PORT, () => {
       console.log(`Server started on PORT ${PORT}`);
     });

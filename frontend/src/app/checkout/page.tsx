@@ -20,7 +20,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { coupon, address } = useOrderStore();
   const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay" | "wallet">("razorpay");
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "razorpay" | "wallet" | "stripe" | "payu">("stripe");
   const [useWallet, setUseWallet] = useState(false);
 
   // Fetch cart
@@ -73,6 +73,13 @@ export default function CheckoutPage() {
         router.push(`/orders/${data.orderId}`);
       } else if (paymentMethod === "razorpay") {
         initiateRazorpayPayment(data);
+      } else if (paymentMethod === "stripe") {
+        // Stripe returns a URL to redirect to
+        if (data.gateway && data.gateway.url) {
+          window.location.href = data.gateway.url;
+        } else {
+          toast.error("Failed to initiate Stripe payment");
+        }
       } else if (paymentMethod === "wallet") {
         router.push(`/orders/${data.orderId}`);
       }
@@ -218,23 +225,38 @@ export default function CheckoutPage() {
                         type="radio"
                         name="payment"
                         className="radio"
-                        checked={paymentMethod === "razorpay"}
-                        onChange={() => setPaymentMethod("razorpay")}
+                        checked={paymentMethod === "stripe"}
+                        onChange={() => setPaymentMethod("stripe")}
                       />
-                      <span className="label-text">Online Payment (Razorpay)</span>
+                      <span className="label-text">Credit/Debit Card (Stripe) <span className="badge badge-sm badge-success ml-2">Recommended</span></span>
                     </label>
                   </div>
 
-                  <div className="form-control">
+                  <div className="form-control opacity-50">
                     <label className="label cursor-pointer justify-start gap-4">
                       <input
                         type="radio"
                         name="payment"
                         className="radio"
-                        checked={paymentMethod === "wallet"}
-                        onChange={() => setPaymentMethod("wallet")}
+                        checked={paymentMethod === "razorpay"}
+                        onChange={() => setPaymentMethod("razorpay")}
+                        disabled
                       />
-                      <span className="label-text">Wallet</span>
+                      <span className="label-text">Razorpay (Inactive)</span>
+                    </label>
+                  </div>
+
+                  <div className="form-control opacity-50">
+                    <label className="label cursor-pointer justify-start gap-4">
+                      <input
+                        type="radio"
+                        name="payment"
+                        className="radio"
+                        checked={paymentMethod === "payu"} // Assuming 'payu' existed in logic but not state type, state type needs update
+                        onChange={() => setPaymentMethod("payu")}
+                        disabled
+                      />
+                      <span className="label-text">PayU (Inactive)</span>
                     </label>
                   </div>
 

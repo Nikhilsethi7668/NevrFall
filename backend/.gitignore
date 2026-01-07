@@ -35,6 +35,7 @@ coverage/
 # OS generated files
 .DS_Store
 Thumbs.db
+.env
 
 # Optional: npm package lock (if you want to ignore)
 # package-lock.json

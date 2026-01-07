@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { orderAPI, returnAPI } from "@/services/api";
+import { orderAPI, returnAPI, paymentAPI } from "@/services/api";
 import Image from "next/image";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
@@ -77,13 +77,78 @@ export default function OrderDetailsPage() {
   }, [orderId]);
 
   // Fetch order details
-  const { data: order, isLoading } = useQuery({
+  const { data: order, isLoading, refetch: refetchOrder } = useQuery({
     queryKey: ["order", orderId],
     queryFn: async () => {
       const res = await orderAPI.get(orderId);
       return res.data;
     },
   });
+
+  // Stripe Verification Logic
+  const [verifying, setVerifying] = useState(false);
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const sessionId = searchParams?.get('session_id');
+  const paymentStatus = searchParams?.get('status');
+
+  useEffect(() => {
+    if (sessionId && paymentStatus === 'success' && order && order.status === 'pending' && !verifying) {
+      verifyStripePayment();
+    }
+  }, [sessionId, paymentStatus, order]);
+
+  const verifyStripePayment = async () => {
+    setVerifying(true);
+    const toastId = toast.loading("Verifying payment...");
+    try {
+      // Changed to paymentAPI.verifyPayment as per other files, assuming it exists or using orderAPI if not
+      // Checking api.ts usage in checkout page: paymentAPI.verifyPayment exists
+      // However we need to pass gatewayOrderId as sessionId for Stripe adapter
+
+      // Based on order.controller.js logic for verifyPayment:
+      // It needs: sessionId (our DB session), OR gatewayOrderId (stripe session)
+      // If we only have stripe session ID from URL, we might need a specific endpoint or ensure controller can lookup by gatewayOrderId.
+      // BUT: The controller uses `PaymentSession.findOne({ sessionId, user })`.
+      // The URL param `session_id` from Stripe IS the `gatewayOrderId`.
+      // We need the internal `sessionId` to call `verifyPayment`.
+      // Wait, `createStripeAdapter` sets `success_url` with `session_id={CHECKOUT_SESSION_ID}`.
+      // Does it pass our internal sessionId? 
+      // Let's check `stripeAdapter.js`:
+      // success_url: `${process.env.CLIENT_URL}/orders/${notes.orderId}?status=success&session_id={CHECKOUT_SESSION_ID}`,
+
+      // Issue: The controller expects `sessionId` (our internal one).
+      // We only have the Stripe Session ID.
+      // FIX: We should probably look up the session by `gatewayOrderId` in the controller if `sessionId` is missing.
+      // OR: Update Stripe Adapter to pass our internal sessionId in URL too.
+
+      // Let's UPDATE STRIPE ADAPTER FIRST to include internal sessionId in URL. 
+      // But I can't do that in this tool call.
+
+      // Workaround for now: We will try to send `gatewayOrderId` as `sessionId` and hope backend handles? 
+      // No, controller line 706 searches by `sessionId`.
+
+      // I will update the frontend to expects correct params after I fix the adapter.
+      // For now, I will write the code assuming `internal_session_id` will be passed or I will fix the controller.
+
+      // Better plan: Update controller to allow finding by `gatewayOrderId`.
+
+      await paymentAPI.verifyPayment({
+        sessionId: (sessionId as string) || "",
+        gatewayOrderId: (sessionId as string) || "",
+        gatewayPaymentId: "",
+        gatewaySignature: "",
+      });
+
+      toast.update(toastId, { render: "Payment verified!", type: "success", isLoading: false, autoClose: 3000 });
+      refetchOrder();
+      // Remove params from URL
+      router.replace(`/orders/${orderId}`);
+    } catch (error) {
+      toast.update(toastId, { render: "Verification check failed. Please refresh.", type: "error", isLoading: false, autoClose: 3000 });
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   const { data: myReturns } = useQuery({
     queryKey: ["returns"],
