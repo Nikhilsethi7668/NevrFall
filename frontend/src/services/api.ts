@@ -2,8 +2,9 @@
 import axios from 'axios';
 import secureLocalStorage from 'react-secure-storage';
 import { API_BASE_URL } from '../app/constants/Constant';
+const NODE_ENV = 'production'
 
-const BASE_URL = process.env.NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:3000';
+const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:3000';
 
 const api = axios.create({
   baseURL: BASE_URL,

@@ -21,8 +21,8 @@ services:
       - JWT_SECRET=NEVRFALLnevrfall0099889900
 
       # Client URL (your frontend URL)
-      - CLIENT_URL=http://94.250.203.249:3000
-      - ADMIN_URL=http://94.250.203.249:5173
+      - CLIENT_URL=http://45.137.194.145:3000
+      - ADMIN_URL=http://45.137.194.145:5173
 
       # AWS S3 Configuration (if using file uploads)
       - AWS_ACCESS_KEY_ID=AKIA4DMVQXOOPR3APN6A
@@ -64,7 +64,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_BACKEND_URL=http://94.250.203.249:8080
+      - VITE_BACKEND_URL=http://45.137.194.145:8080
     networks:
       - nevrfal-network
 
@@ -80,7 +80,7 @@ services:
       - 3000:3000
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://94.250.203.249:8080
+      - NEXT_PUBLIC_API_URL=http://45.137.194.145:8080
     depends_on:
       backend:
         condition: service_healthy
