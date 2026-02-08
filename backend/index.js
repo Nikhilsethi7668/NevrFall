@@ -40,7 +40,7 @@ app.use(
     origin: [
       "http://45.137.194.145:3000",
       "http://45.137.194.145:5173",
-      "http://45.137.194.145:8081",
+      "http://45.137.194.145:8090",
       process.env.CLIENT_URL,
       process.env.ADMIN_URL,
     ],
