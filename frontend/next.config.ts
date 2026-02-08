@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: 'standalone',
   env: {
-    NEXT_PUBLIC_API_URL: 'http://94.250.203.249:8080',
+    NEXT_PUBLIC_API_URL: 'http://45.137.194.145:8090',
   },
   eslint: {
     ignoreDuringBuilds: true,
