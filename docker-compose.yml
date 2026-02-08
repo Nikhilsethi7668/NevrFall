@@ -8,10 +8,10 @@ services:
     container_name: nevrfal-backend
     restart: unless-stopped
     ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      - "${BACKEND_PORT:-8090}:8090"
     environment:
       # Server Configuration
-      - PORT=8080
+      - PORT=8090
       - NODE_ENV=production
 
       # MongoDB Atlas Connection
@@ -64,7 +64,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_BACKEND_URL=http://45.137.194.145:8080
+      - VITE_BACKEND_URL=http://45.137.194.145:8090
     networks:
       - nevrfal-network
 
@@ -73,14 +73,14 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://94.250.203.249:8080}
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://45.137.194.145:8090}
     container_name: nevrfal-frontend
     restart: unless-stopped
     ports:
       - 3000:3000
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://45.137.194.145:8080
+      - NEXT_PUBLIC_API_URL=http://45.137.194.145:8090
     depends_on:
       backend:
         condition: service_healthy

@@ -40,6 +40,7 @@ app.use(
     origin: [
       "http://45.137.194.145:3000",
       "http://45.137.194.145:5173",
+      "http://45.137.194.145:8081",
       process.env.CLIENT_URL,
       process.env.ADMIN_URL,
     ],
@@ -94,7 +95,7 @@ app.use((err, req, res, next) => {
   res.status(code).json({ error: err.message || "Server error" });
 });
 
-const PORT = Number(process.env.PORT || 8080);
+const PORT = Number(process.env.PORT || 8090);
 
 (async () => {
   try {
