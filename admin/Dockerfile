@@ -8,7 +8,7 @@ RUN npm install
 
 COPY . .
 
-ENV VITE_BACKEND_URL=http://94.250.203.249:8080
+ENV VITE_BACKEND_URL=http://45.137.194.145:8090
 
 RUN npm run build
 

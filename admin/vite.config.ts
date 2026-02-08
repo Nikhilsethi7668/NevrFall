@@ -12,7 +12,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: import.meta.env.VITE_BACKEND_URL || 'http://45.137.194.145:8090',
+        target: 'http://45.137.194.145:8090',
         changeOrigin: true,
         secure: false,
         ws: true,
