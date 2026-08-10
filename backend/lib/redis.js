@@ -1,16 +1,21 @@
 import Redis from "ioredis";
+import dotenv from "dotenv";
+dotenv.config();
+
 
 const useTLS = (process.env.REDIS_TLS || "false").toLowerCase() === "true";
 
 const getRedisConfig = () => ({
-  host: process.env.REDIS_HOST || "127.0.0.1",
-  port: Number(process.env.REDIS_PORT || 6379),
-  username: process.env.REDIS_USERNAME || "default",
-  password: process.env.REDIS_PASSWORD || undefined,
-  tls: useTLS ? { servername: process.env.REDIS_HOST } : undefined,
+  host: "redis-12670.c12.us-east-1-4.ec2.cloud.redislabs.com",
+  port: Number(12670),
+  username: "default",
+  password: "d2TlwTsaqXqhLNkjlhZoS8wUv8DkU6Cd",
+  tls: useTLS ? { servername: "redis-12670.c12.us-east-1-4.ec2.cloud.redislabs.com" } : undefined,
   enableReadyCheck: true,
   lazyConnect: false,
 });
+
+console.log(JSON.stringify(getRedisConfig(), null, 2));
 
 // Lazy initialization
 let _redis = null;

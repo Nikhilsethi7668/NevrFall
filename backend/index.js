@@ -12,7 +12,7 @@ import productRoutes from "./Routes/product.routes.js";
 import cartRoutes from "./Routes/cart.routes.js";
 import couponRoutes from "./Routes/coupon.routes.js";
 import orderRoutes from "./Routes/order.routes.js";
-import paymentRoutes from "./Routes/payment.routes.js";
+// import paymentRoutes from "./Routes/payment.routes.js";
 import deliveryRoutes from "./Routes/delivery.routes.js";
 import exchangeRoutes from "./Routes/exchange.routes.js";
 import returnRoutes from "./Routes/return.routes.js";
@@ -39,8 +39,10 @@ app.use(
   cors({
     origin: [
       "http://45.137.194.145:3000",
+      "http://localhost:3000",
       "http://45.137.194.145:5173",
       "http://45.137.194.145:8090",
+      "http://localhost:5173",
       process.env.CLIENT_URL,
       process.env.ADMIN_URL,
     ],
@@ -81,7 +83,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/return", returnRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/coupons", couponRoutes);
-app.use("/api/payments", paymentRoutes);
+// app.use("/api/payments", paymentRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 

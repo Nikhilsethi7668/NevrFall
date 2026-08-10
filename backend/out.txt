@@ -1,0 +1,17 @@
+[dotenv@17.2.3] injecting env (17) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+{
+  "host": "redis-12670.c12.us-east-1-4.ec2.cloud.redislabs.com",
+  "port": 12670,
+  "username": "default",
+  "password": "d2TlwTsaqXqhLNkjlhZoS8wUv8DkU6Cd",
+  "enableReadyCheck": true,
+  "lazyConnect": false
+}
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+Using cacheDelPattern
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+(node:17388) [MONGOOSE] Warning: Duplicate schema index on {"code":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17388) [MONGODB DRIVER] Warning: useNewUrlParser is a deprecated option: useNewUrlParser has no effect since Node.js Driver version 4.0.0 and will be removed in the next major version
+(node:17388) [MONGODB DRIVER] Warning: useUnifiedTopology is a deprecated option: useUnifiedTopology has no effect since Node.js Driver version 4.0.0 and will be removed in the next major version
+querySrv ECONNREFUSED _mongodb._tcp.cluster0.mz1cqci.mongodb.net

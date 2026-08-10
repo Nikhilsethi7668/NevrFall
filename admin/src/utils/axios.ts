@@ -2,7 +2,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: import.meta.env.VITE_BACKEND_URL + '/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -34,7 +34,7 @@ axiosInstance.interceptors.response.use(
     if (status === 401) {
       localStorage.removeItem('adminToken');
       localStorage.removeItem('auth-storage');
-      
+
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
         toast.error('Session expired. Please login again.');
@@ -47,7 +47,7 @@ axiosInstance.interceptors.response.use(
     } else if (status >= 400) {
       toast.error(message);
     }
-    
+
     return Promise.reject(error);
   }
 );

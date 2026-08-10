@@ -8,7 +8,7 @@ import Payment from "../Models/Payments.js";
 import PaymentSession from "../Models/PaymentSession.js";
 import User from "../Models/User.js";
 import WalletTransaction from "../Models/WalletTransaction.js";
-import { getActiveGatewayAdapter } from "../Services/gatewayFactory.js";
+// import { getActiveGatewayAdapter } from "../Services/gatewayFactory.js";
 import { cacheGet, cacheSet, cacheDelPattern } from "../lib/cache.js";
 import { redis } from "../lib/redis.js";
 import logger from "../utils/logger.js";

@@ -1,7 +1,7 @@
 import PaymentGatewayConfig from "../Models/PaymentGatewayConfig.js";
 import createRazorpayAdapter from "./razorpayAdapter.js";
 import createPayuAdapter from "./payuAdapter.js";
-import createStripeAdapter from "./stripeAdapter.js";
+// import createStripeAdapter from "./stripeAdapter.js";
 
 export async function getActiveGatewayAdapter(paymentMethod = "none") {
   console.log("getActiveGatewayAdapter called with:", paymentMethod);
