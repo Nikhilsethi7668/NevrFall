@@ -5,6 +5,6 @@ export function generateOtp() {
 }
 
 export function hashOtp(otp) {
-  const secret = process.env.OTP_HASH_SECRET || "otp-secret";
+  const secret = process.env.OTP_HASH_SECRET || "otp-secret-9090909";
   return crypto.createHmac("sha256", secret).update(String(otp)).digest("hex");
 }

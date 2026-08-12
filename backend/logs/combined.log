@@ -63,3 +63,6 @@
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-26T16:04:11.289Z"}
 {"level":"warn","message":"QueueScheduler not available in bullmq import — continuing without queue scheduler.","service":"app-service","timestamp":"2025-10-27T07:30:18.051Z"}
 >>>>>>> Stashed changes
+{"error":"getaddrinfo ENOTFOUND ac-wmb5lb3-shard-00-01.mz1cqci.mongodb.net","level":"error","message":"Stock release job failed","service":"app-service","timestamp":"2026-08-12T06:00:26.935Z"}
+{"error":"getaddrinfo ENOTFOUND ac-wmb5lb3-shard-00-00.mz1cqci.mongodb.net","level":"error","message":"Stock release job failed","service":"app-service","timestamp":"2026-08-12T06:28:10.541Z"}
+{"error":"getaddrinfo ENOTFOUND ac-wmb5lb3-shard-00-01.mz1cqci.mongodb.net","level":"error","message":"Stock release job failed","service":"app-service","timestamp":"2026-08-12T06:28:10.571Z"}

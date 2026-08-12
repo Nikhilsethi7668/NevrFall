@@ -1,16 +1,44 @@
 import mongoose from "mongoose";
+
 const AddressSchema = new mongoose.Schema(
   {
-    name: String,
-    phone: String,
-    pincode: String,
-    line1: String,
-    line2: String,
-    city: String,
-    state: String,
+    name: {
+      type: String,
+      trim: true,
+    },
+
+    phone: {
+      type: String,
+      trim: true,
+    },
+
+    pincode: {
+      type: String,
+      trim: true,
+    },
+
+    line1: {
+      type: String,
+      trim: true,
+    },
+
+    line2: {
+      type: String,
+      trim: true,
+    },
+
+    city: {
+      type: String,
+      trim: true,
+    },
+
+    state: {
+      type: String,
+      trim: true,
+    },
+
     default: {
       type: Boolean,
-      required: true,
       default: false,
     },
   },
@@ -22,9 +50,26 @@ const UserSchema = new mongoose.Schema(
     name: {
       type: String,
       default: "User",
+      trim: true,
     },
-    phone: { type: String, unique: true, index: true, required: true },
-    email: { type: String, unique: true, sparse: true, index: true },
+
+    phone: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+      trim: true,
+    },
+
+    email: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+      lowercase: true,
+      trim: true,
+    },
+
     gender: {
       type: String,
       enum: ["male", "female", "other"],
@@ -32,11 +77,27 @@ const UserSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "admin", "Support", "manager"],
       default: "user",
     },
-    addresses: { type: [AddressSchema], default: [] },
-    wallet: { balance: { type: Number, default: 0 } },
+
+    addresses: {
+      type: [AddressSchema],
+      default: [],
+    },
+
+    wallet: {
+      balance: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+    },
+
+    status: {
+      type: String,
+      enum: ["active", "blocked"],
+      default: "active",
+    },
   },
   { timestamps: true }
 );

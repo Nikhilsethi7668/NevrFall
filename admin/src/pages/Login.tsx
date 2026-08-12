@@ -10,7 +10,7 @@ type LoginStep = 'phone' | 'verify-phone' | 'email' | 'verify-email';
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
-  
+
   const [step, setStep] = useState<LoginStep>('phone');
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState('');
@@ -30,7 +30,7 @@ const Login: React.FC = () => {
   // Step 1: Request Phone OTP
   const handleRequestPhoneOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!phone || phone.length !== 10) {
       toast.error('Please enter a valid 10-digit phone number');
       return;
@@ -52,7 +52,7 @@ const Login: React.FC = () => {
   // Step 2: Verify Phone OTP
   const handleVerifyPhoneOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!phoneOtp || phoneOtp.length !== 6) {
       toast.error('Please enter a valid 6-digit OTP');
       return;
@@ -61,7 +61,8 @@ const Login: React.FC = () => {
     setLoading(true);
     try {
       const response = await authApi.verifyMobileOtp(phone, phoneOtp);
-      
+
+
       // Check if user has admin/support/manager role
       if (!['admin', 'support', 'manager', 'Support'].includes(response.user.role)) {
         toast.error('Access denied. Admin privileges required.');
@@ -91,7 +92,7 @@ const Login: React.FC = () => {
   // Step 3: Request Email OTP
   const handleRequestEmailOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
       toast.error('Please enter a valid email address');
@@ -114,7 +115,7 @@ const Login: React.FC = () => {
   // Step 4: Verify Email OTP
   const handleVerifyEmailOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!emailOtp || emailOtp.length !== 6) {
       toast.error('Please enter a valid 6-digit OTP');
       return;
@@ -123,7 +124,7 @@ const Login: React.FC = () => {
     setLoading(true);
     try {
       const response = await authApi.verifyEmailOtp(email, phone, emailOtp);
-      
+
       login(response.token, response.user);
       toast.success('Login successful!');
       navigate('/');

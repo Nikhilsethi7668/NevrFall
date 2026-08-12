@@ -6,11 +6,11 @@ dotenv.config();
 const useTLS = (process.env.REDIS_TLS || "false").toLowerCase() === "true";
 
 const getRedisConfig = () => ({
-  host: "redis-12670.c12.us-east-1-4.ec2.cloud.redislabs.com",
-  port: Number(12670),
-  username: "default",
-  password: "d2TlwTsaqXqhLNkjlhZoS8wUv8DkU6Cd",
-  tls: useTLS ? { servername: "redis-12670.c12.us-east-1-4.ec2.cloud.redislabs.com" } : undefined,
+  host: process.env.REDIS_HOST,
+  port: Number(process.env.REDIS_PORT),
+  username: process.env.REDIS_USERNAME,
+  password: process.env.REDIS_PASSWORD,
+  tls: useTLS ? { servername: process.env.REDIS_HOST } : undefined,
   enableReadyCheck: true,
   lazyConnect: false,
 });

@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
-
+import dns from "dns";
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
@@ -29,7 +29,12 @@ import { env } from "process";
 import { initCronJobs } from "./lib/cronScheduler.js";
 
 const app = express();
-app.set("trust proxy", 1);
+
+
+app.set("trust proxy", false);
+
+//Resolve DNS for MongoDB
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
