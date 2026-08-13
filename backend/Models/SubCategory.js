@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 
-const CategorySchema = new mongoose.Schema(
+const SubCategorySchema = new mongoose.Schema(
   {
-    superCategory: {
+    category: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "SuperCategory",
+      ref: "Category",
       required: true,
       index: true,
     },
@@ -41,11 +41,11 @@ const CategorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Same category name cannot exist twice
-// inside the same SuperCategory
-CategorySchema.index(
-  { superCategory: 1, name: 1 },
+// Same subcategory name cannot exist twice
+// inside the same Category
+SubCategorySchema.index(
+  { category: 1, name: 1 },
   { unique: true }
 );
 
-export default mongoose.model("Category", CategorySchema);
+export default mongoose.model("SubCategory", SubCategorySchema);
